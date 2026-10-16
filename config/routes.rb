@@ -96,6 +96,7 @@ Rails.application.routes.draw do
       post "portal/reopen", to: "portal_windows#reopen", as: :portal_reopen
       # Feature 06, S1 AI screening (blueprint §3.1 screen 8, §4.1).
       post "screening/start",       to: "screenings#start",       as: :screening_start
+      post "screening/retry",       to: "screenings#retry_failed", as: :screening_retry
       get  "screening/review",      to: "screenings#review",      as: :screening_review
       get  "screening/calibration", to: "screenings#calibration", as: :screening_calibration
       # Feature 09 (D51 B): "Review before AI", the reviewer's release list for one job.

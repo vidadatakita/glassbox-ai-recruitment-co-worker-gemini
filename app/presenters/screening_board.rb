@@ -16,9 +16,9 @@ class ScreeningBoard
     "cv_file" => "The CV file could not be read from storage",
     # Feature 09 (D51).
     "no_evidence_section" => "Manual check needed: the CV was not sent to the AI",
-    "config" => "The text was released by the reviewer but not sent. Press Start screening once the credentials are configured",
+    "config" => "The text was released by the reviewer but not sent. Retry the screening once the credentials are configured",
     "release_mismatch" => "The text to be sent differed from the released text and was not sent. A new version is prepared for review",
-    "unexpected" => "Screening stopped because of a system fault, not because of the CV. Try \"Start screening\" again; if it repeats, contact the admin"
+    "unexpected" => "Screening stopped because of a system fault, not because of the CV. Retry the screening; if it repeats, contact the admin"
   }.freeze
 
   # Shown when the AI is off (D50). One sentence for the reason, one for the consequence.
@@ -48,6 +48,8 @@ class ScreeningBoard
 
   def in_state(state) = participations.select { |p| p.screening_state == state }
   def failed = in_state("screening_failed")
+  # The failed rows "Retry failed screening" sends to the queue again (Screening::Start.retry_failed).
+  def retryable = failed.select { |p| Screening::Start.retryable?(p) }
   # Stored result, but the automatic decision step raised afterwards (F-14). Never re-sent.
   def finalize_errors = done.select { |p| p.screening_failure == "finalize" }
   def unreadable = in_state("cv_unreadable")

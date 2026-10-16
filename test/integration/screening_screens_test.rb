@@ -187,4 +187,48 @@ class ScreeningScreensTest < ActionDispatch::IntegrationTest
     end
     assert_equal "done", @participation.reload.screening_state
   end
+
+  # End-to-end test, 16 Oct 2026: the public demo opens the HR owner, reviewer and owner doors, no
+  # consultant, so a failed screening could not be retried there. Risks hunted: the retry missing
+  # for those roles, reaching the owner, or sending again a CV that needs a manual check.
+  test "the HR owner and the reviewer retry a failed screening; a manual-check row stays; the owner is refused" do
+    with_ai(@fake) do
+      @fake.push(refusal_message(category: "bio"), refusal_message(category: "bio"))
+      failed = apply_with_cv!(@job)
+      manual = apply_with_cv!(@job, name: "Dewi Anggraini")
+      screen_and_release!
+      assert_equal %w[screening_failed screening_failed], [failed.reload, manual.reload].map(&:screening_state)
+      manual.update_columns(screening_failure: "personal_data", screening_failure_detail: nil)
+      retry_button = "form[action='#{staff_job_screening_retry_path(@job)}'] button[name=commit][value='Retry failed screening (1)']"
+
+      sign_in_as staff_user("owner")
+      get staff_job_path(@job)
+      assert_select "form[action='#{staff_job_screening_retry_path(@job)}']", 0
+      post staff_job_screening_retry_path(@job)
+      assert_equal "You do not have access to this action.", flash[:alert]
+      assert_equal "screening_failed", failed.reload.screening_state
+
+      sign_in_as @job.consultant
+      get staff_job_path(@job)
+      assert_select "form[action='#{staff_job_screening_retry_path(@job)}']", 0, "the consultant has Start screening"
+
+      sign_in_as staff_user("reviewer")
+      get staff_job_path(@job)
+      assert_select retry_button
+
+      sign_in_as staff_user("hr_pic")
+      get staff_job_path(@job)
+      assert_select retry_button
+      assert_house_form_rules
+      post staff_job_screening_retry_path(@job)
+      assert_redirected_to staff_job_path(@job, anchor: "screening")
+      assert_equal "1 failed screening(s) queued again. The result appears here when the AI has answered.", flash[:notice]
+      assert_equal "queued", failed.reload.screening_state
+      @fake.push(gemini_message(criteria_for(@job)))
+      perform_enqueued_jobs
+      assert_equal "done", failed.reload.screening_state
+      assert_equal %w[screening_failed personal_data], [manual.reload.screening_state, manual.screening_failure], "a manual check needs a pasted text, not a retry"
+    end
+    assert_equal 3, @fake.requests.size, "two first attempts and one retry; the manual-check CV was not sent again"
+  end
 end
