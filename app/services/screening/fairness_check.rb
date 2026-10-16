@@ -267,7 +267,8 @@ module Screening
     class Malformed < StandardError; end
 
     # The same per-criterion rules as Screening::Run#parse (one entry per requirement, a judgement
-    # allowed for its tier, the quote checked verbatim against the text the model was given).
+    # allowed for its tier, every quoted passage checked verbatim against the text the model was
+    # given; QuoteCheck.check reads the "quotes" list of prompt .4 and the older single "quote").
     # Deliberately duplicated in the small: Run#parse is private and belongs to the screening run,
     # which also stores results; this check stores nothing.
     def parse(text, redacted)
@@ -284,9 +285,7 @@ module Screening
         judgement = entry["judgement"].to_s
         raise Malformed, "judgement not allowed for the tier" unless Rubric::JUDGEMENTS.fetch(criterion.tier).include?(judgement)
 
-        quote = entry["quote"].to_s
-        by_key[criterion.key] = { "judgement" => judgement, "quote" => quote,
-                                  "verified" => QuoteCheck.verified?(judgement:, quote:, extracted: redacted, redacted:) }
+        by_key[criterion.key] = { "judgement" => judgement, **QuoteCheck.check(entry, judgement:, extracted: redacted, redacted:) }
       end
       missing = @rubric.criteria.map(&:key) - by_key.keys
       raise Malformed, "#{missing.size} requirement(s) not judged" if missing.any?

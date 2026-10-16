@@ -193,6 +193,17 @@ class Screening::FairnessCheckTest < ActiveSupport::TestCase
     assert_equal 1, peak
   end
 
+  test "an answer in the quotes-list shape of prompt .4 is read, and every passage must be in the CV" do
+    listed = ->(*extra) { answer.map { |c| { id: c[:id], judgement: c[:judgement], quotes: [c[:quote], *extra] } } }
+    result = run_check([gemini_message(listed.call), gemini_message(answer(sebaiknya: "1"))])
+    assert result.base.judgements.values.all? { |j| j["verified"] }, "a one-passage list verifies like a single quote"
+    assert result.passed?
+
+    @fake = FakeGemini.new
+    result = run_check([gemini_message(listed.call("Led a team of forty at a port terminal")), gemini_message(answer(sebaiknya: "1"))])
+    refute result.base.judgements.values.any? { |j| j["verified"] }, "a passage that is not in the CV leaves its criterion unverified"
+  end
+
   test "the fairness CV never goes through a release: no AiRelease row and no applicant is written" do
     assert_no_difference(["AiRelease.count", "Candidate.count", "JobApplication.count", "ScreeningResult.count"]) do
       run_check([gemini_message(answer), gemini_message(answer(sebaiknya: "1"))])

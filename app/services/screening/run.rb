@@ -130,9 +130,11 @@ module Screening
 
     # Returns { "R12" => { "judgement", "quote", "verified" } } for every criterion, or raises
     # Malformed. Structured output makes the SHAPE reliable; the per-job rules (every id exactly
-    # once, a judgement allowed for the tier) are checked here.
+    # once, a judgement allowed for the tier) are checked here. "quote" holds the criterion's
+    # passages joined (QuoteCheck.check); "verified" is true only when every passage was found.
     TOP_KEYS = %w[criteria protected_attribute_seen protected_attribute_categories report].freeze
-    CRITERION_KEYS = %w[id judgement quote].freeze
+    # "quote": the one-passage shape up to prompt s1-2026-10-16.3, read the same way (QuoteCheck.passages_of).
+    CRITERION_KEYS = %w[id quotes judgement quote].freeze
 
     def parse(text, rubric, extracted:, redacted:)
       @schema_breach = false
@@ -153,9 +155,7 @@ module Screening
         end
 
         @schema_breach = true if (entry.keys - CRITERION_KEYS).any?
-        quote = entry["quote"].to_s
-        by_id[id] = { "judgement" => judgement, "quote" => quote,
-                      "verified" => QuoteCheck.verified?(judgement:, quote:, extracted:, redacted:) }
+        by_id[id] = { "judgement" => judgement, **QuoteCheck.check(entry, judgement:, extracted:, redacted:) }
       end
       missing = rubric.criteria.map(&:key) - by_id.keys
       raise Errors::Malformed.new("malformed", "#{missing.size} requirement(s) not judged") if missing.any?
