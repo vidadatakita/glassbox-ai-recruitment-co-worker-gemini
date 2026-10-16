@@ -1,0 +1,32 @@
+<%# "Ask AI" chat window (data_chat.js). The AI only reads summaries of this user's jobs through
+    fixed read-only functions (DataChat); it never sees names, contacts or CV text and cannot change
+    anything. Not a form submit to a page: questions go by fetch, so the page under it stays. %>
+<div class="data-chat" data-data-chat data-url="<%= staff_data_chat_path %>">
+  <section class="data-chat__panel" id="data-chat-panel" role="dialog" aria-label="Ask AI" hidden>
+    <header class="data-chat__head">
+      <div><strong>Ask AI</strong><span>About your vacancies and applicants</span></div>
+      <button type="button" class="data-chat__close" data-chat-close aria-label="Close Ask AI"><i class="fa fa-times" aria-hidden="true"></i></button>
+    </header>
+    <div class="data-chat__log" data-chat-log aria-live="polite">
+      <div class="data-chat__msg data-chat__msg--bot">
+        <p>Ask anything about your vacancies and applicants: who applied, their stage and status, screening results, requirements often not met, or how long the process takes. Try:</p>
+        <div class="data-chat__chips">
+          <% DataChat::STARTERS.sample(4).each do |q| %>
+            <button type="button" class="data-chat__chip" data-chat-example><%= q %></button>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    <form class="data-chat__form" data-chat-form>
+      <button type="button" class="data-chat__to-end" data-chat-to-end hidden aria-label="To the latest message"><i class="fa fa-arrow-down" aria-hidden="true"></i></button>
+      <label class="visually-hidden" for="data-chat-question">Question</label>
+      <textarea id="data-chat-question" name="question" rows="1" maxlength="<%= DataChat::MAX_QUESTION %>" required placeholder="Example: status of Candidate 03?"></textarea>
+      <button type="submit" class="data-chat__send" aria-label="Send question"><i class="fa fa-paper-plane" aria-hidden="true"></i></button>
+    </form>
+  </section>
+  <%# One pill: the sparkle and "Ask AI"; while the window is open it shows a close mark. %>
+  <button type="button" class="data-chat__fab" data-chat-toggle aria-expanded="false" aria-controls="data-chat-panel">
+    <span class="data-chat__fab-open"><%= render "staff/shared/ai_sparkle", size: 20 %><span class="data-chat__fab-text">Ask AI</span></span>
+    <span class="data-chat__fab-close"><i class="fa fa-times" aria-hidden="true"></i><span class="visually-hidden">Close Ask AI</span></span>
+  </button>
+</div>

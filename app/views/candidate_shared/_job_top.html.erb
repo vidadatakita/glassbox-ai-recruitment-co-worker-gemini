@@ -1,0 +1,16 @@
+<%# Header band on every candidate page: who is hiring and for what. A confidential job (G1, D17)
+    never shows the company's name, address or email. The job title here is a paragraph, not a
+    heading, so each page keeps its own single h1. %>
+<% content_for :top do %>
+  <header class="cand-hero">
+    <div class="cand-hero__inner">
+      <div class="cand-brand"><b>GlassBox</b><span>Applicant portal</span></div>
+      <span class="co"><%= job.confidential? ? "Company name withheld" : job.client_company.name %></span>
+      <p class="cand-hero__title"><%= job.title %></p>
+      <ul class="cand-facts" aria-label="Vacancy summary">
+        <% if job.location.present? %><li><%= job.location %></li><% end %>
+        <% if job.show_salary? && job.salary_min && job.salary_max %><li><%= salary_band(job) %></li><% end %>
+      </ul>
+    </div>
+  </header>
+<% end %>

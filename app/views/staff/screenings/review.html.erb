@@ -1,0 +1,19 @@
+<% content_for :title, "Screening review · #{@job.title}" %>
+<div class="portal-page loan-index-page layout-decoration-page">
+  <%= render "staff/shared/page_header", eyebrow: "Screening review", title: @job.title,
+             subtitle: "Follow or reverse every AI elimination and the 10% sample of passes. Every review becomes a recorded decision. A person decides every step.",
+             actions: label_link("Back", "fa-arrow-left", staff_job_path(@job, anchor: "screening"), purpose: :neutral, icon_end: true) %>
+  <section class="content">
+    <%= render "staff/screenings/review_notices", board: @board, consultant_blocked: @consultant_blocked %>
+    <%= render "staff/screenings/review_metrics", board: @board %>
+    <% items = @board.to_review %>
+    <% if items.empty? %>
+      <div class="card custom-card"><div class="card-body"><p class="text-muted mb-0">No AI advice is awaiting review. AI eliminations, unverified quotes and the 10% sample of passes appear here.</p></div></div>
+    <% end %>
+    <% items.each do |item| %>
+      <%= render "staff/screenings/review_item", item: item, board: @board,
+                 can_act: !@consultant_blocked && @board.calibrated? && @board.stage.status == "open" %>
+    <% end %>
+    <%= render "staff/screenings/review_history", job: @job, board: @board %>
+  </section>
+</div>

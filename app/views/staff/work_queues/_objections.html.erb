@@ -1,0 +1,34 @@
+<%# E21: each objection is answered by a person; the answer is shown to the candidate. One form
+    per row, none nested. %>
+<div class="card custom-card portal-queue-section">
+  <div class="card-header"><div class="card-title">Applicant objections (<%= objections.size %>)</div></div>
+  <div class="card-body">
+    <% if objections.empty? %><p class="text-muted mb-0">No open objections. Objections applicants raise against a CV screening result appear here to be answered.</p><% end %>
+    <% objections.each do |objection| %>
+      <% application = objection.participation.job_application %>
+      <div class="border-bottom pb-3 mb-3">
+        <p class="mb-1"><strong><%= candidate_label(application) %></strong> · <%= application.job.title %> · received <%= wib(objection.received_at) %></p>
+        <p class="mb-2"><%= objection.text %></p>
+        <% if %w[consultant reviewer].include?(current_user.role) %>
+          <%= form_with url: staff_objection_answer_path(objection), method: :post, data: { turbo: false, submit_guard: true } do %>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label" for="outcome_<%= objection.id %>">Outcome</label>
+                <select class="form-select" id="outcome_<%= objection.id %>" name="outcome" required>
+                  <option value="">Select</option>
+                  <% Objection::OUTCOMES.each do |value, label| %><option value="<%= value %>"><%= label %></option><% end %>
+                </select>
+              </div>
+              <div class="col-md-8">
+                <label class="form-label" for="answer_<%= objection.id %>">Answer to the applicant</label>
+                <textarea class="form-control" id="answer_<%= objection.id %>" name="answer" rows="2" required></textarea>
+              </div>
+            </div>
+            <p class="text-muted mt-2 mb-2">If the objection is upheld, record a manual decision with a reason at that stage.</p>
+            <%= label_button "Send answer", "fa-paper-plane" %>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

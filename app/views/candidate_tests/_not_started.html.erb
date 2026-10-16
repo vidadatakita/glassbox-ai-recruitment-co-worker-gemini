@@ -1,0 +1,28 @@
+<%# Before the clock (plan §b): everything the candidate must know is said BEFORE "Start test",
+    because the time cannot be paused once it runs. %>
+<section class="card" aria-labelledby="test-before">
+  <h2 id="test-before">Before you start</h2>
+  <dl class="kv">
+    <dt>Time allowed</dt><dd><%= test.time_limit ? "#{test.time_limit} minutes, counted from the moment you press Start test" : "Not available yet" %></dd>
+    <dt>Start by</dt><dd><%= l(test.start_by.in_time_zone, format: :long_wib) %></dd>
+    <% if test.version %>
+      <% files = test.version.file_answer_types %>
+      <dt>Answer</dt><dd><%= [(files.any? ? "one #{files.map { |t| TechnicalTestCase::ANSWER_TYPES.fetch(t) }.to_sentence(two_words_connector: " or ", last_word_connector: ", or ")} file, at most 10 MB" : nil),
+                              ("one GitHub, GitLab or Bitbucket repository link" if test.version.repo_link_answer?)].compact.join(", or ").upcase_first %></dd>
+    <% end %>
+  </dl>
+  <ul class="small test-rules">
+    <li>We recommend a <b>laptop or desktop computer</b>. The case study is a working file that is hard to complete on a phone.</li>
+    <li>After Start test, the case study file can be downloaded and the clock runs without pause, even if the page is closed.</li>
+    <li>The answer can be sent only once.</li>
+  </ul>
+  <% if test.can_start? %>
+    <%= form_with url: candidate_status_test_start_path(params[:token]), method: :post, data: { turbo: false, submit_guard: true } do %>
+      <%# value= keeps its original token: A3 translates visible text only and never a submit value
+          (the controller does not read params[:commit]; the rule is kept so no form silently changes). %>
+      <button type="submit" class="btn primary" name="commit" value="Mulai tes">Start test</button>
+    <% end %>
+  <% else %>
+    <p class="flash alert">The technical test is not available yet. Please open this page again later.</p>
+  <% end %>
+</section>

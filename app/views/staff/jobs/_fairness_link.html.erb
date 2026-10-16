@@ -1,0 +1,12 @@
+<%# The way into the fairness check from the vacancy home (FLOW v2.1, new in v2.1): one invented CV,
+    swapped before redaction, run on the HIGH tier. Same roles as the screening report. %>
+<% if job.brief_complete? && current_user.role.in?(%w[hr_pic consultant reviewer owner]) %>
+<div class="hris-form-card report-link" id="fairness-check">
+  <div class="hris-form-card__header">
+    <div class="hris-form-card__icon"><i class="fa fa-balance-scale" aria-hidden="true"></i></div>
+    <div><h3>Fairness check <%= ai_tier_badge(:fairness, job: job) %></h3>
+      <p>One invented CV, run with the name, the gender and the religion swapped in the original text before redaction. Identical redacted bytes prove the redaction; identical scores prove the model saw no difference. A merit control that must move the score shows the check can fail.</p></div>
+    <div class="hris-form-card__action"><%= label_link "Open fairness check", "fa-arrow-right", staff_job_fairness_check_path(job), purpose: :submit, icon_end: true %></div>
+  </div>
+</div>
+<% end %>

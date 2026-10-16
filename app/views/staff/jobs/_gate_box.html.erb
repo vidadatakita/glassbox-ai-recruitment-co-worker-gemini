@@ -1,0 +1,23 @@
+<%# D60: the gate "CV screening and technical test" on the vacancy home. Overview first (the gate total and
+    each stage side by side), then the applicant list, most urgent first. Figures come from GateBoard
+    (rows loaded once). Client roles see "Candidate 01" instead of names (rule 14, D62 h7). %>
+<% gate = GateBoard.new(job) %>
+<% if gate.applicable? %>
+<div class="hris-form-card gate-box" id="gerbang-seleksi">
+  <div class="hris-form-card__header">
+    <div class="hris-form-card__icon"><i class="fa fa-columns" aria-hidden="true"></i></div>
+    <div>
+      <h3><%= gate.name %> <%= gate_status_badge(gate.s1) %></h3>
+      <p>One gate: an applicant continues only after passing CV screening (weight <%= gate.s1.weight %>%) and the technical test (weight <%= gate.s2.weight %>%). Both stages open and close together.</p>
+    </div>
+    <div class="hris-form-card__action"><span class="gate-box__total"><strong><%= gate.total %></strong> <%= "applicant".pluralize(gate.total) %></span>
+      <%# D60 slice 5: the reviewer's rubric scoring of the answers. %>
+      <%= label_link "Technical test scoring", "fa-pencil-square-o", staff_job_test_scorings_path(job), purpose: :neutral %></div>
+  </div>
+  <div class="hris-form-card__body">
+    <%= render "staff/jobs/gate_summary", gate: gate %>
+    <%= render "staff/jobs/gate_stages", gate: gate %>
+    <%= render "staff/jobs/gate_applicants", gate: gate %>
+  </div>
+</div>
+<% end %>

@@ -1,0 +1,16 @@
+<% content_for :title, "Request a new link" %>
+<h1>Request a new link</h1>
+<p class="small">The old link will be deactivated and a new one sent to the e-mail address you used when you applied.</p>
+<%= form_with url: link_requests_path, method: :post, data: { turbo: false, submit_guard: true } do %>
+  <div class="field">
+    <label for="job_code">Vacancy code</label>
+    <input type="text" id="job_code" name="job_code" value="<%= params[:job_code] %>" required>
+    <span class="small">The code is in the address of the vacancy page, after /apply/.</span>
+  </div>
+  <div class="field">
+    <label for="email">E-mail used when applying</label>
+    <input type="email" id="email" name="email" required>
+  </div>
+  <%# The button's value is its label: no controller reads params[:commit] on the candidate forms. %>
+  <button type="submit" class="btn primary" name="commit" value="Send new link">Send new link</button>
+<% end %>

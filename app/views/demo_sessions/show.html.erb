@@ -1,0 +1,39 @@
+<% content_for :title, "Try the demo · GlassBox" %>
+<%# A5: the no-login door. Three doors, one form each (never a form inside a form), no disabled
+    buttons. The page says what the visitor is about to see and that every row is invented. %>
+<div class="text-center mb-4">
+  <%= render "layouts/brand", variant: :demo %>
+  <h1 class="h4 fw-semibold mb-1">Try the demo</h1>
+  <p class="text-muted mb-0">A recruitment workspace with invented data. Pick a role; no password is asked.
+    Gemini proposes, a named person decides at every step.</p>
+</div>
+
+<div class="d-grid gap-3">
+  <% @doors.each do |key, door| %>
+    <div class="border rounded-3 p-3 d-flex align-items-start justify-content-between gap-3">
+      <div>
+        <div class="fw-semibold"><%= door[:title] %></div>
+        <div class="text-muted fs-13"><%= door[:does] %></div>
+      </div>
+      <%= button_to "Enter as #{door[:title]}", demo_path, params: { role: key }, method: :post,
+                    class: "btn btn-primary text-nowrap", form: { data: { turbo: false } } %>
+    </div>
+  <% end %>
+</div>
+
+<% if @apply_jobs.any? %>
+  <hr class="my-4">
+  <div>
+    <div class="fw-semibold mb-1">Apply as a candidate</div>
+    <p class="text-muted fs-13 mb-2">The applicant side needs no account either: open a vacancy, answer the knockout
+      questions, give consent, upload a CV. The status link that follows shows the stage and the next date, never a score.</p>
+    <ul class="list-unstyled mb-0">
+      <% @apply_jobs.each do |job| %>
+        <li><%= link_to job.title, lamar_path(job.public_code), class: "link-primary" %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<p class="text-muted fs-12 text-center mt-4 mb-0">All data on this site is invented and is reset every night at 03:00 WIB.
+  Staff accounts: <%= link_to "sign in", new_session_path %>.</p>

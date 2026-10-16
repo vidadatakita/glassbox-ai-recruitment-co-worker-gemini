@@ -1,0 +1,19 @@
+<%# Information card block (layout contract §17), scoped to this one brief. Every figure carries
+    its target or state (information-display §1 rule 1). %>
+<% problems = check.problems %>
+<% acts = job.activities.to_a %>
+<% reqs = job.requirements.to_a %>
+<% comps = job.competencies.to_a %>
+<% required = Briefs::Coverage.required(job.golongan) %>
+<% covered = required.size - Briefs::Coverage.missing(job.golongan, comps.map(&:layer)).size %>
+<div class="row loan-index-summary">
+  <%= render "staff/shared/metric", variant: "primary", icon: "fa-file-text-o", label: "Brief status",
+             value: job.brief_complete? ? "Complete" : "Draft",
+             caption: job.brief_complete? ? "completed #{l(job.brief_completed_at.in_time_zone.to_date, format: :short)}" : "#{problems.size} items incomplete" %>
+  <%= render "staff/shared/metric", variant: (acts.sum(&:share_percent) == 100 ? "success" : "warning"), icon: "fa-list-ol", label: "Activities",
+             value: acts.size, caption: "time share #{acts.sum(&:share_percent)}% of 100%, target 5-8 activities" %>
+  <%= render "staff/shared/metric", variant: "info", icon: "fa-check-square-o", label: "Requirements",
+             value: reqs.size, caption: "#{reqs.count { |r| r.tier == 'wajib' }} must-have, #{job.knockout_questions.size} knockout questions" %>
+  <%= render "staff/shared/metric", variant: (covered == required.size ? "success" : "warning"), icon: "fa-sitemap", label: "Competency layers",
+             value: "#{covered} / #{required.size}", caption: "required layers for #{job.golongan_label} covered, #{comps.size} competencies" %>
+</div>

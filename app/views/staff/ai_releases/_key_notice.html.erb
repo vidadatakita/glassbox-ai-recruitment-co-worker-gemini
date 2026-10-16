@@ -1,0 +1,7 @@
+<%# D51 + D50: without an API key texts are prepared and wait here; nothing can be sent. %>
+<% unless Screening::Config.enabled? %>
+  <div class="alert alert-warning" role="status">
+    <p class="mb-1"><strong><%= ScreeningBoard::OFF_MESSAGE %></strong></p>
+    <p class="mb-0"><%= local_assigns[:count] ? "#{count} text(s) awaiting review. " : "" %>The texts keep waiting here and cannot be sent until the server admin configures the API key. "Not sent" can still be chosen.</p>
+  </div>
+<% end %>

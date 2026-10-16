@@ -1,0 +1,6 @@
+<% if errors.present? %>
+  <div class="errors" role="alert">
+    <p>Please check the following:</p>
+    <ul><% errors.each do |message| %><li><%= message %></li><% end %></ul>
+  </div>
+<% end %>

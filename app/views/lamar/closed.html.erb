@@ -1,0 +1,21 @@
+<% content_for :title, "Vacancy closed" %>
+<%= render "candidate_shared/job_top", job: @job %>
+<div class="closed">
+  <% if @window&.state == :never_opened %>
+    <p class="big">This vacancy is not open yet.</p>
+  <% elsif @window&.state == :closed_by_settings %>
+    <p class="big">This vacancy is not accepting applications yet.</p>
+    <p>Please come back a little later.</p>
+  <% elsif @window&.state == :closed_by_stage %>
+    <p class="big">CV screening for this vacancy has closed.</p>
+    <p>New applications can no longer be accepted. Thank you for your interest.</p>
+  <% else %>
+    <p class="big">This vacancy has closed.</p>
+    <% if @window&.closed_at %>
+      <p>Closed <%= l(@window.closed_at.in_time_zone, format: :long_wib) %>. Thank you for your interest.</p>
+    <% else %>
+      <p>Thank you for your interest.</p>
+    <% end %>
+  <% end %>
+  <p class="small">Already applied? Open the status link we gave you. Lost the link? <%= link_to "Request a new link", new_link_request_path %>.</p>
+</div>

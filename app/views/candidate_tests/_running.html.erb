@@ -1,0 +1,57 @@
+<%# The running test. The countdown is computed in the browser from the SERVER's due_at (display
+    only, test_countdown.js); the server refuses an answer after due_at + grace whatever the
+    screen shows. Without JavaScript the end time is still printed in WIB. %>
+<% overdue = test.now > test.due_at %>
+<section class="card test-clock" aria-labelledby="test-clock">
+  <h2 id="test-clock">In progress</h2>
+  <p class="test-countdown" data-due-at="<%= test.due_at.iso8601 %>" data-now="<%= test.now.iso8601 %>" role="timer" aria-live="off">
+    <span class="small">Time left</span>
+    <b data-countdown-text><%= overdue ? "Time is up" : "#{(test.remaining_seconds / 60.0).ceil} minutes" %></b>
+  </p>
+  <p class="small">The test ends <%= l(test.due_at.in_time_zone, format: :long_wib) %>.
+    <% if overdue %>An answer sent by <%= l(test.answer_deadline.in_time_zone, format: :long_wib) %> is still accepted.<% end %></p>
+</section>
+
+<section class="card" aria-labelledby="test-case">
+  <h2 id="test-case">Case study</h2>
+  <% if test.version.instructions.present? %>
+    <div class="test-instructions"><%= simple_format(test.version.instructions) %></div>
+  <% end %>
+  <%= link_to "Download the case study file", candidate_status_test_case_file_path(params[:token], k: @case_file_key), class: "btn ghost" %>
+  <p class="small">The download link is valid for 10 minutes. Reload this page for a new link.</p>
+</section>
+
+<% files = test.version.file_answer_types %>
+<section class="card" aria-labelledby="test-answer">
+  <h2 id="test-answer"><%= files.any? ? "Upload your answer" : "Send your answer" %></h2>
+  <% if files.any? %>
+    <%= form_with url: candidate_status_test_answer_path(params[:token]), method: :post, multipart: true, data: { turbo: false, submit_guard: true } do %>
+      <div class="field">
+        <span class="field-label" id="jawaban-label">Answer file (<%= files.map { |t| ".#{t}" }.join(", ") %>, at most 10 MB)</span>
+        <label class="file-pick" for="jawaban">
+          <%# name="jawaban" is the param the controller reads; data-empty is display text (file_pick.js prints
+              dataset.empty when no file is chosen), so its value is English like the span. %>
+          <input type="file" id="jawaban" name="jawaban" required accept="<%= files.map { |t| ".#{t}" }.join(",") %>"
+                 aria-labelledby="jawaban-label" aria-describedby="jawaban-name">
+          <span class="file-pick__button">Choose file</span>
+          <span class="file-pick__name" id="jawaban-name" data-empty="No file yet">No file yet</span>
+        </label>
+      </div>
+      <p class="small">Check your file again. The answer can be sent only once.</p>
+      <button type="submit" class="btn primary" name="commit" value="Kirim jawaban">Send answer</button>
+    <% end %>
+  <% end %>
+  <% if test.version.repo_link_answer? %>
+    <% if files.any? %><p class="small"><strong>Or</strong> send a repository link (choose one of the two):</p><% end %>
+    <%# Its own form: a link answer and a file answer are never sent together (SubmitAnswer refuses both). %>
+    <%= form_with url: candidate_status_test_answer_path(params[:token]), method: :post, data: { turbo: false, submit_guard: true } do %>
+      <div class="field">
+        <label for="repo_url">Repository link (GitHub, GitLab or Bitbucket)</label>
+        <input type="url" id="repo_url" name="repo_url" required maxlength="300" inputmode="url"
+               placeholder="https://github.com/your-name/your-repo" pattern="https://(github\.com|gitlab\.com|bitbucket\.org)/.+">
+      </div>
+      <p class="small">Make sure the reviewer can open the repository (public, or grant access). Commits after the time is up are not scored. The answer can be sent only once.</p>
+      <button type="submit" class="btn primary" name="commit" value="Kirim link">Send link</button>
+    <% end %>
+  <% end %>
+</section>

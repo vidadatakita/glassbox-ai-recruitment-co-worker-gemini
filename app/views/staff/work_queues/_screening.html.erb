@@ -1,0 +1,46 @@
+<%# Feature 06 (blueprint §4.3): "Screening failed", "CV unreadable" and pending reviews appear
+    here as well as on the job page, so nobody has to open every job to find them. %>
+<%# Tenant scoping: only the user's own company's jobs (org_jobs). not_sent = the reviewer declined
+    to send the text to the AI (feature 09), listed with the failures so it is not lost. %>
+<% failed = Participation.joins(:stage).where(stages: { job_id: org_jobs }).where(screening_state: %w[screening_failed cv_unreadable not_sent]).includes(:stage, job_application: %i[candidate job]).order(:screening_state_at).to_a %>
+<% jobs = org_jobs.joins(:stages).where(stages: { code: "S1", score_source: "ai" }).distinct.order(:id).to_a %>
+<% boards = jobs.map { |job| ScreeningBoard.new(job) } %>
+<% board_for = boards.index_by { |b| b.job.id } %>
+<div class="card custom-card portal-queue-section" id="screening">
+  <div class="card-header"><div class="card-title">CV screening by AI (<%= failed.size + boards.sum { |b| b.to_review.size + (current_user.role == "reviewer" ? b.awaiting_release.size : 0) } %>)</div></div>
+  <div class="card-body">
+    <% unless Screening::Config.enabled? %>
+      <div class="alert alert-warning" role="status"><strong><%= ScreeningBoard::OFF_MESSAGE %></strong> <%= boards.sum { |b| b.waiting.size + b.queued.size + b.awaiting_release.size } %> applications are waiting for screening; no score is produced.</div>
+    <% end %>
+    <% if failed.empty? && boards.all? { |b| b.to_review.empty? && (current_user.role != "reviewer" || b.awaiting_release.empty?) } %>
+      <p class="text-muted mb-0">No failed screening and nothing awaiting review. Applications whose screening failed, unreadable CVs, and AI results a reviewer needs to check appear here.</p>
+    <% end %>
+    <% if failed.any? %>
+      <%# A stacked list, not a table, so the reason stays readable at phone width. %>
+      <ul class="list-unstyled screening-failures mb-3">
+        <% failed.each do |p| %>
+          <li class="border-bottom py-2 d-flex flex-wrap gap-2 align-items-start justify-content-between">
+            <div>
+              <%# Rule 14: client users see the candidate label, never a name (test engine run 1, F-05). %>
+              <p class="mb-1"><strong><%= screening_person(p, board_for.fetch(p.job_application.job_id)) %></strong> <%= screening_state_badge(p) %></p>
+              <p class="mb-1"><%= case p.screening_state
+                                     when "screening_failed" then "#{ScreeningBoard.failure_label(p)}. No score was produced."
+                                     when "not_sent" then "The reviewer decided not to send this CV to the AI. Decide manually."
+                                     else "Paste the CV text or ask the applicant for a new CV."
+                                     end %></p>
+              <p class="text-muted small mb-0"><%= p.job_application.job.title %> · since <%= wib(p.screening_state_at) %></p>
+            </div>
+            <%= link_to staff_job_path(p.job_application.job, anchor: "screening"), class: "btn btn-sm btn-primary-light", title: "View vacancy details" do %>
+              <i class="fa fa-plus" aria-hidden="true"></i> View details<span class="visually-hidden"> <%= p.job_application.job.title %></span>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+    <%= render "staff/work_queues/ai_release", boards: boards %>
+    <% boards.select { |b| b.to_review.any? }.each do |b| %>
+      <p class="mb-1"><strong><%= b.job.title %></strong>: <%= b.to_review.size %> AI results awaiting review<%= " (not yet calibrated)" unless b.calibrated? %>.
+        <% if current_user.role == "reviewer" %><%= link_to "Open Screening review", staff_job_screening_review_path(b.job) %><% end %></p>
+    <% end %>
+  </div>
+</div>

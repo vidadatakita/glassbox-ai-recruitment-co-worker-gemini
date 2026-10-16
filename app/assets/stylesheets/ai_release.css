@@ -1,0 +1,30 @@
+/* Feature 09 (D51 B), "Pemeriksaan sebelum AI". Scoped by .ai-release / .release-* so nothing leaks.
+   The payload block wraps long lines (no sideways scroll at 390 px) but never changes the text. */
+.release-payload { white-space: pre-wrap; word-break: break-word; font-size: .8125rem; line-height: 1.55;
+  background: var(--custom-white, #fff); border: 1px solid var(--default-border); border-radius: .5rem;
+  padding: .75rem 1rem; margin-bottom: .75rem; color: #1f2a37; }
+.release-line { display: inline; }
+.release-line--cv { color: #111827; }
+.release-cut { margin-right: .4rem; vertical-align: -1px; }
+.release-mark { padding: 0 .15rem; border-radius: .2rem; }
+.release-mark--blocking { background: rgba(var(--danger-rgb), .18); color: #7f1d1d; outline: 1px solid rgba(var(--danger-rgb), .45); }
+.release-mark--hint { background: rgba(var(--warning-rgb), .22); color: #6b4300; }
+.ai-release .ai-release-findings li { margin-bottom: .25rem; }
+.ai-release .card-header code, .ai-release-list code { font-size: .75rem; }
+.ai-release .job-brief-facts dd small { font-weight: 400; }
+@media (max-width: 575.98px) {
+  .release-payload { font-size: .75rem; padding: .5rem .6rem; }
+}
+
+/* Readable review (2026-10-10): the CV lines read like a document; the technical lines (the rubric
+   as data, the tags) stay in the text but are folded away until "Tampilkan teks teknis" is ticked.
+   Their "\n" is inside each span, so folding leaves no blank lines. */
+.ai-release .release-payload { font-family: inherit; font-size: .9rem; line-height: 1.6; background: #fff; }
+.ai-release .release-line:not(.release-line--cv) { display: none; }
+.ai-release:has(#show-tech:checked) .release-line:not(.release-line--cv) { display: inline; color: #6b7280; }
+.ai-release:has(#show-tech:checked) .release-payload { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .8rem; }
+.ai-release .release-line--risky { background: #fff1f2; }
+.ai-release .release-cut { margin-right: .5rem; vertical-align: -1px; }
+.ai-release-steps { background: #f8fafc; border: 1px solid #e3e8f0; border-radius: .5rem; padding: .75rem 1rem .75rem 2.2rem; margin-bottom: 1rem; font-size: .9rem; }
+.ai-release-steps li { margin: .2rem 0; }
+.ai-release-tech-toggle { cursor: pointer; }

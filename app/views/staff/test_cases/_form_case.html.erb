@@ -1,0 +1,50 @@
+<%# The case file, the instructions, the clock, and what the candidate may upload as an answer. %>
+<% latest = form.latest %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-file-excel-o", tone: "success", title: "Case study",
+           text: "The file the applicant works on, the instructions, the time limit, and the answer file types." } do %>
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <label class="form-label" for="test_case_case_file">Case study file</label>
+      <input type="file" class="form-control" id="test_case_case_file" name="test_case[case_file]" accept=".xlsx,.docx,.pdf,.csv">
+      <span class="hris-field-hint">.xlsx, .docx, .pdf or .csv, at most <%= TechnicalTestCase::MAX_CASE_FILE_BYTES / 1.megabyte %> MB. Files with macros (.xlsm, .docm), legacy formats (.xls, .doc), ActiveX, embedded objects or links to other files are refused.</span>
+      <% if latest&.case_file&.attached? %>
+        <p class="test-case-current-file"><i class="fa fa-paperclip" aria-hidden="true"></i> Version <%= latest.version %> file: <%= latest.case_file_kind %>, <%= number_to_human_size(latest.case_file_bytes) %> <%= scan_badge(latest) %><br>
+          <small class="text-muted">Leave the file picker empty to keep this file.</small></p>
+      <% end %>
+    </div>
+    <div class="col-lg-3 col-6">
+      <label class="form-label" for="test_case_time_limit_minutes">Time limit</label>
+      <div class="input-group">
+        <input type="text" inputmode="numeric" class="form-control" id="test_case_time_limit_minutes" name="test_case[time_limit_minutes]" value="<%= form.value("time_limit_minutes") %>">
+        <span class="input-group-text">minutes</span>
+      </div>
+      <span class="hris-field-hint">Default <%= TechnicalTestCase::DEFAULT_TIME_LIMIT %>, at most <%= TechnicalTestCase::MAX_TIME_LIMIT %>.</span>
+    </div>
+    <div class="col-lg-3 col-6">
+      <fieldset>
+        <legend class="form-label">Answer types</legend>
+        <input type="hidden" name="test_case[answer_types_submitted]" value="1">
+        <ul class="test-case-checks">
+          <% TechnicalTestCase::ANSWER_TYPES.each do |key, label| %>
+            <li class="test-case-check">
+              <input type="checkbox" class="standard-checkbox" id="answer_type_<%= key %>" name="test_case[answer_types][]" value="<%= key %>" <%= "checked" if form.answer_type?(key) %>>
+              <label for="answer_type_<%= key %>"><%= label %></label>
+            </li>
+          <% end %>
+        </ul>
+      </fieldset>
+    </div>
+    <div class="col-12">
+      <label class="form-label" for="test_case_instructions">Instructions for the applicant</label>
+      <textarea class="form-control" id="test_case_instructions" name="test_case[instructions]" rows="4"><%= form.value("instructions") %></textarea>
+      <span class="hris-field-hint">Write what must be done and the form of the answer, for example: "Find the stock differences on the Stock Card sheet, write the cause and the correction on the Answer sheet."</span>
+    </div>
+    <% if form.mode == :new_version %>
+      <div class="col-12">
+        <label class="form-label" for="test_case_new_version_reason">Reason for the new version</label>
+        <textarea class="form-control" id="test_case_new_version_reason" name="test_case[new_version_reason]" rows="2"><%= form.value("new_version_reason") %></textarea>
+        <span class="hris-field-hint">Required. Saved with version <%= form.version_number %> and shown in the version list.</span>
+      </div>
+    <% end %>
+  </div>
+<% end %>

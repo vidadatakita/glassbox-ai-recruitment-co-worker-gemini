@@ -1,0 +1,63 @@
+<%# Step 1: Position & level. D49 (1): no job library yet, a job is its title + Golongan. %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-briefcase", title: "Position & level",
+           text: "The position title as used in your company, and the grade according to the job grading scale." } do %>
+  <div class="row g-3">
+    <% if !form.job.persisted? && pick_company? %>
+      <div class="col-12">
+        <label class="form-label" for="client_company_id">Client company <%= required_mark %></label>
+        <select class="form-select" id="client_company_id" name="client_company_id" required>
+          <option value="">Choose a company</option>
+          <% ClientCompany.order(:name).each do |c| %><option value="<%= c.id %>" <%= "selected" if params[:client_company_id].to_s == c.id.to_s %>><%= c.name %></option><% end %>
+        </select>
+      </div>
+    <% end %>
+    <div class="col-lg-8">
+      <label class="form-label" for="brief_title">Position <%= required_mark %></label>
+      <input type="text" class="form-control<%= missing(form.value("title")) %>" id="brief_title" name="brief[title]" value="<%= form.value("title") %>" maxlength="120">
+      <span class="hris-field-hint">For example: Production Operator, Warehouse Supervisor.</span>
+    </div>
+    <div class="col-lg-4">
+      <label class="form-label" for="brief_golongan">Grade <%= required_mark %></label>
+      <% if locked %>
+        <input type="hidden" name="brief[golongan]" value="<%= job.golongan %>">
+        <p class="form-control-plaintext mb-0" id="brief_golongan"><%= job.golongan_label %> <i class="fa fa-lock text-muted" title="Locked" aria-hidden="true"></i></p>
+      <% else %>
+        <select class="form-control form-select<%= missing(form.value("golongan")) %>" id="brief_golongan" name="brief[golongan]">
+          <option value="">Choose a grade</option>
+          <% Job::GOLONGAN_NAMES.each do |number, name| %>
+            <option value="<%= number %>" <%= "selected" if form.value("golongan").to_s == number.to_s %>>G<%= number %> <%= name %></option>
+          <% end %>
+        </select>
+      <% end %>
+      <span class="hris-field-hint">Decides the recommended package and the required competency layers.</span>
+    </div>
+  </div>
+<% end %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-users", tone: "info", title: "Headcount & employment type",
+           text: "How many people are needed and under which employment type." } do %>
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label" for="brief_headcount">Headcount <%= required_mark %></label>
+      <input type="text" inputmode="numeric" class="form-control<%= missing(form.value("headcount")) %>" id="brief_headcount" name="brief[headcount]" value="<%= form.value("headcount") %>">
+      <span class="hris-field-hint">Number of people; decides how many finalists are needed.</span>
+    </div>
+    <div class="col-md-8">
+      <label class="form-label" for="brief_employment_type">Employment type <%= required_mark %></label>
+      <select class="form-control form-select<%= missing(form.value("employment_type")) %>" id="brief_employment_type" name="brief[employment_type]">
+        <option value="">Choose an employment type</option>
+        <% Job::EMPLOYMENT_TYPES.each do |key, label| %>
+          <option value="<%= key %>" <%= "selected" if form.value("employment_type") == key %>><%= label %></option>
+        <% end %>
+      </select>
+    </div>
+    <div class="col-12">
+      <input type="hidden" name="brief[confidential]" value="0">
+      <label class="salary-switch-row" for="brief_confidential">
+        <input type="checkbox" class="salary-switch-input" id="brief_confidential" name="brief[confidential]" value="1" <%= "checked" if form.checked?("confidential") %>>
+        <span class="salary-switch-control" aria-hidden="true"></span>
+        <span><strong>Confidential vacancy</strong>
+          <small>The company name is hidden on the application page (G1, D17).</small></span>
+      </label>
+    </div>
+  </div>
+<% end %>

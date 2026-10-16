@@ -1,0 +1,19 @@
+<%# SPEC §2.1 header figures, each with its comparison: the stage threshold, the gate, the band. %>
+<% job = board.job %>
+<div class="row loan-index-summary">
+  <%= render "staff/shared/metric", variant: "primary", icon: "fa-magic", label: "AI score (S1)", col: "col-lg-4 col-sm-6",
+             value: ScreeningReport::Text.band(row.band),
+             caption: row.ai_score ? "score #{ScreeningReport::Text.score(row.ai_score)} of 100 · pass score #{ScreeningReport::Text.score(board.s1.threshold)}" : "not assessed by the AI yet" %>
+  <%= render "staff/shared/metric", variant: "info", icon: "fa-file-excel-o", label: "Technical test score (S2)", col: "col-lg-4 col-sm-6",
+             value: ScreeningReport::Text.test(row.test),
+             caption: board.s2 ? "of 100 · pass score #{ScreeningReport::Text.score(board.s2.threshold)}" : "this package has no technical test" %>
+  <%= render "staff/shared/metric", variant: ScreeningReport::GateCell.tone(row.gate), icon: "fa-filter", label: "CV screening result", col: "col-lg-4 col-sm-6",
+             value: ScreeningReport::GateCell.word(row.gate),
+             caption: board.gated? ? "passed only when both CV screening and the technical test pass" : "CV screening only" %>
+  <%= render "staff/shared/metric", variant: row.label_key ? ScreeningReport::Labels.tone(row.label_key) : "info", icon: "fa-tag", label: "Label", col: "col-lg-6 col-sm-6",
+             value: row.label_key ? ScreeningReport::Labels.word(row.label_key) : "None yet",
+             caption: row.label_confirmed ? "confirmed by the reviewer · advice, not a decision" : "AI advice, not confirmed by the reviewer yet" %>
+  <%= render "staff/shared/metric", variant: ScreeningReport::Budget.tone(row.budget) == "muted" ? "info" : ScreeningReport::Budget.tone(row.budget), icon: "fa-money", label: "FIT: Budget", col: "col-lg-6 col-sm-6",
+             value: ScreeningReport::Budget.label(row.budget),
+             caption: "expected #{report_salary(row.application)} · vacancy band #{ScreeningReport::Text.salary(job.salary_min, job.salary_max)} · information only, not scored" %>
+</div>

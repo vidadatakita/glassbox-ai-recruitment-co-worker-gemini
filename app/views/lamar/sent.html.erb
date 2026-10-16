@@ -1,0 +1,12 @@
+<% content_for :title, "Application sent" %>
+<%= render "candidate_shared/job_top", job: @job %>
+<div class="closed">
+  <p class="big">We have received your application.</p>
+  <p>Save the private link below. From this link you can see the stages, appointments and results of your application.</p>
+</div>
+<%= render "lamar/test_entry", test: @test, token: @token, mail: @test_mail if @test&.can_start? %>
+<p class="linkbox"><%= link_to candidate_status_url(@token), candidate_status_url(@token) %></p>
+<p class="small">Do not share this link with anyone. If you lose it, open <%= link_to "Request a new link", new_link_request_path %>.</p>
+<%# With the required test above, "Start the technical test" is the only button; the status link stays
+    in the box above so the candidate can come back to the test. %>
+<%= link_to "Open the status page", candidate_status_path(@token), class: "btn primary" unless @test&.can_start? %>

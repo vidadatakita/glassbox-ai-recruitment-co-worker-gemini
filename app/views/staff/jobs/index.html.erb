@@ -1,0 +1,78 @@
+<% content_for :title, "My vacancies" %>
+<div class="portal-page loan-index-page layout-decoration-page">
+  <%# "Add vacancy" (feature 03) only for the roles that may write a brief (D49 (5)). %>
+  <%= render "staff/shared/page_header", eyebrow: "Recruitment", title: "My vacancies",
+             subtitle: "Vacancies with their brief status, Applicant portal and number of applications.",
+             actions: (label_link("Add vacancy", "fa-plus", staff_new_job_path) if current_user.role.in?(%w[hr_pic consultant])) %>
+  <section class="content">
+    <% open_count = @windows.values.count(&:open?) %>
+    <% complete_count = @jobs.count(&:brief_complete?) %>
+    <div class="row loan-index-summary">
+      <%= render "staff/shared/metric", variant: "primary", icon: "fa-briefcase", label: "Vacancies",
+                 value: @jobs.size, caption: "#{open_count} open, #{@jobs.count { |j| j.ad_approved_at.nil? }} awaiting job ad approval", col: "col-lg-3 col-sm-6" %>
+      <%= render "staff/shared/metric", variant: (complete_count == @jobs.size ? "success" : "warning"), icon: "fa-file-text-o", label: "Briefs complete",
+                 value: "#{complete_count} / #{@jobs.size}", caption: "#{@jobs.size - complete_count} #{'brief'.pluralize(@jobs.size - complete_count)} still draft", col: "col-lg-3 col-sm-6" %>
+      <%= render "staff/shared/metric", variant: "success", icon: "fa-unlock", label: "Portals open",
+                 value: open_count, caption: "of #{@jobs.size} #{'vacancy'.pluralize(@jobs.size)} accepting applications", col: "col-lg-3 col-sm-6" %>
+      <%= render "staff/shared/metric", variant: "info", icon: "fa-file-text-o", label: "Applications",
+                 value: @windows.values.sum(&:application_count), caption: "applications received through the portal", col: "col-lg-3 col-sm-6" %>
+    </div>
+    <div class="card custom-card">
+      <div class="card-body table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Vacancy</th><th>Location</th><th>Brief</th><th>Portal</th><th class="text-end">Applications</th><th>Next step</th><th></th></tr></thead>
+          <tbody>
+            <% if @jobs.empty? %>
+              <tr><td colspan="7" class="text-muted">No vacancies yet. A new vacancy is created with the Add vacancy button.</td></tr>
+            <% end %>
+            <% @jobs.each do |job| %>
+              <% window = @windows[job.id] %>
+              <tr>
+                <td><%= job.title %><% if job.confidential? %> <span class="badge bg-light text-dark">Confidential</span><% end %>
+                  <small class="d-block text-muted"><%= job.golongan_label %></small></td>
+                <td><%= placement_summary(job) %></td>
+                <td><%= brief_status_badge(job) %></td>
+                <td><%= window_badge(window) %></td>
+                <td class="text-end"><%= window.application_count %><% if window.quota %> / <%= window.quota %><% end %></td>
+                <td>
+                  <% if job.ad_approved_at.nil? && !job.brief_complete? %>Complete the brief
+                  <% elsif job.ad_approved_at.nil? %>Approve the job ad
+                  <% elsif window.state == :never_opened %>Open the Applicant portal
+                  <% elsif window.open? %>Watch incoming applications
+                  <% else %>Continue the selection<% end %>
+                </td>
+                <td class="hris-table-actions">
+                  <%= link_to staff_job_path(job), class: "btn btn-sm btn-primary-light", title: "View vacancy details" do %>
+                    <i class="fa fa-plus"></i><span class="visually-hidden">View details <%= job.title %></span>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="row loan-index-bottom-cards">
+      <div class="col-lg-7">
+        <div class="loan-index-guide-card">
+          <div class="loan-index-guide-card__header"><i class="fa fa-lightbulb-o"></i>
+            <div><h3>How it works</h3><p>From the vacancy brief to incoming applications.</p></div></div>
+          <ol>
+            <li><span>1</span> Add a vacancy and complete the brief in 4 steps.</li>
+            <li><span>2</span> Approve the job ad once the brief is complete.</li>
+            <li><span>3</span> Open the Applicant portal, with a deadline or quota if needed.</li>
+            <li><span>4</span> Share the application link and watch the incoming applications.</li>
+          </ol>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="loan-index-status-card">
+          <h3>Portal status</h3>
+          <% PortalHelper::WINDOW_LABELS.each do |state, (label, _tone)| %>
+            <div><span class="loan-index-status-dot <%= state == :open ? "loan-index-status-dot--success" : "loan-index-status-dot--muted" %>"></span><%= label %> <strong><%= @windows.values.count { |w| w.state == state } %> <%= "vacancy".pluralize(@windows.values.count { |w| w.state == state }) %></strong></div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,17 @@
+<%# D13: until calibration passes, AI results are never presented as final. %>
+<% cal = board.calibration %>
+<% size = Screening::Calibration::SIZE %>
+<% limit = Screening::Calibration::MAX_DISAGREEMENT_PERCENT %>
+<p class="mb-2 screening-calibration-line">
+  <strong>Calibration:</strong>
+  <% if cal.status == :passed %>
+    passed. <%= cal.disagreements %> of <%= size %> CVs differed (limit <%= limit %>%). AI advice may become a decision under the review rules.
+  <% elsif cal.status == :failed %>
+    not calibrated. The consultant and the AI differed on <%= cal.disagreements %> CVs, more than the <%= limit %>% limit. The rubric needs fixing before the AI runs on its own.
+  <% else %>
+    not calibrated. <%= cal.judged_count %> of the first <%= size %> CVs scored by the consultant, <%= cal.pairs.size %> scored by both. AI advice is not a decision yet.
+  <% end %>
+</p>
+<% if board.stale.any? %>
+  <p class="text-muted mb-2"><%= board.stale.size %> AI <%= "result".pluralize(board.stale.size) %> were made with an old rubric. Run the screening again so they are scored with the current rubric.</p>
+<% end %>

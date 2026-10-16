@@ -1,0 +1,12 @@
+<%# Trust block (BP §3.6 B2): answers the five job-scam signs Kemnaker listed on 13 Jan 2025.
+    "Verified by GlassBox" appears only when the setting is on (ONP-14, Q10). %>
+<div class="trust" aria-label="Vacancy authenticity">
+  <% if SystemSetting.verified_line?(company: job.client_company) %>
+    <span class="v">&#10003; Verified by GlassBox</span>
+  <% end %>
+  <% unless job.confidential? %>
+    <span><%= job.client_company.contact_email %> · <%= job.client_company.address %>, <%= job.client_company.city %></span>
+  <% end %>
+  <span class="never">GlassBox never asks for any payment.</span>
+  <span>Suspect a scam? Call the Ministry of Manpower (Kemnaker) on <b>1500 630</b>.</span>
+</div>

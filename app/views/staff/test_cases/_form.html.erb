@@ -1,0 +1,23 @@
+<%# The consultant's editor (D60 slice 2). One form, multipart for the case file; the rubric sits
+    next to the job's activities so each criterion is built from an activity (plan §c). The AI may
+    draft it first (Briefs::Suggest step 5; replaced "no AI drafting", D49 point 4, on 2026-10-10).
+    Saving never approves: HR approves in a separate action. %>
+<% if form.mode == :new_version %>
+  <div class="alert alert-info job-brief-notice" role="status">
+    <i class="fa fa-code-fork" aria-hidden="true"></i>
+    <div><strong>Saving will create version <%= form.version_number %>.</strong> Version <%= form.latest.version %> is already <%= form.latest.started? ? "in use by applicants" : "approved" %> and does not change; the fields below are taken from that version. Write the reason for the change.</div>
+  </div>
+<% end %>
+<%= form_with url: staff_job_test_cases_path(job), method: :post, scope: :test_case, multipart: true,
+              class: "salary-schema-form job-brief-form test-case-form", data: { turbo: false, submit_guard: true } do %>
+  <%= render "staff/test_cases/form_case", form: form %>
+  <%= render "staff/test_cases/form_rubric", job: job, form: form %>
+  <div class="hris-form-actions">
+    <div class="hris-form-actions__note"><i class="fa fa-info-circle" aria-hidden="true"></i>
+      <span>Save stores version <%= form.version_number %> as a draft. HR approves it before applicants use it; every change is recorded with a name and time.</span></div>
+    <div class="hris-form-actions__buttons">
+      <%= label_link "Cancel", "fa-times", staff_job_brief_path(job), purpose: :neutral, icon_end: true %>
+      <%= label_button "Save", "fa-save", class: "hris-submit-button" %>
+    </div>
+  </div>
+<% end %>

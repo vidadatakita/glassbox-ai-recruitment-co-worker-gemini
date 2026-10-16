@@ -1,0 +1,17 @@
+<%# Feature 09 (D51): the release step and its pilot figures on the vacancy home. Counts only, no
+    CV text, so every staff role may see it; the link to the texts is the reviewer's alone. %>
+<% measure = AiReleases::PilotMeasure.new(job: board.job) %>
+<div class="screening-release mb-3" id="pemeriksaan-ai">
+  <% if Screening::Config.review_before_ai? %>
+    <p class="mb-1"><strong>Review before AI:</strong>
+      <%= board.awaiting_release.size %> CVs wait for the reviewer's check before being sent. No CV is sent to the AI without the reviewer's approval.</p>
+  <% else %>
+    <%# AI_SCREENING_REVIEW=auto: every clean CV is screened as it arrives; people decide on the result. %>
+    <p class="mb-1"><strong>Automatic screening:</strong> every CV is scored by the AI as it arrives, after its personal data is redacted; the reviewer and HR decide on the result.
+      <%= board.awaiting_release.size %> CVs are held for the reviewer's check because personal data was still detected after redaction.</p>
+  <% end %>
+  <p class="text-muted small mb-0">Pilot measure: <%= measure.cvs %> CVs checked, <%= measure.released %> sent,
+    <%= measure.residual %> caught by the residual check, <%= measure.cut %> cut by the reviewer, <%= measure.declined %> not sent,
+    <%= measure.model_flagged %> of <%= measure.answered %> AI answers flagged a protected attribute<% if measure.rate?(measure.cvs) %>
+    (<%= release_rate(measure, measure.model_flagged, measure.answered) || "-" %> of answers)<% end %>.</p>
+</div>

@@ -1,0 +1,35 @@
+<%# D52: "Google integrations". One row per integration with its state; nothing here can be changed
+    on screen, because credentials live only in Rails credentials or the server environment
+    (docs/runbooks/enable-google.md). No secret is ever rendered: rows hold yes/no and source
+    names only (GoogleIntegration::Status). The id "integrasi-google" is an anchor; it stays. %>
+<div class="hris-form-card" id="integrasi-google">
+  <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-google"></i></div>
+    <div><h3>Google integrations</h3>
+      <p>Every integration is off until its credentials are configured on the server. Credentials are never shown on this screen.
+        Check them with the command <code>bin/rails glassbox:google:check</code>.</p></div></div>
+  <div class="hris-form-card__body">
+    <div class="row g-3">
+      <% rows.each do |row| %>
+        <div class="col-lg-6">
+          <section class="border rounded p-3 h-100" aria-labelledby="google-<%= row.key %>">
+            <div class="d-flex align-items-start gap-2 mb-2">
+              <i class="fa <%= row.icon %> mt-1" aria-hidden="true"></i>
+              <h4 class="fs-14 mb-0 flex-grow-1" id="google-<%= row.key %>"><%= row.title %></h4>
+              <span class="badge bg-<%= row.badge %>" data-google-state="<%= row.state %>"><%= row.label %></span>
+            </div>
+            <% if row.state == :failed && row.last_failure.present? %>
+              <p class="small text-danger mb-2"><%= row.last_failure %></p>
+            <% elsif row.last_ok_at %>
+              <p class="small text-muted mb-2">Last succeeded: <%= wib(row.last_ok_at) %></p>
+            <% end %>
+            <dl class="row small mb-0">
+              <% row.details.each do |label, value| %>
+                <dt class="col-sm-5 fw-normal text-muted"><%= label %></dt><dd class="col-sm-7 mb-1 text-break"><%= value %></dd>
+              <% end %>
+            </dl>
+          </section>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

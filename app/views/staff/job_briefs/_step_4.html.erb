@@ -1,0 +1,60 @@
+<%# Step 4: Package & stages (P4, P5, P17). The recommendation and its reason come from §7.1
+    (Briefs::PackageAdvisor); no price is shown (D49 (3), E20). %>
+<% recommended = Briefs::PackageAdvisor.recommended(job.golongan) %>
+<% chosen = form.package %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-cubes", title: "Selection package",
+           text: "Recommended for #{job.golongan_label}: #{recommended.map { |p| package_label(p) }.join(' or ')}. #{Briefs::PackageAdvisor.reason(job.golongan)}" } do %>
+  <div class="job-brief-packages" role="radiogroup" aria-label="Selection package">
+    <% (1..5).each do |package| %>
+      <label class="job-brief-package<%= " job-brief-package--recommended" if recommended.include?(package) %>">
+        <input type="radio" name="brief[package]" value="<%= package %>" <%= "checked" if chosen == package %> data-package-choice>
+        <span class="job-brief-package__body">
+          <strong><%= package_label(package) %></strong>
+          <% if recommended.include?(package) %><span class="portal-state portal-state--success">Recommended</span><% end %>
+          <small><%= Briefs::StagePlan.codes(package).map { |c| Briefs::StagePlan::LABELS[c] }.join(" → ") %></small>
+        </span>
+      </label>
+    <% end %>
+  </div>
+  <div class="mt-3">
+    <label class="form-label" for="brief_package_override_reason">Reason for choosing a package outside the recommendation</label>
+    <textarea class="form-control" id="brief_package_override_reason" name="brief[package_override_reason]" rows="2"><%= form.value("package_override_reason") %></textarea>
+    <span class="hris-field-hint">Required when the chosen package is not the recommended one. The reason is saved with the brief.</span>
+  </div>
+<% end %>
+<% codes = chosen ? Briefs::StagePlan.scored_codes(chosen) : [] %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-sliders", tone: "info", title: "Stages, weights and pass scores",
+           text: "Weights decide the cumulative score and add up to exactly 100%. Pass score 0 to 100; a score equal to the pass score passes. Both lock when a stage opens.",
+           aside: render("staff/job_briefs/total", group: "stages", value: form.stage_total) } do %>
+  <% if chosen.nil? %>
+    <p class="text-muted mb-0">Choose a package, then press Save to show its stages.</p>
+  <% else %>
+    <div class="table-responsive">
+      <table class="table align-middle mb-0 job-brief-stage-table">
+        <thead><tr><th>Stage</th><th>Score source</th><th class="job-brief-num-col">Weight <%= required_mark %></th><th class="job-brief-num-col">Pass score <%= required_mark %></th></tr></thead>
+        <tbody>
+          <% codes.each do |code| %>
+            <tr>
+              <td><strong><%= stage_label(code) %></strong>
+                <% if Briefs::StagePlan.review_below_threshold?(code, job.golongan) %><br><small class="text-muted">Below the pass score: reviewed by the consultant, not eliminated outright (rule 13).</small><% end %></td>
+              <td><%= { "ai" => "AI + reviewer", "scorecard" => "Interview scorecard", "manual_or_import" => "Entry or import" }[Briefs::StagePlan.source(code)] %></td>
+              <td><div class="input-group input-group-sm">
+                <input type="text" inputmode="numeric" class="form-control<%= missing(form.stage_value(code, "weight")) %>" aria-label="Weight <%= stage_label(code) %>" name="brief[stage_plan][<%= code %>][weight]" value="<%= form.stage_value(code, "weight") %>" data-sum="stages">
+                <span class="input-group-text">%</span></div></td>
+              <td><input type="text" inputmode="decimal" class="form-control form-control-sm<%= missing(form.threshold_field(code)) %>" aria-label="Pass score <%= stage_label(code) %>" name="brief[stage_plan][<%= code %>][threshold]" value="<%= form.threshold_field(code) %>" placeholder="0-100"></td>
+            </tr>
+          <% end %>
+          <% if Briefs::StagePlan.codes(chosen).include?("RC") %>
+            <tr class="text-muted"><td><%= stage_label("RC") %></td><td>Consistent / concern noted</td><td colspan="2">No score; not part of the cumulative score (rule 12).</td></tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <span class="hris-field-hint">The initial weights follow the defaults (10/20/20/20/30) scaled to this package's stages; change them as needed. After changing the package, press Save so the stage list follows.</span>
+  <% end %>
+<% end %>
+<%= render "staff/job_briefs/competency_rows", form: form, job: job, codes: codes %>
+<%= render "staff/job_briefs/coverage", job: job, layers: form.competencies.map { |c| c["layer"] }.compact_blank %>
+<% if check && !@finish_refused %>
+  <%= render "staff/job_briefs/open_problems", job: job, check: check %>
+<% end %>

@@ -1,0 +1,21 @@
+<div class="card custom-card portal-queue-section">
+  <div class="card-header"><div class="card-title"><%= title %> (<%= items.size %>)</div></div>
+  <div class="card-body table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>Applicant</th><th>Stage</th><th>Appointment (WIB)</th><% if show_reason %><th>Reason</th><% end %><th></th></tr></thead>
+      <tbody>
+        <% if items.empty? %><tr><td colspan="5" class="text-muted"><%= empty %></td></tr><% end %>
+        <% items.each do |appointment| %>
+          <% application = appointment.participation.job_application %>
+          <tr>
+            <td><%= candidate_label(application) %></td>
+            <td><%= CandidateStatus::STAGE_LABELS.fetch(appointment.participation.stage.code) %></td>
+            <td><%= wib(appointment.starts_at) %></td>
+            <% if show_reason %><td><%= appointment.reschedule_reason %></td><% end %>
+            <td class="hris-table-actions"><%= link_to staff_application_path(application), class: "btn btn-sm btn-primary-light", title: "View applicant details" do %><i class="fa fa-plus"></i><span class="visually-hidden">View details</span><% end %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

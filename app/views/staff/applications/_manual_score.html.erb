@@ -1,0 +1,28 @@
+<%# The score of a stage tested outside the app (the psychological test): the HR PIC types what the
+    external test gave, 0-100 (Progression::ScoreManual). Shown only while the stage has no score and
+    no decision; the AI advice and the Continue / Do not continue choice stay below it, unchanged. %>
+<% label = CandidateStatus::STAGE_LABELS.fetch(participation.stage.code) %>
+<%= form_with url: staff_participation_manual_score_path(participation), method: :post, class: "progression-form mb-3", data: { turbo: false, submit_guard: true } do %>
+  <h5 class="fs-14 mb-2"><%= label %> score</h5>
+  <div class="d-flex gap-3 mb-3">
+    <label class="form-check-label"><input type="radio" class="form-check-input me-1" name="attendance" value="attended" checked> Attended</label>
+    <label class="form-check-label"><input type="radio" class="form-check-input me-1" name="attendance" value="no_show"> Did not attend</label>
+  </div>
+  <div class="row g-3 mb-2">
+    <div class="col-sm-4">
+      <label class="form-label" for="manual-value-<%= participation.id %>">Score (0-100)</label>
+      <input class="form-control" type="text" inputmode="decimal" id="manual-value-<%= participation.id %>" name="value"
+             value="<%= flash[:manual_score_value] %>" placeholder="e.g. 78.5">
+      <span class="hris-field-hint">Pass score <%= number_with_precision(participation.stage.threshold, precision: 0) %>.</span>
+    </div>
+    <div class="col-sm-4">
+      <label class="form-label" for="manual-date-<%= participation.id %>">Test date</label>
+      <input class="form-control" type="date" id="manual-date-<%= participation.id %>" name="tested_on" max="<%= Date.current %>">
+      <span class="hris-field-hint">Leave empty for today.</span>
+    </div>
+  </div>
+  <label class="form-label" for="manual-note-<%= participation.id %>">Note</label>
+  <textarea class="form-control mb-2" id="manual-note-<%= participation.id %>" name="note" rows="2" placeholder="Summary of the result from the test provider; avoid personal data."></textarea>
+  <%= label_button "Save score", "fa-save" %>
+  <% if ai_on? %><span class="hris-field-hint d-block mt-1">Once saved, the AI prepares its advice: Continue or Do not continue.</span><% end %>
+<% end %>

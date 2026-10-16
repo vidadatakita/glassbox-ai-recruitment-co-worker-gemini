@@ -1,0 +1,21 @@
+<div class="card custom-card">
+  <div class="card-header"><div class="card-title">Portal open and close history</div></div>
+  <div class="card-body table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>Time (WIB)</th><th>Action</th><th>By</th><th>Closes automatically</th><th class="text-end">Quota</th><th>Reason</th></tr></thead>
+      <tbody>
+        <% if board.events.empty? %><tr><td colspan="6" class="text-muted">The portal has never been opened.</td></tr><% end %>
+        <% board.events.each do |event| %>
+          <tr>
+            <td><%= l(event.created_at.in_time_zone, format: :short_wib) %></td>
+            <td><%= { "open" => "Open", "close" => "Close", "reopen" => "Reopen" }.fetch(event.action) %></td>
+            <td><%= board.actor_names[event.actor_id] || "-" %> (<%= User::ROLE_LABELS.fetch(event.actor_role, event.actor_role) %>)</td>
+            <td><%= event.closes_at ? l(event.closes_at.in_time_zone, format: :short_wib) : "-" %></td>
+            <td class="text-end"><%= event.quota || "-" %></td>
+            <td><%= event.reason.presence || "-" %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

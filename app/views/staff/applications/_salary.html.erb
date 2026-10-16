@@ -1,0 +1,69 @@
+<%# AI Builder Cup step 08, "Decision & negotiation": the AI's position in the band and its rupiah
+    beside the budget and the candidate's expectation; the owner agrees a figure (note when it is
+    outside the band or differs from the AI's). HR PIC and owner only. %>
+<% job = application.job %>
+<% rec = SalaryRecommendation.latest_for(application) %>
+<% agreement = SalaryAgreement.latest_for(application) %>
+<% band = Progression::Salary.band?(job) %>
+<% rupiah = ->(n) { n ? "Rp#{number_with_delimiter(n, delimiter: ".")}" : "-" } %>
+<div class="hris-form-card" id="salary">
+  <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-money"></i></div>
+    <div><h3>Decision and salary</h3><p>The candidate passed the last stage. The AI proposes a position within the salary band; the owner decides.</p></div></div>
+  <div class="hris-form-card__body">
+    <div class="salary-facts">
+      <div><span>Vacancy band (budget)</span><strong><%= band ? "#{rupiah.(job.salary_min)} – #{rupiah.(job.salary_max)}" : "not set" %></strong></div>
+      <div><span>Candidate's expectation</span><strong><%= application.expected_salary_min ? "#{rupiah.(application.expected_salary_min)} – #{rupiah.(application.expected_salary_max)}" : "not given" %></strong></div>
+      <% if agreement %>
+        <div><span>Agreed</span><strong><%= rupiah.(agreement.agreed_amount) %></strong>
+          <small><%= agreement.decided_by.name %>, <%= wib(agreement.created_at) %><%= " · outside the band" if agreement.outside_band %><%= " · #{agreement.note}" if agreement.note.present? %></small></div>
+      <% end %>
+    </div>
+
+    <div class="progression-ai mt-3">
+      <div class="d-flex align-items-center gap-2 mb-1"><%= render "staff/shared/ai_sparkle", size: 18 %><strong>AI advice on salary</strong></div>
+      <% if rec.nil? %>
+        <p class="text-muted mb-2"><%= ai_on? ? "No AI advice yet." : "The AI feature is off. The owner sets the salary from the vacancy band." %></p>
+      <% elsif !rec.ready? %>
+        <p class="text-warning-emphasis mb-2"><%= rec.problem %></p>
+      <% else %>
+        <p class="mb-1 fs-5"><strong><%= rupiah.(rec.amount) %></strong> <span class="text-muted fs-6">· <%= (rec.position * 100).round %>% from the bottom of the band</span></p>
+        <div class="salary-band" role="img" aria-label="Position <%= (rec.position * 100).round %> percent within the salary band">
+          <span class="salary-band__mark" style="left: <%= (rec.position * 100).round(1) %>%"></span>
+        </div>
+        <div class="d-flex justify-content-between small text-muted mb-2"><span><%= rupiah.(job.salary_min) %></span><span><%= rupiah.(job.salary_max) %></span></div>
+        <p class="mb-1"><%= rec.summary %></p>
+        <ul class="mb-2"><% rec.factors.each do |f| %><li><%= f %></li><% end %></ul>
+        <p class="hris-field-hint mb-2">The AI sees only the selection evidence and the position within the band; it never sees a salary figure or the candidate's expectation.</p>
+      <% end %>
+      <%# The AI's salary suggestion is never on the public demo (FLOW v2.1 cut #6: the AI never sees money); the route is not drawn there. %>
+      <% if ai_on? && !demo_mode? %>
+      <%= form_with url: staff_application_salary_recommendation_path(application), method: :post, data: { turbo: false, submit_guard: true, ai_swap: true } do %>
+        <button type="submit" class="btn btn-outline-primary btn-sm ai-btn">
+          <%= render "staff/shared/ai_sparkle" %>
+          <span class="ai-btn__idle"><%= rec ? "Refresh AI advice" : "Ask for AI advice" %></span><span class="ai-btn__busy" role="status">AI is weighing the evidence…</span>
+        </button>
+      <% end %>
+      <% end %>
+    </div>
+
+    <% if current_user.role == "owner" %>
+      <% amount_error = flash[:salary_field] == "amount" %>
+      <% note_error = flash[:salary_field] == "note" %>
+      <%= form_with url: staff_application_salary_path(application), method: :post, class: "mt-3", data: { turbo: false, submit_guard: true } do %>
+        <input type="hidden" name="recommendation_id" value="<%= rec&.id %>">
+        <label class="form-label" for="salary-amount">Agreed salary (Rp)</label>
+        <input class="form-control <%= "is-invalid" if amount_error %>" id="salary-amount" name="amount" inputmode="numeric" required
+               value="<%= flash[:salary_amount] || agreement&.agreed_amount || (rec.amount if rec&.ready?) %>">
+        <% if amount_error %><div class="invalid-feedback d-block"><%= flash[:alert] %></div><% end %>
+        <label class="form-label mt-2" for="salary-note">Note</label>
+        <textarea class="form-control <%= "is-invalid" if note_error %>" id="salary-note" name="note" rows="2"
+                  data-salary-ai="<%= rec.amount if rec&.ready? %>" data-band-min="<%= job.salary_min %>" data-band-max="<%= job.salary_max %>"
+                  placeholder="Required when outside the band or different from the AI advice."><%= flash[:salary_note] %></textarea>
+        <% if note_error %><div class="invalid-feedback d-block"><%= flash[:alert] %></div><% end %>
+        <div class="mt-2"><%= label_button(agreement ? "Change the agreed salary" : "Approve salary", "fa-check", purpose: :approve) %></div>
+      <% end %>
+    <% else %>
+      <p class="text-muted mt-3 mb-0"><%= agreement ? "" : "Waiting for the owner's decision." %></p>
+    <% end %>
+  </div>
+</div>

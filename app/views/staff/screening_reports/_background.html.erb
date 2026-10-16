@@ -1,0 +1,17 @@
+<%# SPEC §2.2: Education and Latest experience, two boxes, each with the CV quote behind it. %>
+<% facts = [["Education", "fa-graduation-cap", result&.education], ["Latest experience", "fa-briefcase", result&.recent_experience]] %>
+<div class="report-pair">
+  <% facts.each do |title, icon, fact| %>
+    <div class="hris-form-card">
+      <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa <%= icon %>" aria-hidden="true"></i></div><div><h3><%= title %></h3></div></div>
+      <div class="hris-form-card__body">
+        <% if fact.is_a?(Hash) && fact["text"].present? %>
+          <p class="mb-2"><%= report_ai(fact["text"], row) %></p>
+          <%= render "staff/screening_reports/quote", quote: fact["quote"], verified: fact["verified"], row: row %>
+        <% else %>
+          <p class="text-muted mb-0"><%= result.nil? ? "Not screened by the AI yet." : "Not in the AI result (a result from before the report prompt version, or the CV does not mention it)." %></p>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>

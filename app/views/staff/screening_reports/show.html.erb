@@ -1,0 +1,21 @@
+<% row = @row %>
+<% person = report_person(row, @board) %>
+<% content_for :title, "Candidate report · #{person}" %>
+<div class="portal-page loan-index-page layout-decoration-page screening-report">
+  <%= render "staff/shared/page_header", eyebrow: "Candidate detail · #{@board.job.title}",
+             title: "#{format('%02d', row.number)} · #{person}",
+             subtitle: "Last position: #{report_ai(ScreeningReport::Text.last_position(row.result), row)}",
+             actions: label_link("Back to report", "fa-arrow-left", staff_job_screening_report_path(@board.job), purpose: :neutral, icon_end: true) %>
+  <section class="content">
+    <%= render "staff/screening_reports/visibility_notice", board: @board %>
+    <%= render "staff/screening_reports/candidate_metrics", row: row, board: @board %>
+    <%= render "staff/screening_reports/contact", row: row if @board.visibility.contacts? %>
+    <%= render "staff/screening_reports/background", result: row.result, row: row %>
+    <%= render "staff/screening_reports/criteria", result: row.result, row: row %>
+    <%= render "staff/screening_reports/technical_test", row: row, board: @board %>
+    <%= render "staff/screening_reports/narratives", row: row, board: @board %>
+    <%= render "staff/screening_reports/label", row: row, board: @board %>
+    <%= render "staff/screening_reports/user_recommendation", row: row, board: @board %>
+    <%= render "staff/screening_reports/confidential_footer", board: @board, result: row.result %>
+  </section>
+</div>

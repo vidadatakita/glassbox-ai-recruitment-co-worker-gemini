@@ -1,0 +1,9 @@
+<%# Rule 14 / D62 h7: say WHY names are hidden and WHEN they appear, so a client never reads the
+    numbering as missing data. Staff see nothing here. %>
+<% if board.visibility.blind? %>
+  <div class="report-notice report-notice--info" role="note">
+    <i class="fa fa-user-secret" aria-hidden="true"></i>
+    <p>Applicant names and contacts are masked (Candidate 01, 02, …) until the gate decision is confirmed, that is when
+      <%= board.gated? ? "CV screening and the technical test are closed" : "CV screening is closed" %>. The candidate numbers are the same as on the vacancy home page.</p>
+  </div>
+<% end %>

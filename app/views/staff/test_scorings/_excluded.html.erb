@@ -1,0 +1,6 @@
+<%# B-1: answers from candidates whose CV screening decision is currently "tidak lolos" are not scored;
+    they receive "gate_eliminated" on the technical test when the gate closes. Said, not hidden. %>
+<% rows = board.excluded %>
+<% if rows.any? %>
+  <p class="text-muted small"><i class="fa fa-info-circle me-1" aria-hidden="true"></i><%= rows.size %> <%= "answer".pluralize(rows.size) %> not scored because the candidate did not pass CV screening: <%= rows.map { |row| candidate_label(row.participation.job_application) }.join(", ") %>. If the CV screening decision is reversed, the answer returns to the scoring list.</p>
+<% end %>

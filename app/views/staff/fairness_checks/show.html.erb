@@ -1,0 +1,18 @@
+<%# Fairness check (C2). The main view only orchestrates; each section is a partial. No technical
+    identifier of the AI call is ever printed (owner rule, test/views/no_technical_detail_test.rb):
+    the screen says whether identical bytes reached the model, not which bytes. One form, never
+    nested; the submit button keeps its name and value and is never disabled (house hard rules). %>
+<% content_for :title, "Fairness check · #{@job.title}" %>
+<div class="portal-page loan-index-page layout-decoration-page fairness-check">
+  <%= render "staff/shared/page_header", eyebrow: "Fairness check", title: @job.title,
+             subtitle: "One invented CV, run again with the name, the gender and the religion swapped. If redaction works, the AI receives the same text every time and gives the same scores.",
+             actions: label_link("Back", "fa-arrow-left", staff_job_path(@job), purpose: :neutral, icon_end: true) %>
+  <section class="content">
+    <%= render "staff/fairness_checks/method", job: @job, result: @result %>
+    <%= render "staff/fairness_checks/bytes", variants: @variants, result: @result %>
+    <% if @result %>
+      <%= render "staff/fairness_checks/scores", job: @job, result: @result %>
+    <% end %>
+    <%= render "staff/fairness_checks/run_form", job: @job, result: @result %>
+  </section>
+</div>

@@ -1,0 +1,22 @@
+<% reviews = ScreeningReview.joins(participation: :stage).where(stages: { job_id: job.id }).includes(:reviewer, :decision, participation: { job_application: :candidate }).order(created_at: :desc).limit(50) %>
+<div class="card custom-card">
+  <div class="card-header"><div class="card-title">Recorded reviews (<%= reviews.size %>)</div></div>
+  <div class="card-body table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead><tr><th>Applicant</th><th>Reason for review</th><th>Reviewer</th><th>Decision</th><th>Note</th><th>Time</th></tr></thead>
+      <tbody>
+        <% if reviews.empty? %><tr><td colspan="6" class="text-muted">No reviews yet. Reviews saved on this page are recorded here with the name and the time.</td></tr><% end %>
+        <% reviews.each do |review| %>
+          <tr>
+            <td><%= screening_person(review.participation, board) %></td>
+            <td><%= ScreeningReview::REASONS.fetch(review.reason) %></td>
+            <td><%= review.reviewer.name %></td>
+            <td><%= ScreeningReview::VERDICTS.fetch(review.verdict) %>: <%= outcome_label(review.decision.outcome) %></td>
+            <td><%= review.note.presence || "-" %></td>
+            <td><%= wib(review.created_at) %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

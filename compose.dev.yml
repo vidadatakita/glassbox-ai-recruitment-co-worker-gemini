@@ -1,0 +1,28 @@
+# Development overrides for compose.yml: live code, dev gems, rails server.
+# Enabled by COMPOSE_FILE=compose.yml:compose.dev.yml in .env.
+services:
+  web:
+    # The "build" stage has the compilers that dev gems (web-console, debug) need.
+    build:
+      target: build
+    # Reuse the host ~/.pgpass; inside the container the host is host.docker.internal, not localhost.
+    command: >
+      bash -c "sed 's/^localhost:/host.docker.internal:/' /host-pgpass > ~/.pgpass && chmod 600 ~/.pgpass
+      && (bundle check || bundle install) && bin/rails db:prepare
+      && rm -f tmp/pids/server.pid && bin/rails server -b 0.0.0.0"
+    environment:
+      RAILS_ENV: development
+      BUNDLE_DEPLOYMENT: "0"
+      BUNDLE_WITHOUT: ""
+      DATABASE_HOST: ${DATABASE_HOST:-host.docker.internal}
+    ports: !override ["${APP_PORT:-3000}:3000"]
+    volumes: !override
+      - .:/rails
+      - bundle:/usr/local/bundle
+      - ~/.pgpass:/host-pgpass:ro
+    restart: "no"
+    stdin_open: true
+    tty: true
+
+volumes:
+  bundle:

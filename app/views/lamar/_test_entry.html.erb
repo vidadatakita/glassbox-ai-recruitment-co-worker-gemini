@@ -1,0 +1,16 @@
+<%# D60 (plan §b): the technical test follows the submitted application. GlassBox Team, 2026-10-13: the test
+    is a REQUIRED next step, not an option, so the page offers only "Start the technical test" (no
+    "do it later"). The start page explains the clock before anything starts; nothing starts from
+    here. The candidate can still come back from the status link until start_by; after that the test
+    expires (TechnicalTests::Status :expired) and the gate treats it as not taken. %>
+<section class="test-entry" aria-labelledby="technical-test-entry">
+  <h2 id="technical-test-entry">Required next step: Technical test (<%= test.time_limit %> minutes)</h2>
+  <p>Your application can only continue if the technical test is taken before the deadline.</p>
+  <p class="small">Start no later than <%= l(test.start_by.in_time_zone, format: :long_wib) %>. The clock runs from the moment you press Start test. We recommend a laptop or desktop computer.</p>
+  <%= link_to "Start the technical test", candidate_status_test_path(token), class: "btn primary" %>
+  <% if mail&.sent? %>
+    <p class="small">The status link and the test deadline have also been sent to your e-mail.</p>
+  <% elsif mail %>
+    <p class="small">The confirmation e-mail could not be sent. Save the link below.</p>
+  <% end %>
+</section>

@@ -1,0 +1,26 @@
+<div class="card custom-card portal-queue-section">
+  <div class="card-header"><div class="card-title">Emails that failed to send (<%= failures.size %>)</div></div>
+  <div class="card-body table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>Applicant</th><th>Type</th><th>Error</th><th>Time (WIB)</th><th></th></tr></thead>
+      <tbody>
+        <% if failures.empty? %><tr><td colspan="5" class="text-muted">None. Emails to applicants that failed to send (status link, offer code) appear here.</td></tr><% end %>
+        <% failures.each do |failure| %>
+          <tr>
+            <td><%= candidate_label(failure.job_application) %></td>
+            <td><%= MailDelivery::LABELS.fetch(failure.kind) %></td>
+            <%# F-09: the stored text is a category and SMTP code; error_text also masks any address in older rows. %>
+            <td><%= failure.error_class %>: <%= failure.error_text %></td>
+            <td><%= wib(failure.created_at) %></td>
+            <td>
+              <%= form_with url: handle_mail_failure_staff_work_queue_path(failure), method: :post, data: { turbo: false, submit_guard: true } do %>
+                <%# The value only mirrors the label: no controller reads params[:commit]. %>
+                <button type="submit" class="btn btn-sm btn-light" name="commit" value="Handled"><i class="fa fa-check"></i> Handled</button>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,27 @@
+# examples:
+#   periodic_cleanup:
+#     class: CleanSoftDeletedRecordsJob
+#     queue: background
+#     args: [ 1000, { batch_size: 500 } ]
+#     schedule: every hour
+#   periodic_cleanup_with_command:
+#     command: "SoftDeletedRecord.due.delete_all"
+#     priority: 2
+#     schedule: at 5am every day
+
+production:
+  clear_solid_queue_finished_jobs:
+    command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
+    schedule: every hour at minute 12
+  # D60: technical-test expiry (no_show), the 24-hour reminder and gate-outcome notices. Every
+  # page that shows a test also evaluates expiry lazily, so a late tick never shows a wrong state.
+  technical_test_tick:
+    class: TechnicalTestTickJob
+    queue: default
+    schedule: every 5 minutes
+  # A5: the demo workspace goes back to its seed every night, 20:00 UTC = 03:00 WIB. Demo::Reset
+  # refuses to run unless DEMO_MODE=1, so this line is harmless on a client install.
+  demo_reset:
+    class: DemoResetJob
+    queue: default
+    schedule: at 8pm every day

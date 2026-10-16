@@ -1,0 +1,20 @@
+<%# Who released or declined which text, when, and the digest of the released text (D51 B record). %>
+<div class="card custom-card">
+  <div class="card-header"><div class="card-title">Review history</div></div>
+  <div class="card-body">
+    <% if actions.empty? %>
+      <p class="text-muted mb-0">No text has been sent or declined yet.</p>
+    <% else %>
+      <ul class="list-unstyled ai-release-list mb-0">
+        <% actions.each do |action| %>
+          <li class="border-bottom py-2">
+            <p class="mb-1"><strong><%= screening_person(action.ai_release.participation) %></strong>
+              <span class="portal-state portal-state--<%= action.action == "released" ? "success" : "muted" %>"><%= AiReleaseAction::ACTIONS.fetch(action.action) %></span></p>
+            <p class="text-muted small mb-0">By <%= action.actor.name %> · <%= wib(action.created_at) %></p>
+            <% if action.note.present? %><p class="small mb-0">Note: <%= action.note %></p><% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  </div>
+</div>

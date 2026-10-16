@@ -1,0 +1,64 @@
+<%# AI Builder Cup step 07 on an interview stage: invited interviewers (the hiring manager scores
+    from a link on a phone), and the debrief. Blind: each interviewer's scores show only once every
+    invited interviewer has submitted, so nobody's view leans on another's. %>
+<% stage = participation.stage %>
+<% invites = participation.interviewer_invites.order(:id).to_a %>
+<% entries = participation.score_entries.current.order(:id).to_a %>
+<% pending = invites.reject(&:submitted?) %>
+<% hr = current_user.role == Progression::CHOOSER %>
+<% open_stage = stage.status != "closed" && participation.progression_choice.nil? %>
+<div class="progression-interviewers">
+  <h5 class="fs-14 mb-2">Interview assessors</h5>
+  <% if flash[:interviewer_link] && flash[:interviewer_for].to_i == participation.id %>
+    <div class="alert alert-success" role="status">
+      <strong>Link for <%= flash[:interviewer_name] %></strong> (valid <%= InterviewerInvite::LINK_DAYS %> days, one submission). Copy it now; this link is not shown again.
+      <input class="form-control mt-2" type="text" readonly value="<%= flash[:interviewer_link] %>" onclick="this.select()" aria-label="Scoring link">
+      <a class="btn btn-sm btn-success mt-2" target="_blank" rel="noopener"
+         href="https://wa.me/?text=<%= ERB::Util.url_encode("Please score the #{stage.job.title} interview: #{flash[:interviewer_link]}") %>">Send via WhatsApp</a>
+    </div>
+  <% end %>
+  <% if invites.any? %>
+    <ul class="list-unstyled mb-2">
+      <% invites.each do |invite| %>
+        <li><%= invite.interviewer_name %> ·
+          <% if invite.submitted? %><span class="portal-state portal-state--success">Submitted</span> <%= wib(invite.submitted_at) %>
+          <% else %><span class="portal-state portal-state--muted">Waiting</span><% end %></li>
+      <% end %>
+    </ul>
+  <% end %>
+
+  <% if entries.any? && pending.any? %>
+    <p class="hris-field-hint">Each assessor's scores appear once every assessor has submitted (blind scoring).</p>
+  <% elsif entries.any? %>
+    <% competencies = stage.job.competencies.where(stage_code: stage.code).to_a %>
+    <% by_entry = invites.select(&:submitted?).index_by(&:score_entry_id) %>
+    <% picks = UserRecommendation.where(job_application: participation.job_application).order(:id).to_a %>
+    <div class="table-responsive">
+      <table class="table table-sm debrief-table mb-2">
+        <thead><tr><th>Debrief</th><% entries.each do |e| %><th><%= by_entry[e.id]&.interviewer_name || "HR" %></th><% end %></tr></thead>
+        <tbody>
+          <% competencies.each do |c| %>
+            <tr><td><%= c.name %></td><% entries.each do |e| %><td><%= e.ratings[c.id.to_s] || "-" %></td><% end %></tr>
+          <% end %>
+          <tr><td>Score</td><% entries.each do |e| %><td><strong><%= e.value.to_f %></strong></td><% end %></tr>
+          <tr><td>Pick</td><% entries.each do |e| %>
+            <% invite = by_entry[e.id] %>
+            <% pick = invite && picks.reverse.find { |r| r.user_name == invite.interviewer_name && r.created_at <= invite.submitted_at + 1.second } %>
+            <td><%= pick ? UserRecommendation::PICKS.fetch(pick.pick).first : "-" %></td><% end %></tr>
+          <tr><td>Note</td><% entries.each do |e| %><td class="small"><%= e.note.presence || "-" %></td><% end %></tr>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+
+  <% if hr && open_stage %>
+    <%= form_with url: staff_participation_interviewer_path(participation), method: :post, class: "d-flex flex-wrap gap-2 align-items-end", data: { turbo: false, submit_guard: true } do %>
+      <div class="flex-grow-1">
+        <label class="form-label" for="interviewer-<%= participation.id %>">Invite an assessor by link</label>
+        <input class="form-control" id="interviewer-<%= participation.id %>" name="interviewer_name" required maxlength="120" placeholder="Name, e.g. Budi (Operations Manager)">
+      </div>
+      <%= label_button "Create scoring link", "fa-link" %>
+    <% end %>
+    <span class="hris-field-hint d-block mt-1">The assessor scores from a phone, no account needed.<%= " Once their score is in, the AI advice is refreshed." if ai_on? %></span>
+  <% end %>
+</div>

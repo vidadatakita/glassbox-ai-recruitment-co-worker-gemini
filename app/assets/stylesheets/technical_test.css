@@ -1,0 +1,88 @@
+/* D60 (feature 07): the gate "Seleksi CV dan Tes Teknis" on Beranda Lowongan and the brief step
+   "Tes teknis". Theme variables only; no gradients; radius <= 0.5rem (layout-decoration §2). */
+.gate-box .hris-form-card__header h3 .portal-state { margin-left: .4rem; vertical-align: middle; }
+.gate-box__total { font-size: .8125rem; color: #4b5563; white-space: nowrap; }
+.gate-box__total strong { font-size: 1.25rem; color: var(--default-text-color); font-variant-numeric: tabular-nums; }
+.gate-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin-bottom: 1rem; }
+.gate-summary__item { border: 1px solid var(--default-border); border-radius: .5rem; padding: .75rem; display: grid; gap: .2rem; }
+.gate-summary__label { font-size: .75rem; font-weight: 600; color: #5d71a0; text-transform: uppercase; letter-spacing: .02em; }
+.gate-summary__num { font-size: 1.5rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.gate-summary__share { font-size: .75rem; color: #4b5563; }
+.gate-summary__item--danger .portal-funnel__fill { background: rgba(var(--danger-rgb), .7); }
+.gate-summary__item--success .portal-funnel__fill { background: rgba(var(--success-rgb), .8); }
+.gate-stages { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-bottom: 1rem; }
+.gate-stage { border: 1px solid var(--default-border); border-radius: .5rem; padding: .75rem 1rem; }
+.gate-stage h4 { font-size: .9375rem; margin: 0 0 .15rem; }
+.gate-stage p { font-size: .75rem; margin: 0 0 .5rem; }
+.gate-stage__figures { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; margin: 0; }
+.gate-stage__figures dt { font-size: .6875rem; font-weight: 600; color: #5d71a0; }
+.gate-stage__figures dd { margin: 0; font-size: 1.125rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gate-box, .gate-box .hris-form-card__body { min-width: 0; }
+.gate-table__note { font-size: .8125rem; margin-bottom: .25rem; }
+@media (max-width: 575.98px) {
+  .gate-summary { grid-template-columns: 1fr; }
+  .gate-stages { grid-template-columns: 1fr; }
+  /* Phone: each applicant is a stacked row (name, then the three states with their labels), so
+     the three decisions are read together without sideways scrolling. */
+  .gate-table thead { display: none; }
+  .gate-table, .gate-table tbody, .gate-table tr { display: block; width: 100%; }
+  .gate-table tr { display: grid; grid-template-columns: 1fr auto; gap: .35rem .75rem; padding: .65rem 0; border-bottom: 1px solid var(--default-border); }
+  .gate-table td { display: block; border: 0; padding: 0; }
+  .gate-table td[data-label] { grid-column: 1 / 2; display: flex; justify-content: space-between; gap: .5rem; font-size: .8125rem; }
+  .gate-table td[data-label]::before { content: attr(data-label); color: #5d71a0; font-weight: 600; }
+  .gate-table .gate-table__person { grid-column: 1 / 2; font-weight: 600; }
+  .gate-table .hris-table-actions { grid-column: 2 / 3; grid-row: 1 / 5; align-self: center; }
+}
+/* "Perlu review" in the gate table; scoped so other screens keep their own look. */
+.gate-box .portal-state--warning { background: rgba(var(--warning-rgb), .12); color: #7a4d00; }
+/* Brief step 5 "Tes teknis". */
+.test-case-status { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin-bottom: 1.25rem; }
+.test-case-status__item { border: 1px solid var(--default-border); border-radius: .5rem; padding: .75rem 1rem; background: var(--custom-white, #fff); display: grid; gap: .15rem; }
+.test-case-status__label { font-size: .75rem; font-weight: 600; color: #5d71a0; text-transform: uppercase; letter-spacing: .02em; }
+.test-case-status__value { font-size: 1.25rem; font-weight: 600; }
+.test-case-status__note { font-size: .75rem; color: #4b5563; }
+.test-case-rubric { display: grid; grid-template-columns: minmax(0, 16rem) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.test-case-rubric__activities { border: 1px solid var(--default-border); border-radius: .5rem; padding: .75rem .9rem; font-size: .8125rem; position: sticky; top: 5rem; }
+.test-case-rubric__activities h4 { font-size: .8125rem; margin: 0 0 .5rem; }
+.test-case-rubric__activities ol { margin: 0; padding-left: 1.1rem; display: grid; gap: .35rem; }
+.test-case-current-file { margin: .5rem 0 0; font-size: .8125rem; }
+.test-case-subhead { font-size: .9375rem; margin: 1rem 0 .5rem; }
+.test-case-approve { border-top: 1px solid var(--default-border); padding-top: .75rem; margin-top: .75rem; font-size: .8125rem; }
+.test-case-page .portal-state--warning { background: rgba(var(--warning-rgb), .12); color: #7a4d00; }
+@media (max-width: 991.98px) {
+  .test-case-rubric { grid-template-columns: 1fr; }
+  .test-case-rubric__activities { position: static; }
+}
+@media (max-width: 575.98px) { .test-case-status { grid-template-columns: 1fr; } }
+/* Answer types as a grouped list (same look as the brief's chips, own class so the brief's
+   placement list stays countable on its own). */
+.test-case-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0; padding: 0; list-style: none; }
+.test-case-chips li { padding: .25rem .6rem; border: 1px solid var(--default-border); border-radius: .25rem; font-size: .8125rem; background: rgba(var(--light-rgb), .5); }
+/* Answer-type choices: plain checkbox + label rows (the theme's .form-check floated a checked box
+   to the corner of the fieldset, screenshot 2026-10-10). */
+/* Bootstrap floats the legend at 100% width and clears only its next sibling (the hidden input),
+   so without this the first choice was squeezed to zero width beside the legend. */
+.test-case-checks { list-style: none; margin: 0; padding: 0; clear: both; }
+.test-case-check { display: flex; align-items: center; gap: .5rem; margin: 0 0 .35rem; font-size: .875rem; cursor: pointer; }
+.test-case-check label { margin: 0; cursor: pointer; }
+.test-case-check input { width: 1rem; height: 1rem; margin: 0; flex: none; float: none; position: static; }
+
+/* D60 slice 5, "Penilaian Tes Teknis": the 1-5 choice per rubric criterion. Five 40 px targets in
+   one row, so a rating is one tap and the five values read as one scale. */
+.test-scoring-scale { display: flex; gap: 4px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.test-scoring-scale__option { position: relative; margin: 0; }
+.test-scoring-scale__option input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.test-scoring-scale__option span { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--default-border, #dde3ee);
+  border-radius: 6px; font-weight: 600; }
+.test-scoring-scale__option input:checked + span { background: var(--primary-color, #082147); border-color: var(--primary-color, #082147); color: #fff; }
+.test-scoring-scale__option input:focus-visible + span { outline: 3px solid var(--primary-color, #082147); outline-offset: 2px; }
+.test-scoring-rubric td { min-width: 120px; }
+/* On a phone the rubric becomes one block per criterion (label beside each value), so the anchors
+   and the 1-5 choice are read together without scrolling sideways inside the card. */
+@media (max-width: 575.98px) {
+  .test-scoring-rubric thead { display: none; }
+  .test-scoring-rubric tr { display: block; padding: 10px 0; border-bottom: 1px solid var(--default-border, #dde3ee); }
+  .test-scoring-rubric td { display: grid; grid-template-columns: 64px 1fr; gap: 8px; min-width: 0; border: 0; padding: 4px 0; text-align: left !important; }
+  .test-scoring-rubric td:first-child { display: block; }
+  .test-scoring-rubric td[data-label]::before { content: attr(data-label); color: var(--text-muted, #6c757d); font-size: 12px; }
+}

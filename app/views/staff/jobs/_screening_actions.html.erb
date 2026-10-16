@@ -1,0 +1,14 @@
+<div class="btn-list screening-actions">
+  <% if current_user.role == "consultant" && board.enabled? %>
+    <%= form_with url: staff_job_screening_start_path(job), method: :post, class: "d-inline", data: { turbo: false, submit_guard: true } do %>
+      <%= label_button "Start screening", "fa-play" %>
+    <% end %>
+  <% end %>
+  <% if %w[consultant reviewer].include?(current_user.role) %>
+    <%= label_link "Calibration", "fa-balance-scale", staff_job_screening_calibration_path(job), purpose: :neutral %>
+  <% end %>
+  <% if current_user.role == "reviewer" %>
+    <%= label_link "Review before AI (#{board.awaiting_release.size})", "fa-shield", staff_job_ai_releases_path(job), purpose: :neutral %>
+    <%= label_link "Screening review (#{board.to_review.size})", "fa-check-square-o", staff_job_screening_review_path(job), purpose: :neutral %>
+  <% end %>
+</div>

@@ -1,0 +1,28 @@
+<% funnel = board.funnel %>
+<% top = [funnel.map(&:entered).max.to_i, 1].max %>
+<div class="hris-form-card">
+  <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-filter"></i></div>
+    <div><h3>Selection review</h3><p>Applicants entering each stage, in process order; percentage against the previous stage.</p></div></div>
+  <div class="hris-form-card__body">
+    <% if funnel.empty? %>
+      <p class="text-muted mb-0">No selection stages have been created for this vacancy yet.</p>
+    <% else %>
+      <div class="portal-funnel">
+        <% funnel.each do |row| %>
+          <div class="portal-funnel__row">
+            <span><%= CandidateStatus::STAGE_LABELS.fetch(row.stage.code) %></span>
+            <span class="portal-funnel__track"><span class="portal-funnel__fill" style="width: <%= (row.entered * 100 / top) %>%"></span></span>
+            <span class="portal-funnel__num"><%= row.entered %><% if row.rate %> <small class="text-muted">(<%= row.rate %>%)</small><% end %></span>
+          </div>
+        <% end %>
+      </div>
+      <% if (drop = board.biggest_drop) %>
+        <p class="portal-insight mt-3 mb-0"><i class="fa fa-exclamation-circle me-1"></i><%= drop %></p>
+      <% end %>
+      <% if board.no_show_by_stage.any? %>
+        <p class="text-muted mt-2 mb-0">Did not attend, per stage:
+          <%= safe_join(board.no_show_by_stage.map { |stage, n, total| "#{CandidateStatus::STAGE_LABELS.fetch(stage.code)} #{n} of #{total}" }, " · ") %></p>
+      <% end %>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,22 @@
+<% content_for :title, "Paste CV text" %>
+<% application = @participation.job_application %>
+<div class="portal-page loan-index-page layout-decoration-page">
+  <%= render "staff/shared/page_header", eyebrow: "CV unreadable", title: candidate_label(application),
+             subtitle: "This CV has no readable text. Paste the CV content below; the application then re-enters the screening queue.",
+             actions: label_link("Back", "fa-arrow-left", staff_job_path(@participation.stage.job, anchor: "screening"), purpose: :neutral, icon_end: true) %>
+  <section class="content">
+    <div class="card custom-card">
+      <div class="card-body">
+        <% if application.cv.attached? %>
+          <p><%= link_to cv_staff_application_path(application), class: "btn btn-sm btn-primary-light", title: "View CV" do %><i class="fa fa-plus" aria-hidden="true"></i> View CV<% end %></p>
+        <% end %>
+        <%= form_with url: staff_participation_cv_text_path(@participation), method: :post, data: { turbo: false, submit_guard: true } do %>
+          <label class="form-label" for="cv_text">CV text</label>
+          <textarea class="form-control mb-2" id="cv_text" name="cv_text" rows="14" required><%= params[:cv_text] %></textarea>
+          <p class="text-muted small">Copy the whole CV content as it is. Personal data such as date of birth, religion and address is removed by the system before it is sent to the AI.</p>
+          <%= label_button "Save CV text", "fa-save" %>
+        <% end %>
+      </div>
+    </div>
+  </section>
+</div>

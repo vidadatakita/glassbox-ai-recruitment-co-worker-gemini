@@ -1,0 +1,19 @@
+<%# §2.3 coverage check for this Golongan, shown as a checklist: each required layer with its
+    state in words and an icon, never colour alone. Coverage adds no score (rule 18). %>
+<% required = Briefs::Coverage.required(job.golongan) %>
+<% missing = Briefs::Coverage.missing(job.golongan, layers) %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-check-circle-o", tone: (missing.empty? ? "success" : "warning"), title: "Competency layer coverage",
+           text: "Layers required for #{job.golongan_label}: #{required.size} layers, #{required.size - missing.size} covered." } do %>
+  <ul class="job-brief-coverage">
+    <% Competency::LAYERS.each do |code, label| %>
+      <% need = required.include?(code) %>
+      <% have = layers.include?(code) %>
+      <li class="job-brief-coverage__item job-brief-coverage__item--<%= need ? (have ? "ok" : "missing") : "optional" %>">
+        <i class="fa <%= need ? (have ? "fa-check-circle" : "fa-exclamation-circle") : "fa-circle-o" %>" aria-hidden="true"></i>
+        <span><strong><%= code %> <%= label %></strong>
+          <small><%= need ? (have ? "Required, covered" : "Required, no competency yet") : (have ? "Optional, covered" : "Optional") %></small></span>
+      </li>
+    <% end %>
+  </ul>
+  <% if missing.any? %><p class="job-brief-insight mb-0 mt-2"><%= Briefs::Coverage.message(job.golongan, layers) %></p><% end %>
+<% end %>

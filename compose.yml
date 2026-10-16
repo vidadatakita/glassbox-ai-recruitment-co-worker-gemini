@@ -1,0 +1,15 @@
+# Production by default: the final Dockerfile stage (Thruster + Puma, non-root, precompiled assets).
+# Development: set COMPOSE_FILE=compose.yml:compose.dev.yml in .env (see .env.example).
+# All settings come from .env.  docker compose up -d  ->  http://localhost:${APP_PORT:-3000}
+services:
+  web:
+    build: .
+    env_file: .env
+    ports: ["${APP_PORT:-3000}:80"]
+    extra_hosts: ["host.docker.internal:host-gateway"] # reach PostgreSQL on the Docker host
+    volumes:
+      - storage:/rails/storage
+    restart: unless-stopped
+
+volumes:
+  storage:

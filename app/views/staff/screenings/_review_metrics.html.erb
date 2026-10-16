@@ -1,0 +1,11 @@
+<% items = board.to_review %>
+<div class="row loan-index-summary">
+  <%= render "staff/shared/metric", variant: "primary", icon: "fa-check-square-o", label: "Awaiting review",
+             value: items.size, caption: "AI advice for the reviewer to decide" %>
+  <%= render "staff/shared/metric", variant: "danger", icon: "fa-times-circle", label: "AI eliminations",
+             value: items.count { |i| i.reason == "elimination" }, caption: "every elimination is reviewed" %>
+  <%= render "staff/shared/metric", variant: "warning", icon: "fa-quote-left", label: "Unverified quotes",
+             value: items.count { |i| i.reason == "unverified" }, caption: "AI evidence not found in the CV" %>
+  <%= render "staff/shared/metric", variant: "info", icon: "fa-random", label: "Sample of passes",
+             value: items.count { |i| i.reason == "sample" }, caption: "1 of every 10 that passed" %>
+</div>

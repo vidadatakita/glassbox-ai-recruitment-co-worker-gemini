@@ -1,0 +1,17 @@
+<%# The rubric sent with the CV. It is already inside the text block above (<requirements>); this
+    is a readable view of the same JSON for the reviewer, taken from the payload itself. %>
+<% criteria = release_rubric(release) %>
+<div class="card custom-card">
+  <div class="card-header"><div class="card-title">Vacancy requirements the AI assesses</div></div>
+  <div class="card-body">
+    <% if criteria.is_a?(Array) %>
+      <ul class="list-unstyled small mb-0">
+        <% criteria.each do |c| %>
+          <li class="border-bottom py-1"><code><%= c["id"] %></code> <span class="portal-state portal-state--muted"><%= tier_label(c["tier"]) %></span> <%= c["requirement"] %></li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="text-muted small mb-0">The requirements are in the &lt;requirements&gt; part of the text above.</p>
+    <% end %>
+  </div>
+</div>

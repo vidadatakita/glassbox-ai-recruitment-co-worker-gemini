@@ -1,0 +1,18 @@
+<%# The gate result as parts of the whole: each share against all applicants in the gate. %>
+<div class="gate-summary" aria-label="Gate result">
+  <% [[:passed, "Passed the gate"], [:open, "Waiting for a decision"], [:not_passed, "Not passed"]].each do |result, label| %>
+    <% n = gate.result_count(result) %>
+    <div class="gate-summary__item gate-summary__item--<%= Gates::Result::TONES.fetch(result) %>">
+      <span class="gate-summary__label"><%= label %></span>
+      <span class="gate-summary__num"><%= n %></span>
+      <span class="gate-summary__share"><%= gate.percent(n) %>% of <%= gate.total %></span>
+      <span class="portal-funnel__track"><span class="portal-funnel__fill" style="width: <%= gate.percent(n) %>%"></span></span>
+    </div>
+  <% end %>
+</div>
+<% waiting = gate.result_count(:open) %>
+<% if gate.total.zero? %>
+  <p class="text-muted mb-3">No applicants in this gate yet. Applicants enter CV screening and the technical test together when their application is sent.</p>
+<% elsif waiting.positive? %>
+  <p class="portal-insight mb-3"><i class="fa fa-exclamation-circle me-1" aria-hidden="true"></i><%= waiting %> <%= "applicant".pluralize(waiting) %> still waiting for a decision. The gate can be closed once every applicant is decided in both stages; those eliminated at CV screening are recorded as not assessed in the technical test when the gate closes.</p>
+<% end %>

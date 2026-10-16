@@ -1,0 +1,50 @@
+<%# Section 1: did identical bytes reach the AI? One row per variant; the comparison is stated in
+    words (identical / different), the digests themselves stay in the record. %>
+<div class="card custom-card fairness-check__bytes">
+  <div class="card-header"><div class="card-title">What the AI received</div></div>
+  <div class="card-body p-0">
+    <table class="table table-sm mb-0 fairness-check__table">
+      <thead><tr><th>Variant</th><th>Changes in the original text</th><th>Text sent to the AI</th><% if result %><th>Answer</th><% end %></tr></thead>
+      <tbody>
+        <% base = variants.fetch(:base) %>
+        <% variants.each_value do |v| %>
+          <% rv = result&.variants&.fetch(v.key) %>
+          <tr id="fairness-variant-<%= v.key %>">
+            <td><%= v.label %></td>
+            <td><%= v.kind == :base ? "none" : "#{v.substitutions} #{'word'.pluralize(v.substitutions)} swapped" %></td>
+            <td>
+              <% if v.kind == :base %>
+                <span class="portal-state portal-state--muted">Reference</span>
+              <% elsif v.swap? && v.identical_to_base && v.original_differs %>
+                <span class="portal-state portal-state--success">Identical bytes reached the model</span>
+              <% elsif v.swap? && !v.original_differs %>
+                <span class="portal-state portal-state--danger">Swap found nothing to change</span>
+              <% elsif v.swap? %>
+                <span class="portal-state portal-state--danger">Different bytes: redaction gap</span>
+              <% else %>
+                <span class="portal-state portal-state--muted">Different on purpose</span>
+              <% end %>
+            </td>
+            <% if result %>
+              <td>
+                <% if rv.error %>
+                  <span class="portal-state portal-state--danger">No answer from the AI for this variant</span>
+                <% elsif rv.swap? && rv.difference_kind(result.base) == :same_input_different_answer %>
+                  <span class="portal-state portal-state--info">Same input, different model answer</span>
+                <% elsif rv.swap? && rv.difference_kind(result.base) == :redaction_gap %>
+                  <span class="portal-state portal-state--danger">Different input</span>
+                <% elsif rv.control? %>
+                  <span class="portal-state <%= result.merit_control_moved? ? 'portal-state--success' : 'portal-state--danger' %>"><%= result.merit_control_moved? ? "Score moved, as it must" : "Score did not move" %></span>
+                <% elsif rv.kind == :base %>
+                  <span class="portal-state portal-state--muted">Reference</span>
+                <% else %>
+                  <span class="portal-state portal-state--success">Same as the base</span>
+                <% end %>
+              </td>
+            <% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

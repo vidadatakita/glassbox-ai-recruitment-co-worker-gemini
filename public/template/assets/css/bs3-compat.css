@@ -1,0 +1,547 @@
+/*
+ * Bootstrap 3 -> Bootstrap 5 compatibility layer.
+ * Keeps the legacy AdminLTE-era view markup rendering acceptably
+ * under the ZYNIX (Bootstrap 5) template without touching every view.
+ */
+
+/* ---------- Grid: col-xs-* (removed in BS4/5) ---------- */
+.col-xs-1, .col-xs-2, .col-xs-3, .col-xs-4, .col-xs-5, .col-xs-6,
+.col-xs-7, .col-xs-8, .col-xs-9, .col-xs-10, .col-xs-11, .col-xs-12 {
+  position: relative;
+  width: 100%;
+  padding-right: calc(var(--bs-gutter-x, 1.5rem) * .5);
+  padding-left: calc(var(--bs-gutter-x, 1.5rem) * .5);
+  flex: 0 0 auto;
+}
+.col-xs-1  { width: 8.33333333%; }
+.col-xs-2  { width: 16.66666667%; }
+.col-xs-3  { width: 25%; }
+.col-xs-4  { width: 33.33333333%; }
+.col-xs-5  { width: 41.66666667%; }
+.col-xs-6  { width: 50%; }
+.col-xs-7  { width: 58.33333333%; }
+.col-xs-8  { width: 66.66666667%; }
+.col-xs-9  { width: 75%; }
+.col-xs-10 { width: 83.33333333%; }
+.col-xs-11 { width: 91.66666667%; }
+.col-xs-12 { width: 100%; }
+
+/* Old grids sometimes use col-* outside a flex .row; keep them usable.
+   NOTE: hris-zynix.css loads after this file and extends both classes with an
+   auto margin so they also work inside a FLEX parent, where a float is ignored.
+   See "POSITIONING UTILITIES" there; that block is the authority. */
+.pull-left  { float: left !important; }
+.pull-right { float: right !important; }
+.center-block { display: block; margin-left: auto; margin-right: auto; }
+
+/* ---------- Responsive visibility helpers ---------- */
+@media (max-width: 767.98px) {
+  .hidden-xs { display: none !important; }
+}
+@media (min-width: 768px) {
+  .visible-xs { display: none !important; }
+}
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .hidden-sm { display: none !important; }
+}
+@media (min-width: 992px) and (max-width: 1199.98px) {
+  .hidden-md { display: none !important; }
+}
+@media (min-width: 1200px) {
+  .hidden-lg { display: none !important; }
+}
+
+/* ---------- AdminLTE .box -> card look ---------- */
+.box {
+  position: relative;
+  background: var(--custom-white, #fff);
+  border-radius: 0.5rem;
+  border: 1px solid var(--default-border, #e9edf6);
+  box-shadow: 0 0.125rem 0 rgba(10, 10, 10, 0.04);
+  margin-bottom: 1.25rem;
+  width: 100%;
+  border-top: 3px solid #d2d6de;
+}
+.box.box-primary   { border-top-color: var(--primary-color, #5c67f7); }
+.box.box-info      { border-top-color: #0dcaf0; }
+.box.box-success   { border-top-color: #198754; }
+.box.box-warning   { border-top-color: #ffc107; }
+.box.box-danger    { border-top-color: #dc3545; }
+.box.box-solid     { border-top: 0; }
+
+.box-header {
+  display: block;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--default-border, #e9edf6);
+  position: relative;
+}
+.box-header:after,
+.box-body:after,
+.box-footer:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+.box-title {
+  display: inline-block;
+  font-size: 1.05rem;
+  font-weight: 500;
+  margin: 0;
+  line-height: 1.5;
+}
+.box-body {
+  padding: 1rem;
+}
+.box-footer {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--default-border, #e9edf6);
+  background-color: transparent;
+}
+.box-tools {
+  position: absolute;
+  right: 0.75rem;
+  top: 0.6rem;
+}
+.btn-box-tool {
+  padding: 0.15rem 0.35rem;
+  color: #657a99;
+  border: 0;
+  background: transparent;
+}
+.btn-box-tool:hover,
+.btn-box-tool:focus { color: var(--primary-color, #2563eb); }
+
+/* Dashgum's form wrapper appears throughout the older HRIS screens. */
+.form-panel {
+  width: 100%;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  background: var(--custom-white, #fff);
+  border: 1px solid var(--default-border, #e9edf6);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.125rem 0 rgba(10, 10, 10, 0.04);
+}
+
+/* ---------- BS3 panels -> card look ---------- */
+.panel {
+  background: var(--custom-white, #fff);
+  border: 1px solid var(--default-border, #e9edf6);
+  border-radius: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+.panel-heading {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--default-border, #e9edf6);
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+.panel-title { margin: 0; font-size: 1.05rem; }
+.panel-body { padding: 1rem; }
+.panel-footer {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--default-border, #e9edf6);
+}
+.panel-default > .panel-heading { background-color: rgba(0, 0, 0, 0.02); }
+.panel-primary > .panel-heading { background-color: var(--primary-color, #5c67f7); color: #fff; }
+
+/* ---------- .well ---------- */
+.well {
+  min-height: 20px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  background-color: rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--default-border, #e9edf6);
+  border-radius: 0.5rem;
+}
+
+/* ---------- BS3 labels -> badges ---------- */
+.label {
+  display: inline-block;
+  padding: 0.25em 0.6em;
+  font-size: 75%;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 0.35rem;
+}
+.label-default { background-color: #6c757d; }
+.label-primary { background-color: var(--primary-color, #5c67f7); }
+.label-success { background-color: #198754; }
+.label-info    { background-color: #0dcaf0; }
+.label-warning { background-color: #ffc107; color: #212529; }
+.label-danger  { background-color: #dc3545; }
+
+/* ---------- Buttons ---------- */
+.btn-default {
+  color: #212529;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+}
+.btn-default:hover,
+.btn-default:focus {
+  color: #212529;
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+}
+.btn-flat { border-radius: 0; }
+.btn-xs {
+  padding: 0.125rem 0.35rem;
+  font-size: 0.75rem;
+  border-radius: 0.25rem;
+}
+.btn-block { display: block; width: 100%; }
+
+/* ---------- Forms ---------- */
+.form-group { margin-bottom: 1rem; }
+.control-label { margin-bottom: 0.35rem; display: inline-block; font-weight: 600; }
+
+/*
+ * Most HRIS forms use the Bootstrap 3 horizontal convention: a label and a
+ * .col-sm-* field are siblings inside .form-group. Bootstrap 5 no longer makes
+ * .form-group a row, so restore that behaviour once for every legacy form.
+ */
+.form-horizontal .form-group,
+.hris-horizontal-form .form-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  margin-right: -0.75rem;
+  margin-left: -0.75rem;
+}
+.form-horizontal .form-group > [class*="col-"],
+.hris-horizontal-form .form-group > [class*="col-"] {
+  padding-right: 0.75rem;
+  padding-left: 0.75rem;
+}
+.form-horizontal .form-group > .control-label,
+.hris-horizontal-form .form-group > .control-label {
+  padding-top: calc(0.375rem + 1px);
+  text-align: right;
+}
+
+/* Forms created without legacy column classes receive the same horizontal
+ * label/field rhythm. Auth and modern grid forms intentionally opt out. */
+@media (min-width: 576px) {
+  .hris-horizontal-form .form-group > label:not([class*="col-"]) {
+    flex: 0 0 25%;
+    width: 25%;
+    max-width: 25%;
+    padding: calc(0.375rem + 1px) 0.75rem 0;
+    margin-bottom: 0;
+    font-weight: 600;
+    text-align: right;
+  }
+  .hris-horizontal-form .form-group > label:not([class*="col-"]) + :not(label) {
+    flex: 0 0 75%;
+    width: 75%;
+    max-width: 75%;
+  }
+}
+.form-horizontal .form-group .form-control,
+.hris-horizontal-form .form-group .form-control {
+  min-height: 2.375rem;
+}
+.form-horizontal .form-group textarea.form-control,
+.hris-horizontal-form .form-group textarea.form-control {
+  min-height: 5.75rem;
+  resize: vertical;
+}
+.form-horizontal .form-group .select2-container,
+.hris-horizontal-form .form-group .select2-container {
+  width: 100% !important;
+}
+.form-horizontal .form-group .help-block,
+.form-horizontal .form-group .form-text,
+.hris-horizontal-form .form-group .help-block,
+.hris-horizontal-form .form-group .form-text {
+  margin-bottom: 0;
+}
+.form-horizontal .form-group > .checkbox,
+.form-horizontal .form-group > .radio,
+.hris-horizontal-form .form-group > .checkbox,
+.hris-horizontal-form .form-group > .radio {
+  padding-top: calc(0.375rem + 1px);
+}
+.form-horizontal .actions,
+.hris-horizontal-form .actions,
+.form-horizontal .box-footer,
+.hris-horizontal-form .box-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.form-horizontal .actions > .btn,
+.form-horizontal .box-footer > .btn,
+.hris-horizontal-form .actions > .btn,
+.hris-horizontal-form .box-footer > .btn {
+  margin: 0;
+}
+@media (max-width: 575.98px) {
+  .form-horizontal .form-group,
+  .hris-horizontal-form .form-group {
+    margin-right: -0.5rem;
+    margin-left: -0.5rem;
+  }
+  .form-horizontal .form-group > [class*="col-"],
+  .hris-horizontal-form .form-group > [class*="col-"] {
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
+  }
+  .form-horizontal .form-group > .control-label,
+  .hris-horizontal-form .form-group > .control-label {
+    padding-top: 0;
+    margin-bottom: 0.35rem;
+    text-align: left;
+  }
+}
+.input-group-addon {
+  display: flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #212529;
+  text-align: center;
+  background-color: #e9ecef;
+  border: 1px solid #ced4da;
+  border-radius: 0.25rem;
+}
+.input-group .input-group-addon { border-radius: 0; }
+.help-block {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+.has-error .control-label,
+.has-error .help-block { color: #dc3545; }
+.has-error .form-control { border-color: #dc3545; }
+
+#error_explanation {
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.875rem 1rem;
+  color: #a31d2c;
+  background: rgba(var(--danger-rgb, 255, 56, 60), 0.08);
+  border: 1px solid rgba(var(--danger-rgb, 255, 56, 60), 0.22);
+  border-radius: 0.375rem;
+}
+#error_explanation h2 { margin: 0 0 0.45rem; font-size: 0.9rem; font-weight: 700; }
+#error_explanation ul { margin: 0; padding-left: 1.15rem; font-size: 0.8125rem; }
+
+.checkbox, .radio { display: block; margin-bottom: 0.5rem; }
+.checkbox label, .radio label { font-weight: 400; }
+.checkbox input[type="checkbox"], .radio input[type="radio"] { margin-right: 0.35rem; }
+
+/* ---------- Offset and fluid-grid helpers removed after Bootstrap 3 ---------- */
+@media (min-width: 768px) {
+  .col-sm-offset-1 { margin-left: 8.33333333%; }
+  .col-sm-offset-2 { margin-left: 16.66666667%; }
+  .col-sm-offset-3 { margin-left: 25%; }
+  .col-sm-offset-4 { margin-left: 33.33333333%; }
+  .col-sm-offset-5 { margin-left: 41.66666667%; }
+  .col-sm-offset-6 { margin-left: 50%; }
+  .col-sm-offset-7 { margin-left: 58.33333333%; }
+  .col-sm-offset-8 { margin-left: 66.66666667%; }
+  .col-sm-offset-9 { margin-left: 75%; }
+  .col-sm-offset-10 { margin-left: 83.33333333%; }
+  .col-sm-offset-11 { margin-left: 91.66666667%; }
+}
+@media (min-width: 992px) {
+  .col-md-offset-1 { margin-left: 8.33333333%; }
+  .col-md-offset-2 { margin-left: 16.66666667%; }
+  .col-md-offset-3 { margin-left: 25%; }
+  .col-md-offset-4 { margin-left: 33.33333333%; }
+  .col-md-offset-5 { margin-left: 41.66666667%; }
+  .col-md-offset-6 { margin-left: 50%; }
+  .col-md-offset-7 { margin-left: 58.33333333%; }
+  .col-md-offset-8 { margin-left: 66.66666667%; }
+  .col-md-offset-9 { margin-left: 75%; }
+  .col-md-offset-10 { margin-left: 83.33333333%; }
+  .col-md-offset-11 { margin-left: 91.66666667%; }
+}
+@media (min-width: 1200px) {
+  .col-lg-offset-1 { margin-left: 8.33333333%; }
+  .col-lg-offset-2 { margin-left: 16.66666667%; }
+  .col-lg-offset-3 { margin-left: 25%; }
+  .col-lg-offset-4 { margin-left: 33.33333333%; }
+  .col-lg-offset-5 { margin-left: 41.66666667%; }
+  .col-lg-offset-6 { margin-left: 50%; }
+  .col-lg-offset-7 { margin-left: 58.33333333%; }
+  .col-lg-offset-8 { margin-left: 66.66666667%; }
+  .col-lg-offset-9 { margin-left: 75%; }
+  .col-lg-offset-10 { margin-left: 83.33333333%; }
+  .col-lg-offset-11 { margin-left: 91.66666667%; }
+}
+.row-fluid { display: flex; flex-wrap: wrap; margin-right: -0.75rem; margin-left: -0.75rem; }
+.row-fluid > [class*="span"] { flex: 0 0 auto; padding-right: 0.75rem; padding-left: 0.75rem; }
+.span1 { width: 8.33333333%; }
+.span2 { width: 16.66666667%; }
+.span3 { width: 25%; }
+.span4 { width: 33.33333333%; }
+.span5 { width: 41.66666667%; }
+.span6 { width: 50%; }
+.span7 { width: 58.33333333%; }
+.span8 { width: 66.66666667%; }
+.span9 { width: 75%; }
+.span10 { width: 83.33333333%; }
+.span11 { width: 91.66666667%; }
+.span12 { width: 100%; }
+
+/* ---------- Misc ---------- */
+.img-circle { border-radius: 50%; }
+.img-responsive { max-width: 100%; height: auto; }
+.table-condensed th,
+.table-condensed td { padding: 0.3rem; }
+.table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ---------- Legacy page headers and dashboard widgets ---------- */
+.content,
+.content-header { width: 100%; }
+.content-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.25rem 0 1.25rem;
+}
+.content-header h1 {
+  margin: 0;
+  color: var(--default-text-color, #222f36);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.content-header h1 small {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--text-muted, #98a5c3);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+.content-header .breadcrumb {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--custom-white, #fff);
+  border: 1px solid var(--default-border, #e9edf6);
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+}
+
+.small-box {
+  --legacy-accent: var(--primary-color, #2563eb);
+  position: relative;
+  min-height: 8.5rem;
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+  color: var(--default-text-color, #222f36);
+  background: var(--custom-white, #fff);
+  border: 1px solid var(--default-border, #e9edf6);
+  border-top: 3px solid var(--legacy-accent);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.125rem 0 rgba(10, 10, 10, 0.04);
+}
+.small-box .inner { padding: 1rem; }
+.small-box h3 {
+  margin: 0 0 0.25rem;
+  color: var(--legacy-accent);
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+.small-box p { margin: 0; color: var(--text-muted, #98a5c3); font-size: 0.8125rem; }
+.small-box .icon {
+  position: absolute;
+  top: 0.8rem;
+  right: 0.9rem;
+  color: var(--legacy-accent);
+  font-size: 2.25rem;
+  opacity: 0.16;
+}
+.small-box-footer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 1rem;
+  color: var(--legacy-accent) !important;
+  background: rgba(var(--primary-rgb, 37, 99, 235), 0.04);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.small-box-footer:hover,
+.small-box-footer:focus { background: rgba(var(--primary-rgb, 37, 99, 235), 0.09); }
+.small-box.bg-aqua { --legacy-accent: #0ea5a4; }
+.small-box.bg-green { --legacy-accent: #16a34a; }
+.small-box.bg-purple { --legacy-accent: #7c3aed; }
+.small-box.bg-yellow { --legacy-accent: #d97706; }
+
+.btn-app {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 5.5rem;
+  min-height: 4.75rem;
+  margin: 0 0.35rem 0.5rem 0;
+  padding: 0.6rem;
+  color: var(--default-text-color, #222f36);
+  background: var(--custom-white, #fff);
+  border: 1px solid var(--default-border, #e9edf6);
+  border-radius: 0.375rem;
+  box-shadow: 0 0.125rem 0 rgba(10, 10, 10, 0.04);
+  font-size: 0.75rem;
+  text-align: center;
+  text-decoration: none;
+}
+.btn-app i { margin-bottom: 0.35rem; color: var(--primary-color, #2563eb); font-size: 1.15rem; }
+.btn-app:hover,
+.btn-app:focus { color: var(--primary-color, #2563eb); border-color: var(--primary-color, #2563eb); }
+
+/* BS3 dismiss "x" button inside alerts/modals */
+button.close, .close {
+  float: right;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #000;
+  text-shadow: none;
+  opacity: 0.5;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+button.close:hover, .close:hover { opacity: 0.85; cursor: pointer; }
+
+.caret {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 2px;
+  vertical-align: middle;
+  border-top: 4px dashed;
+  border-right: 4px solid transparent;
+  border-left: 4px solid transparent;
+}
+
+/* Legacy ajax loading overlay (kept from old layout) */
+#loading {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+}
+#loading_background {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#loading_background center { width: 100%; }

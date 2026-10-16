@@ -1,0 +1,23 @@
+<%# Grouped by layer in lens order (§2.3), each with its count and an empty state. %>
+<% comps = job.competencies.to_a %>
+<% required = Briefs::Coverage.required(job.golongan) %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-sitemap", tone: "warning", title: "Competency map",
+           text: "#{comps.size} competencies, grouped by layer. Each competency is assessed in one stage." } do %>
+  <% Competency::LAYERS.each do |layer, label| %>
+    <% list = comps.select { |c| c.layer == layer } %>
+    <div class="job-brief-layer">
+      <h4 class="job-brief-group-title"><%= layer %> <%= label %> <span class="text-muted fw-normal">· <%= list.size %> <%= "competency".pluralize(list.size) %>, <%= required.include?(layer) ? "required for G#{job.golongan}" : "optional" %></span></h4>
+      <% if list.empty? %>
+        <p class="<%= required.include?(layer) ? "job-brief-insight" : "text-muted" %>"><%= required.include?(layer) ? "No competency yet in this required layer." : "No competency in this layer." %></p>
+      <% else %>
+        <ul class="job-brief-list">
+          <% list.each do |c| %>
+            <li><strong><%= c.name %></strong> <span class="portal-state portal-state--muted"><%= stage_label(c.stage_code) %></span>
+              <small>1: <%= c.anchor_1 || "-" %> · 3: <%= c.anchor_3 || "-" %> · 5: <%= c.anchor_5 || "-" %></small>
+              <% if c.questions.present? %><small>Questions: <%= c.questions %></small><% end %></li>
+          <% end %>
+        </ul>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>

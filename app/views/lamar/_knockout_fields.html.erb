@@ -1,0 +1,14 @@
+<%# The stored answer values "ya" / "tidak" are data (SubmitApplication::ANSWERS); only the labels read in English. %>
+<% job.knockout_questions.order(:position).each do |question| %>
+  <fieldset class="field ko-question">
+    <legend><%= question.text %></legend>
+    <div class="ko">
+      <% { "ya" => "Yes", "tidak" => "No" }.each do |value, label| %>
+        <label>
+          <input type="radio" name="knockout[<%= question.id %>]" value="<%= value %>" <%= "checked" if answers[question.id.to_s] == value %> required>
+          <span><%= label %></span>
+        </label>
+      <% end %>
+    </div>
+  </fieldset>
+<% end %>

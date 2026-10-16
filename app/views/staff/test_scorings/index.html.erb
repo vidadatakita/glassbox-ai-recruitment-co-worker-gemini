@@ -1,0 +1,23 @@
+<%# "Technical test scoring" (D60 slice 5). Orchestrates only: what blocks scoring, the counts that say
+    how much is left, the answers to score (each with its pinned rubric), then what was scored and
+    why some answers are not in the list. Each scoring is its own form; none is nested. %>
+<% content_for :title, "Technical test scoring · #{@job.title}" %>
+<div class="portal-page loan-index-page layout-decoration-page test-scoring-page">
+  <%= render "staff/shared/page_header", eyebrow: "Technical test scoring", title: @job.title,
+             subtitle: "The reviewer scores each answer with the rubric of the version the applicant worked on. Ratings of 1 to 5 per criterion become the stage score and the technical test decision.",
+             actions: label_link("Back", "fa-arrow-left", staff_job_path(@job, anchor: "gerbang-seleksi"), purpose: :neutral, icon_end: true) %>
+  <section class="content">
+    <%= render "staff/test_scorings/notices", board: @board, consultant_blocked: @consultant_blocked %>
+    <%= render "staff/test_scorings/metrics", board: @board %>
+    <% items = @board.to_score %>
+    <% if items.empty? %>
+      <div class="card custom-card"><div class="card-body"><p class="text-muted mb-0">No answers are awaiting scoring. Answers applicants send from the technical test page appear here.</p></div></div>
+    <% end %>
+    <% items.each do |row| %>
+      <%= render "staff/test_scorings/item", row: row, can_score: @can_score,
+                 ai: (@ai_suggestion if @ai_suggestion&.test_attempt_id == row.attempt.id) %>
+    <% end %>
+    <%= render "staff/test_scorings/scored", board: @board %>
+    <%= render "staff/test_scorings/excluded", board: @board %>
+  </section>
+</div>

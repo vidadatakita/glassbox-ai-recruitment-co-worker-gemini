@@ -1,0 +1,35 @@
+<%# Every version, newest first: state, who made and approved it, and the case file with its scan
+    state shown BEFORE the download (plan §d: no antivirus yet). %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-history", title: "Technical test versions",
+           text: "Every change to a version that is approved or in use by applicants becomes a new version. Applicants keep working on the version they started.",
+           aside: content_tag(:span, "#{versions.size} #{'version'.pluralize(versions.size)}", class: "portal-state portal-state--muted") } do %>
+  <% if versions.empty? %>
+    <p class="text-muted mb-0">No versions yet. The consultant uploads the case study and rubric below, then HR approves it.</p>
+  <% else %>
+    <div class="table-responsive">
+      <table class="table align-middle mb-0 test-case-versions">
+        <thead><tr><th>Version</th><th>Status</th><th>Created</th><th>Approved</th><th>Case study file</th></tr></thead>
+        <tbody>
+          <% versions.sort_by { |v| -v.version }.each do |v| %>
+            <tr>
+              <td><strong><%= v.version %></strong><% if v.new_version_reason.present? %><br><small class="text-muted">Reason: <%= v.new_version_reason %></small><% end %></td>
+              <td><%= test_case_state_badge(v, current) %></td>
+              <td><%= v.created_by.name %><br><small class="text-muted"><%= wib(v.created_at) %></small></td>
+              <td><% if v.approved? %><%= v.approved_by.name %><br><small class="text-muted"><%= wib(v.approved_at) %></small><% else %><span class="text-muted">Not yet</span><% end %></td>
+              <td>
+                <% if v.case_file.attached? %>
+                  <%= scan_badge(v) %>
+                  <%= link_to staff_job_test_case_file_path(job, v), class: "btn btn-sm btn-primary-light ms-1", title: "Download the version #{v.version} case study file" do %>
+                    <i class="fa fa-download" aria-hidden="true"></i> Download <%= v.case_file_kind %>
+                  <% end %>
+                <% else %>
+                  <span class="text-muted">No file yet</span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+<% end %>

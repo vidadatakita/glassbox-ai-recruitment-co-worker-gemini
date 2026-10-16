@@ -1,0 +1,58 @@
+/* Feature 08, "Laporan Analisis Kandidat" (D61/D62). Theme variables only; flat; radius <= .5rem
+   (layout-decoration §2). Scoped by .screening-report / .report-* so nothing leaks elsewhere. */
+.screening-report .report-notice { display: flex; gap: .75rem; align-items: flex-start; padding: .75rem 1rem; margin-bottom: 1rem;
+  border: 1px solid var(--default-border); border-radius: .5rem; background: rgba(var(--info-rgb), .06); color: #0b4a75; }
+.screening-report .report-notice p { margin: 0; font-size: .8125rem; }
+.screening-report .report-insight { margin: -.25rem 0 1rem; font-size: .8125rem; }
+.report-table th { font-size: .72rem; vertical-align: bottom; white-space: nowrap; }
+.report-table > :not(caption) > * > * { padding: .55rem .4rem; }
+.report-table .portal-state { display: inline-block; line-height: 1.25; white-space: normal; max-width: 8.5rem; }
+.report-table__person a { color: inherit; }
+.report-table td.report-nowrap { white-space: nowrap; }
+.report-table td { font-size: .78rem; vertical-align: top; }
+.report-th-note { display: block; font-weight: 400; color: #5d71a0; text-transform: none; letter-spacing: 0; }
+.report-cell__note { display: block; font-size: .72rem; color: #4b5563; margin-top: .15rem; }
+.report-score { font-size: 1rem; font-variant-numeric: tabular-nums; color: var(--default-text-color); }
+.report-table__person { font-weight: 600; min-width: 8.5rem; }
+.report-band-rule, .report-rule { font-size: .75rem; color: #4b5563; margin: .75rem 0 0; }
+.report-rule { margin: 0 0 .75rem; }
+.report-footer { font-size: .72rem; color: #5d71a0; margin: .5rem 0 1.5rem; }
+/* The card and its body must be allowed to shrink, or a wide table widens the whole page instead of
+   scrolling inside .table-responsive (measured: +471 px at 1280 before this rule). */
+.screening-report .hris-form-card, .screening-report .hris-form-card__body, .screening-report .content { min-width: 0; }
+/* The visually-hidden link text in the action column is position:absolute; without a positioned
+   scroll container it escapes it and widens the page (measured +185 px at 1280). */
+.screening-report .table-responsive { position: relative; }
+.report-contact { overflow-wrap: anywhere; font-weight: 400; }
+.report-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+.report-pair .hris-form-card { margin-bottom: 1.25rem; }
+.report-quote { display: block; font-size: .8125rem; color: #384657; border-left: 2px solid var(--default-border); padding-left: .6rem; margin: .25rem 0; quotes: "“" "”"; }
+.report-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; margin: 0 0 .75rem; }
+.report-facts dt { font-size: .6875rem; font-weight: 600; color: #5d71a0; text-transform: uppercase; }
+.report-facts dd { margin: 0; font-size: .875rem; }
+.report-boxes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.report-box { border: 1px solid var(--default-border); border-radius: .5rem; padding: .75rem 1rem; }
+.report-box h4 { font-size: .875rem; margin: 0 0 .5rem; }
+.report-box h4 .fa { color: #5d71a0; }
+.report-claims { margin: 0; padding-left: 1rem; font-size: .8125rem; display: grid; gap: .5rem; }
+.report-label-form__fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: .75rem; margin-bottom: .75rem; }
+.report-inline-form { display: grid; gap: .5rem; max-width: 32rem; }
+.report-inline-form .btn { justify-self: start; }
+.screening-report h3 .portal-state { margin-left: .4rem; vertical-align: middle; }
+.screening-report .portal-state--warning, .report-link .portal-state--warning { background: rgba(var(--warning-rgb), .12); color: #7a4d00; }
+@media (max-width: 767.98px) {
+  .report-pair, .report-boxes, .report-facts, .report-label-form__fields { grid-template-columns: 1fr; }
+  .report-table thead { display: none; }
+  .report-table, .report-table tbody, .report-table tr { display: block; width: 100%; }
+  .screening-report .report-table { min-width: 0; }
+  .report-table td { min-width: 0 !important; overflow-wrap: anywhere; }
+  .report-table .portal-state { max-width: none; }
+  .report-table tr { display: grid; grid-template-columns: 1fr auto; gap: .3rem .75rem; padding: .65rem 0; border-bottom: 1px solid var(--default-border); }
+  .report-table td { display: block; border: 0; padding: 0; }
+  .report-table td[data-label] { grid-column: 1 / 2; display: flex; justify-content: space-between; gap: .75rem; }
+  .report-table td[data-label]::before { content: attr(data-label); color: #5d71a0; font-weight: 600; flex: 0 0 auto; }
+  .report-table td[data-label] > * { text-align: right; }
+  .report-table td[data-label="No"] { display: none; }
+  .report-table .report-table__person { grid-column: 1 / 2; grid-row: 1; }
+  .report-table .hris-table-actions { grid-column: 2 / 3; grid-row: 1 / 3; align-self: start; }
+}

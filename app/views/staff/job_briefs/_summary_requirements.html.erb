@@ -1,0 +1,30 @@
+<%# Three tiers, each its own group with its count and an explicit empty state (house view
+    convention: multi-value lists are grouped separately, never merged). %>
+<% reqs = job.requirements.includes(:knockout_question).to_a %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-check-square-o", title: "Requirements",
+           text: "Each requirement with the evidence looked for in the CV. Knockout questions are asked on the application page; a \"no\" answer eliminates at CV screening." } do %>
+  <div class="row g-3">
+    <% Requirement::TIERS.each do |tier, label| %>
+      <% list = reqs.select { |r| r.tier == tier } %>
+      <div class="col-lg-4">
+        <h4 class="job-brief-group-title"><%= label %> <span class="text-muted fw-normal">· <%= list.size %> <%= "requirement".pluralize(list.size) %><%= ", weight #{list.sum { |r| r.weight.to_i }}% of 100%" if tier == "sebaiknya" && list.any? %></span></h4>
+        <% if list.empty? %>
+          <p class="text-muted">No <%= label.downcase %> requirement yet.</p>
+        <% else %>
+          <ul class="job-brief-list">
+            <% list.each do |r| %>
+              <li><strong><%= r.text %></strong><% if r.weight %> <span class="portal-state portal-state--info"><%= r.weight %>%</span><% end %>
+                <small>CV evidence: <%= r.cv_evidence %></small>
+                <% if r.knockout_question %><small class="job-brief-knockout"><i class="fa fa-question-circle" aria-hidden="true"></i> Knockout: <%= r.knockout_question.text %></small><% end %></li>
+            <% end %>
+          </ul>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+  <% legacy = job.knockout_questions.select { |q| q.requirement_id.nil? } %>
+  <% if legacy.any? %>
+    <h4 class="job-brief-group-title mt-2">Knockout questions without a requirement <span class="text-muted fw-normal">· <%= legacy.size %> <%= "question".pluralize(legacy.size) %> from before the brief form</span></h4>
+    <ul class="job-brief-list"><% legacy.each do |q| %><li><%= q.text %></li><% end %></ul>
+  <% end %>
+<% end %>

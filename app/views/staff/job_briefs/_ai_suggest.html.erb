@@ -1,0 +1,38 @@
+<%# AI Builder Cup step 01 (Briefs::Suggest): the AI proposes, the person edits and saves. Its own
+    form (button_to), outside the brief form: no form inside a form. With a proposal loaded the
+    button stays, as "Refresh AI advice", so the person can ask for another one. %>
+<span id="hasil-ai" class="scroll-anchor"></span>
+<%# `allowed` overrides the brief rule for step 5, whose editor is the job's consultant. %>
+<% if step.in?(%w[2 3 4 5 ad]) && Screening::Config.enabled? && local_assigns.fetch(:allowed) { Staff::JobBriefsController.suggestable?(job) } %>
+  <% what = { "2" => "the 90-day target and the activities", "3" => "the must-have, should-have and nice-to-have requirements with their weights",
+              "4" => "the competency map: layer, assessing stage, behaviour examples for scores 1/3/5, and interview questions",
+              "5" => "the technical test: instructions, time limit, answer types, and the scoring rubric per activity",
+              "ad" => "an applicant-friendly job ad free of discriminatory requirements" }.fetch(step) %>
+  <% source = step == "ad" ? "the saved brief (position, activities, requirements, location, and the salary when it is shown)" : step.in?(%w[4 5]) ? "the saved position, level, activities and requirements#{", plus the package's stages" if step == "4"}" : "the position, level, employment type and location" %>
+  <% kept = { "3" => "Compensation and location are not changed. ", "4" => "Package, weights and pass scores are not changed. ",
+              "5" => "You still upload the case file yourself; HR approves the test version before it is used. ",
+              "ad" => "The brief is not changed. After saving, the ad is checked automatically for discriminatory sentences. " }[step] %>
+  <% label = suggestion ? "Refresh AI advice" : "Ask for AI advice" %>
+  <%= render layout: "staff/job_briefs/card", locals: { icon_html: render("staff/shared/ai_sparkle", size: 20), tone: "info", title: "Ask for AI advice",
+             text: "The AI drafts #{what} from the position \"#{job.title}\" (#{job.golongan_label}). You check and edit it before it is saved. A person decides every step." } do %>
+    <% if suggestion %>
+      <div class="alert alert-primary job-brief-notice" role="status">
+        <%= render "staff/shared/ai_sparkle", size: 20 %>
+        <div><%= ai_tier_badge(:brief, job: job) %> <strong><%= step == "3" ? "The requirements in the form below are filled from AI advice" : "The form below holds AI advice" %>.</strong>
+          Nothing is saved yet: check, edit or delete rows as needed, then press <%= step.in?(%w[4 5 ad]) ? "Save" : "Save &amp; next".html_safe %>.
+          Your changes are recorded and compared with this advice on the brief page.
+          <% if suggestion.payload["dropped"].to_i.positive? %><br><%= suggestion.payload["dropped"] %> proposed lines were dropped because they mention age, gender, religion, marital status or appearance.<% end %></div>
+      </div>
+    <% end %>
+    <%# While the AI answers, CSS (staff.css .ai-btn) makes the button look busy from the guard's
+        form[data-submitted] flag: no `disabled` attribute (house rule, submit_guard.js). %>
+    <%= form_with url: staff_job_brief_suggestion_path(job, step:), method: :post, data: { turbo: false, submit_guard: true, ai_swap: true } do %>
+      <%= render "staff/shared/ai_instruction", id: "instruksi_#{step}", value: suggestion&.payload&.dig("instruction") %>
+      <button type="submit" class="btn <%= suggestion ? "btn-outline-primary" : "btn-primary" %> ai-btn">
+        <%= render "staff/shared/ai_sparkle" %>
+        <span class="ai-btn__idle"><%= label %></span><span class="ai-btn__busy" role="status">The AI is drafting…</span>
+      </button>
+    <% end %>
+    <span class="hris-field-hint"><%= kept %><%= suggestion ? "New advice replaces what is in the form; anything you have not saved is replaced too." : "What is already in the form will be replaced by the AI advice." %> It is saved only when you press Save. Only <%= source %> is sent to the AI; no applicant data.</span>
+  <% end %>
+<% end %>

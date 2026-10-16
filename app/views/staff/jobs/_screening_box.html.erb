@@ -1,0 +1,25 @@
+<%# Feature 06: S1 AI screening on the vacancy home (blueprint §4.3: every failure on screen).
+    Each action is its own form; none is nested in another. %>
+<% board = ScreeningBoard.new(job) %>
+<% if board.applicable? %>
+<div class="hris-form-card screening-box" id="screening">
+  <div class="hris-form-card__header">
+    <div class="hris-form-card__icon hris-form-card__icon--<%= board.enabled? ? "success" : "warning" %>"><i class="fa fa-magic" aria-hidden="true"></i></div>
+    <div>
+      <h3>CV screening by AI
+        <% if board.enabled? %><span class="portal-state portal-state--success">On</span><% else %><span class="portal-state portal-state--warning">Off</span><% end %>
+        <%= calibration_badge(board.calibration) %>
+      </h3>
+      <p>The AI scores each CV against the requirements in the vacancy brief. The system computes the score; every elimination and 10% of those passed are checked by the reviewer. A person decides every step.</p>
+    </div>
+  </div>
+  <div class="hris-form-card__body">
+    <%= render "staff/jobs/screening_off", board: board %>
+    <%= render "staff/jobs/screening_counts", board: board %>
+    <%= render "staff/jobs/screening_calibration_line", board: board %>
+    <%= render "staff/jobs/screening_failures", board: board %>
+    <%= render "staff/jobs/screening_release", board: board %>
+    <%= render "staff/jobs/screening_actions", board: board, job: job %>
+  </div>
+</div>
+<% end %>

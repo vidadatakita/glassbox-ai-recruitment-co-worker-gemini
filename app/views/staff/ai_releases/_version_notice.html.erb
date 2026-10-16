@@ -1,0 +1,24 @@
+<% if release.erased? %>
+  <div class="alert alert-secondary" role="status"><strong>Text erased.</strong>
+    <%= AiReleaseErasure::REASONS.fetch(release.erasure&.reason.to_s, "Erased") %><% if release.erasure %>, <%= wib(release.erasure.created_at) %><% end %>.
+    The review history is kept.</div>
+<%# The digest stays in the record for audit, never on screen (owner 2026-10-10/11: no technical
+    details for users; test/views/no_technical_detail_test.rb). %>
+<% end %>
+<%# Which version this is, and why it cannot be acted on when it cannot. %>
+<% if release.action %>
+  <div class="alert alert-info" role="status"><strong><%= AiReleaseAction::ACTIONS.fetch(release.action.action) %></strong>
+    by <%= release.action.actor.name %>, <%= wib(release.action.created_at) %>.
+    <% if release.action.note.present? %>Note: <%= release.action.note %><% end %>
+    <% if release.released? && !release.consumed? %>
+      <br>Current status: <%= screening_state_badge(release.participation) %>
+      <% if release.participation.screening_state == "screening_failed" %><%= ScreeningBoard.failure_label(release.participation) %>.<% end %>
+    <% end %></div>
+<% elsif !release.latest? %>
+  <div class="alert alert-warning" role="status">This is an older version. <%= link_to "Open the latest version", staff_ai_release_path(latest) %>.</div>
+<% elsif consultant_blocked %>
+  <div class="alert alert-warning" role="status">You are the consultant of this vacancy, so you cannot send, cut or decline this text. Another reviewer decides.</div>
+<% end %>
+<% if release.supersedes_id %>
+  <p class="small text-muted">This version was made from the previous one: <%= release.cut_line_numbers.size %> line(s) deleted by <%= release.cut_by.name %>, <%= wib(release.created_at) %>.</p>
+<% end %>

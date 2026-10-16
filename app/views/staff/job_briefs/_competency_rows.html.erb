@@ -1,0 +1,45 @@
+<%# Competency map (P4, P17): one layer and exactly one assessing stage per competency. Anchors
+    1/3/5 name an action and its result, never personality (rule 19). %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-sitemap", tone: "warning", title: "Competency map",
+           text: "Each competency has one layer and is assessed in one stage. The behaviour examples for scores 1, 3 and 5 name an action and its result." } do %>
+  <div class="job-brief-rows">
+    <% form.competencies.each_with_index do |row, i| %>
+      <% needed = i.zero? || row["name"].present? %>
+      <fieldset class="job-brief-row">
+        <legend class="job-brief-row__num">Competency <%= i + 1 %></legend>
+        <input type="hidden" name="brief[competencies][<%= i %>][id]" value="<%= row["id"] %>">
+        <div class="row g-2">
+          <div class="col-lg-6">
+            <label class="form-label" for="comp_<%= i %>_name">Competency name <%= required_mark if i.zero? %></label>
+            <input type="text" class="form-control<%= missing(row["name"]) if needed %>" id="comp_<%= i %>_name" name="brief[competencies][<%= i %>][name]" value="<%= row["name"] %>">
+          </div>
+          <div class="col-lg-3 col-6">
+            <label class="form-label" for="comp_<%= i %>_layer">Layer <%= required_mark if i.zero? %></label>
+            <select class="form-control form-select<%= missing(row["layer"]) if needed %>" id="comp_<%= i %>_layer" name="brief[competencies][<%= i %>][layer]">
+              <option value="">Choose</option>
+              <% Competency::LAYERS.each do |code, label| %><option value="<%= code %>" <%= "selected" if row["layer"] == code %>><%= code %> <%= label %></option><% end %>
+            </select>
+          </div>
+          <div class="col-lg-3 col-6">
+            <label class="form-label" for="comp_<%= i %>_stage">Assessed in stage <%= required_mark if i.zero? %></label>
+            <select class="form-control form-select<%= missing(row["stage_code"]) if needed %>" id="comp_<%= i %>_stage" name="brief[competencies][<%= i %>][stage_code]">
+              <option value="">Choose</option>
+              <% Competency::STAGE_CODES.each do |code| %><option value="<%= code %>" <%= "selected" if row["stage_code"] == code %>><%= stage_label(code) %><%= " (not in this package)" if codes.any? && !codes.include?(code) %></option><% end %>
+            </select>
+          </div>
+          <% { "anchor_1" => "Score 1", "anchor_3" => "Score 3", "anchor_5" => "Score 5" }.each do |field, label| %>
+            <div class="col-lg-4">
+              <label class="form-label" for="comp_<%= i %>_<%= field %>"><%= label %> <%= required_mark if i.zero? %></label>
+              <input type="text" class="form-control<%= missing(row[field]) if needed %>" id="comp_<%= i %>_<%= field %>" name="brief[competencies][<%= i %>][<%= field %>]" value="<%= row[field] %>">
+            </div>
+          <% end %>
+          <div class="col-12">
+            <label class="form-label" for="comp_<%= i %>_questions">Interview questions (required for Interview 1 and Interview 2)</label>
+            <textarea class="form-control<%= missing(row["questions"]) if needed && Competency::INTERVIEW_STAGES.include?(row["stage_code"]) %>" id="comp_<%= i %>_questions" name="brief[competencies][<%= i %>][questions]" rows="2"><%= row["questions"] %></textarea>
+          </div>
+        </div>
+      </fieldset>
+    <% end %>
+  </div>
+  <span class="hris-field-hint">Rows left blank are not saved. Need more rows? Press Save; new blank rows appear, up to 10 competencies.</span>
+<% end %>

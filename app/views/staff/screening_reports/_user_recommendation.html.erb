@@ -1,0 +1,37 @@
+<%# SPEC §1 "Hiring manager's pick", D62 h6: the HR owner records the hiring manager's pick, naming them.
+    Information only: it never moves the candidate. %>
+<% rec = row.recommendation %>
+<div class="hris-form-card" id="hiring-manager-pick">
+  <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-user-circle-o" aria-hidden="true"></i></div>
+    <div><h3>Hiring manager's pick</h3><p>The hiring manager's choice, recorded by the HR owner on their behalf. Information only; it does not move the candidate.</p></div></div>
+  <div class="hris-form-card__body">
+    <% if rec %>
+      <p class="mb-2"><%= report_state(UserRecommendation::PICKS.fetch(rec.pick).first, UserRecommendation::PICKS.fetch(rec.pick).last) %> <strong><%= rec.user_name %></strong><%= " · #{rec.note}" if rec.note.present? %></p>
+      <p class="text-muted small">Recorded by <%= rec.entered_by.name %> · <%= wib(rec.created_at) %></p>
+    <% else %>
+      <p class="text-muted">No hiring manager's pick yet.</p>
+    <% end %>
+    <% if current_user.role == "hr_pic" %>
+      <%= form_with url: staff_job_screening_report_user_recommendation_path(board.job, row.application.id), method: :post, class: "report-label-form", data: { turbo: false, submit_guard: true } do %>
+        <div class="report-label-form__fields">
+          <div>
+            <label class="form-label" for="user_name">Hiring manager's name</label>
+            <input type="text" class="form-control" id="user_name" name="user_name" required maxlength="120" value="<%= rec&.user_name %>">
+          </div>
+          <fieldset>
+            <legend class="form-label fs-14">Pick</legend>
+            <% UserRecommendation::PICKS.each do |key, (word, _tone)| %>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="pick" value="<%= key %>" id="pick_<%= key %>" required>
+                <label class="form-check-label" for="pick_<%= key %>"><%= word %></label>
+              </div>
+            <% end %>
+          </fieldset>
+        </div>
+        <label class="form-label" for="rec_note">Note (optional)</label>
+        <input type="text" class="form-control mb-2" id="rec_note" name="note" maxlength="500">
+        <%= label_button "Save", "fa-save" %>
+      <% end %>
+    <% end %>
+  </div>
+</div>

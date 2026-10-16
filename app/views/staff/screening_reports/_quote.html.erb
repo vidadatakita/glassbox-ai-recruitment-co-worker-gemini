@@ -1,0 +1,8 @@
+<%# One verbatim CV quote with the result of the quote check (§4.1 step 6). Never hidden when not found.
+    Masked for blind viewers (report_ai, engine-08 F-01); the check itself ran on the unmasked text. %>
+<% if quote.present? %>
+  <q class="report-quote"><%= report_ai(quote, row) %></q>
+  <% unless verified %><span class="portal-state portal-state--danger">unverified</span><% end %>
+<% else %>
+  <span class="text-muted">No quote</span>
+<% end %>

@@ -1,0 +1,14 @@
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-money", tone: "success", title: "Compensation & placement", text: "Gross monthly salary band, locations and work arrangement." } do %>
+  <dl class="job-brief-facts">
+    <dt>Salary band</dt><dd><%= job.salary_min && job.salary_max ? salary_band(job) : "Not filled in yet." %>
+      <small class="d-block text-muted"><%= job.show_salary? ? "Shown in the job ad" : "Not shown in the job ad" %></small></dd>
+    <dt>Work arrangement</dt><dd><%= Job::WORK_ARRANGEMENTS[job.work_arrangement] || "Not decided yet" %></dd>
+    <dt>Willing to relocate</dt><dd><%= Job::RELOCATIONS[job.relocation] || "Not stated" %></dd>
+  </dl>
+  <h4 class="job-brief-group-title">Placement <span class="text-muted fw-normal">· <%= job.placements.size %> <%= "location".pluralize(job.placements.size) %></span></h4>
+  <% if job.placements.any? %>
+    <ul class="job-brief-chips"><% job.placements.each do |city| %><li><i class="fa fa-map-marker" aria-hidden="true"></i> <%= city %></li><% end %></ul>
+  <% else %>
+    <p class="text-muted mb-0">No placement yet. Locations are entered in step 3.</p>
+  <% end %>
+<% end %>

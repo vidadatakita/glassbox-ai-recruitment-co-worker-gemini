@@ -1,0 +1,15 @@
+<%# D60: the way into the technical test from the status page, while it can be started or is running.
+    The step itself is in the timeline above; this card holds the one action. The link text
+    "Take the technical test" is quoted in candidate_mailer/test_reminder.text.erb; keep them equal. %>
+<% if test.can_start? || test.state == :running %>
+  <section class="card test-entry" aria-labelledby="technical-test-card">
+    <h2 id="technical-test-card">Technical test</h2>
+    <% if test.state == :running %>
+      <p class="small">In progress. Time ends <%= l(test.due_at.in_time_zone, format: :long_wib) %>.</p>
+      <%= link_to "Continue the technical test", candidate_status_test_path(token), class: "btn primary" %>
+    <% else %>
+      <p class="small"><%= test.time_limit %> minutes. Start no later than <%= l(test.start_by.in_time_zone, format: :long_wib) %>.</p>
+      <%= link_to "Take the technical test", candidate_status_test_path(token), class: "btn primary" %>
+    <% end %>
+  </section>
+<% end %>

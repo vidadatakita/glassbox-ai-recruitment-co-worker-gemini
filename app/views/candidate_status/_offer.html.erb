@@ -1,0 +1,52 @@
+<%# 11b Offer and 11d First-day preparation (E24, E22; D33). The offer holds the salary, so the
+    tab opens only with a one-time code sent to the applicant's email (D36). The id "penawaran" is
+    the anchor the controller redirects to; it is an identifier, not screen text. %>
+<% offer = status.latest_offer %>
+<section class="card" id="penawaran" aria-label="Job offer">
+  <h2>Job offer</h2>
+  <% if !unlocked %>
+    <p>To protect the contents of the offer, enter the code we sent to your e-mail.</p>
+    <%# Button values are their labels: no controller reads params[:commit] on the candidate forms. %>
+    <%= form_with url: candidate_status_offer_code_path(params[:token]), method: :post, data: { turbo: false, submit_guard: true } do %>
+      <button type="submit" class="btn ghost" name="commit" value="Send code to my e-mail">Send code to my e-mail</button>
+    <% end %>
+    <%= form_with url: candidate_status_unlock_offer_path(params[:token]), method: :post, data: { turbo: false, submit_guard: true } do %>
+      <div class="field">
+        <label for="offer_code">Code from the e-mail</label>
+        <input type="text" id="offer_code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
+      </div>
+      <button type="submit" class="btn primary" name="commit" value="Open offer">Open offer</button>
+    <% end %>
+  <% else %>
+    <%= link_to "Offer letter (PDF, version #{offer.version})", candidate_status_offer_pdf_path(params[:token], offer.id), class: "btn ghost" %>
+    <dl class="kv">
+      <dt>Start date</dt><dd><%= l(offer.start_at.in_time_zone, format: :long_wib) %></dd>
+      <dt>Reply by</dt><dd><%= l(offer.valid_until, format: :long) %></dd>
+    </dl>
+    <% if offer.accepted? %>
+      <span class="pill ok">You have accepted this offer</span>
+      <h2>First-day preparation</h2>
+      <p><%= simple_format(offer.day_one_notes) %></p>
+      <p class="small">We will contact you before the start date.</p>
+    <% elsif offer.response == "declined" %>
+      <span class="pill bad">You have declined this offer</span>
+    <% else %>
+      <%= form_with url: candidate_status_respond_offer_path(params[:token], offer.id), method: :post, data: { turbo: false, submit_guard: true } do %>
+        <input type="hidden" name="response" value="accepted">
+        <button type="submit" class="btn primary" name="commit" value="Accept">Accept</button>
+      <% end %>
+      <details>
+        <summary>Decline the offer</summary>
+        <%= form_with url: candidate_status_respond_offer_path(params[:token], offer.id), method: :post, data: { turbo: false, submit_guard: true } do %>
+          <input type="hidden" name="response" value="declined">
+          <div class="field">
+            <label for="decline_reason">Reason</label>
+            <textarea id="decline_reason" name="reason" rows="3" required></textarea>
+          </div>
+          <button type="submit" class="btn ghost" name="commit" value="Decline">Decline</button>
+        <% end %>
+      </details>
+      <p class="small">Once you accept, we show the first-day preparation and contact you before the start date.</p>
+    <% end %>
+  <% end %>
+</section>

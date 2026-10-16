@@ -1,0 +1,15 @@
+Hello <%= @application.candidate.name %>,
+
+The CV screening and technical test stage for the vacancy <%= @job.title %> is complete.
+
+<% if @passed -%>
+You passed this stage. The appointment for the next stage will appear on your application status page.
+<% else -%>
+We are sorry, you did not pass this stage.
+Reason: <%= @reason %>
+
+Thank you for applying. Your data will be deleted after the retention period shown when you applied.
+<% end -%>
+
+Details are on your application status page (the link in your application confirmation e-mail).
+GlassBox never asks for any payment.

@@ -1,0 +1,36 @@
+<%# 11a Appointment (BP §3.6 B3). Times in WIB; the clock uses the en.yml hours:minutes form so the
+    card does not mix "09.00" and "09:00" with the dates around it. %>
+<% appointment = step.appointment %>
+<section class="card" aria-label="Appointment: <%= step.label %>">
+  <h2>Appointment: <%= step.label %></h2>
+  <dl class="kv">
+    <dt>Date</dt><dd><%= l(appointment.starts_at.in_time_zone.to_date, format: :weekday_long) %></dd>
+    <dt>Time</dt><dd><%= appointment.starts_at.in_time_zone.strftime("%H:%M") %>–<%= appointment.ends_at.in_time_zone.strftime("%H:%M") %> WIB</dd>
+    <dt>Format</dt><dd><%= Appointment::MODES.fetch(appointment.mode) %></dd>
+    <dt><%= appointment.mode == "video" ? "Link" : "Place" %></dt><dd><%= appointment.place_or_link %></dd>
+    <% if appointment.bring.present? %><dt>Bring</dt><dd><%= appointment.bring %></dd><% end %>
+    <dt>Contact</dt><dd><%= appointment.contact %></dd>
+  </dl>
+  <% case appointment.confirmation %>
+  <% when "confirmed" %>
+    <span class="pill ok">Attendance confirmed</span>
+  <% when "reschedule_requested" %>
+    <span class="pill warn">Your request for another time is being reviewed</span>
+  <% else %>
+    <span class="pill warn">Not confirmed yet</span>
+    <%# Button values are their labels: no controller reads params[:commit] on the candidate forms. %>
+    <%= form_with url: candidate_status_confirm_path(params[:token], appointment.id), method: :post, data: { turbo: false, submit_guard: true } do %>
+      <button type="submit" class="btn primary" name="commit" value="Confirm attendance">Confirm attendance</button>
+    <% end %>
+    <details>
+      <summary>Request another time</summary>
+      <%= form_with url: candidate_status_reschedule_path(params[:token], appointment.id), method: :post, data: { turbo: false, submit_guard: true } do %>
+        <div class="field">
+          <label for="reason_<%= appointment.id %>">Reason</label>
+          <textarea id="reason_<%= appointment.id %>" name="reason" rows="3" required></textarea>
+        </div>
+        <button type="submit" class="btn ghost" name="commit" value="Send request">Send request</button>
+      <% end %>
+    </details>
+  <% end %>
+</section>

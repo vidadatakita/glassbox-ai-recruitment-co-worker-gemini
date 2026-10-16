@@ -1,0 +1,18 @@
+<%# D51 C: the pilot figures the owner needs before the human check (B) may be relaxed. A rate per 100
+    CVs is shown only from AiReleases::PilotMeasure::MIN_FOR_RATE CVs; below that, counts only. %>
+<div class="card custom-card ai-release-measure">
+  <div class="card-header"><div class="card-title">Pilot figures (<%= scope_label %>)</div></div>
+  <div class="card-body">
+    <dl class="job-brief-facts job-brief-facts--inline mb-2">
+      <dt>CVs reviewed</dt><dd><%= measure.cvs %></dd>
+      <dt>Sent to the AI</dt><dd><%= measure.released %><% if (r = release_rate(measure, measure.released, measure.cvs)) %> <small class="text-muted">(<%= r %> CVs)</small><% end %></dd>
+      <dt>Residual check findings</dt><dd><%= measure.residual %><% if (r = release_rate(measure, measure.residual, measure.cvs)) %> <small class="text-muted">(<%= r %> CVs)</small><% end %></dd>
+      <dt>Lines deleted by a reviewer</dt><dd><%= measure.cut %><% if (r = release_rate(measure, measure.cut, measure.cvs)) %> <small class="text-muted">(<%= r %> CVs)</small><% end %></dd>
+      <dt>Not sent</dt><dd><%= measure.declined %></dd>
+      <dt>Flagged by the AI: protected attribute</dt><dd><%= measure.model_flagged %> of <%= measure.answered %> answers<% if (r = release_rate(measure, measure.model_flagged, measure.answered)) %> <small class="text-muted">(<%= r %> answers)</small><% end %></dd>
+    </dl>
+    <% unless measure.rate?(measure.cvs) %>
+      <p class="text-muted small mb-0">Rates per 100 CVs appear after <%= AiReleases::PilotMeasure::MIN_FOR_RATE %> CVs have been reviewed; before that the numbers are too small to support a decision to relax the review.</p>
+    <% end %>
+  </div>
+</div>

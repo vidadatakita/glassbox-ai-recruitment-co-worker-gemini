@@ -1,0 +1,5 @@
+<%# A running total against its target of 100 (every figure informs: the number and the target).
+    brief_totals.js updates it while typing; without JavaScript it shows the saved total. %>
+<span class="job-brief-total <%= value == 100 ? "job-brief-total--ok" : "job-brief-total--off" %>" data-sum-output="<%= group %>" aria-live="polite">
+  Total <strong><%= value %>%</strong> of 100%
+</span>

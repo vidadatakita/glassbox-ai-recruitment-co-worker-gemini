@@ -1,0 +1,9 @@
+<section class="card" aria-labelledby="test-expired">
+  <h2 id="test-expired">Not taken</h2>
+  <% if test.attempt %>
+    <p>The technical test ended <%= l(test.due_at.in_time_zone, format: :long_wib) %> and we received no answer.</p>
+  <% else %>
+    <p>The deadline to start the technical test was <%= l(test.start_by.in_time_zone, format: :long_wib) %> and the test was not started.</p>
+  <% end %>
+  <p class="small">The technical test stage is recorded as not taken. The result of CV screening and technical test appears on the status page once this stage is complete.</p>
+</section>

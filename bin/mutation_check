@@ -1,0 +1,66 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Proves the scoring tests are load-bearing (blueprint §5 binding rule; skill
+# load-bearing-tests). Each mutation breaks one guarded rule in the real code; the named
+# test file MUST fail against it. A mutation that leaves the tests green means the test is
+# decoration and must be fixed before this plan is called done.
+#
+# The original file is restored in `ensure`, including on Ctrl-C.
+require "time"
+
+MUTATIONS = [
+  { rule: "D9: score equal to threshold passes",
+    file: "app/models/scoring/decider.rb",
+    from: "score.to_r >= threshold.to_r", to: "score.to_r > threshold.to_r",
+    test: "test/models/scoring/decider_test.rb" },
+  { rule: "Rule 5: no-shows never averaged in",
+    file: "app/models/scoring/stage_stats.rb",
+    from: "scores = attended.filter_map { |r| r.score&.to_r }", to: "scores = rows.map { |r| r.score&.to_r || 0 }",
+    test: "test/models/scoring/stage_stats_test.rb" },
+  { rule: "Rule 6: weights re-normalised over scored stages",
+    file: "app/models/scoring/cumulative.rb",
+    from: "total_weight = scored.keys.sum { |code| weights.fetch(code) }", to: "total_weight = weights.values.sum",
+    test: "test/models/scoring/cumulative_test.rb" },
+  { rule: "Oracle catches a broken threshold comparison",
+    file: "app/models/scoring/decider.rb",
+    from: "score.to_r >= threshold.to_r", to: "score.to_r > threshold.to_r",
+    test: "test/models/scoring/oracle_test.rb" },
+  { rule: "Rule 3: stage lock",
+    file: "app/models/stage.rb",
+    from: "return unless locked? && !@unlocked", to: "return",
+    test: "test/models/stage_test.rb" },
+  { rule: "Rule 3: manual and rule decisions kept on threshold change",
+    file: "app/services/stages/change_threshold.rb",
+    from: 'return unless current&.basis == "threshold"', to: "return unless current",
+    test: "test/services/stages/change_threshold_test.rb" },
+  { rule: "Rule 9: superseded scores never count",
+    file: "app/models/participation.rb",
+    from: "score_entries.current.pluck(:value)", to: "score_entries.pluck(:value)",
+    test: "test/models/participation_test.rb" }
+].freeze
+
+results = MUTATIONS.map do |m|
+  original = File.read(m[:file])
+  abort "mutation anchor not found in #{m[:file]}: #{m[:from]}" unless original.include?(m[:from])
+  begin
+    File.write(m[:file], original.sub(m[:from], m[:to]))
+    green = system("bin/rails", "test", m[:test], out: File::NULL, err: File::NULL)
+    m.merge(verdict: green ? "SURVIVED" : "KILLED")
+  ensure
+    File.write(m[:file], original)
+  end
+end
+
+lines = ["# Mutation log", "", "Run at #{Time.now.iso8601}.", "",
+         "| Rule | Mutated file | Test | Verdict |", "|---|---|---|---|"]
+results.each { |r| lines << "| #{r[:rule]} | `#{r[:file]}` | `#{r[:test]}` | #{r[:verdict]} |" }
+File.write("docs/mutation-log.md", lines.join("\n") + "\n")
+puts lines
+
+survivors = results.count { |r| r[:verdict] == "SURVIVED" }
+if survivors.positive?
+  warn "#{survivors} mutation(s) SURVIVED: those tests are not load-bearing. Fix the tests, then rerun."
+  exit 1
+end
+puts "All #{results.size} mutations killed."

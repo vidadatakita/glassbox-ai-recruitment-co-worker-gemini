@@ -1,0 +1,21 @@
+<%= form_with url: url, method: :post, data: { turbo: false, submit_guard: true } do %>
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label" for="closes_at">Closes automatically (WIB)</label>
+      <input type="datetime-local" class="form-control" id="closes_at" name="closes_at">
+      <span class="hris-field-hint">Optional. Jakarta time.</span>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label" for="quota">Application quota</label>
+      <input type="number" min="1" step="1" class="form-control" id="quota" name="quota">
+      <span class="hris-field-hint">Optional. Whichever is reached first.</span>
+    </div>
+    <% if reason %>
+      <div class="col-md-5">
+        <label class="form-label" for="reopen_reason">Reason for reopening</label>
+        <input type="text" class="form-control" id="reopen_reason" name="reason" required>
+      </div>
+    <% end %>
+  </div>
+  <div class="mt-3"><%= label_button label, icon %></div>
+<% end %>

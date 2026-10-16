@@ -1,0 +1,14 @@
+<%# SPEC §2.3: one row per requirement of the brief's three tiers, with the verbatim CV quote.
+    Shown on 1-5 by D53 (ScreeningReport::CriterionScale) beside the original judgement. Protected
+    attributes are never criteria: the rubric is the brief's requirements only (§4.1 step 4). %>
+<div class="hris-form-card">
+  <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-check-square-o" aria-hidden="true"></i></div>
+    <div><h3>Criteria scoring table</h3><p>Score 1–5 per requirement, with the AI's original judgement and the CV quote as written.</p></div></div>
+  <div class="hris-form-card__body">
+    <% if result %>
+      <%= render "staff/screening_reports/criteria_scale_table", result: result, row: row %>
+    <% else %>
+      <p class="text-muted mb-0">No AI advice for this candidate yet.</p>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,10 @@
+<dl class="job-brief-facts job-brief-facts--inline screening-counts">
+  <dt>Waiting</dt><dd><%= board.waiting.size %></dd>
+  <dt>Queued</dt><dd><%= board.queued.size %></dd>
+  <dt>Awaiting review</dt><dd><%= board.awaiting_release.size %></dd>
+  <dt>Done</dt><dd><%= board.done.size %></dd>
+  <dt>Needs review</dt><dd><%= board.to_review.size %></dd>
+  <dt>Screening failed</dt><dd><%= board.failed.size %></dd>
+  <dt>CV unreadable</dt><dd><%= board.unreadable.size %></dd>
+  <dt>Not sent</dt><dd><%= board.not_sent.size %></dd>
+</dl>

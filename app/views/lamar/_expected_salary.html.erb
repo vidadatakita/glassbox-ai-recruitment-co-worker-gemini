@@ -1,0 +1,22 @@
+<%# Feature 08 (D62 h5): the optional expected salary, integer rupiah per month, both ends or neither.
+    Shown to recruiters beside the scores as "FIT: Budget"; never sent to the AI, never scored. The
+    server parses and checks it (ScreeningReport::ExpectedSalary); the inputs stay plain text so a
+    candidate can type "7.500.000" the Indonesian way. The two inline styles keep this field out of
+    candidate.css, which the feature-07 test-flow builder owns. %>
+<% fe = local_assigns[:field_errors] || {} %>
+<% values = local_assigns[:values] || {} %>
+<fieldset style="border:0;padding:0;margin:0;min-width:0" class="field salary-range <%= "has-error" if fe[:expected_salary] %>" aria-describedby="lamaran_salary-hint<%= " lamaran_salary-error" if fe[:expected_salary] %>">
+  <legend class="field-label">Expected salary (optional)</legend>
+  <div class="salary-range__inputs" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <label for="lamaran_expected_salary_min"><span class="small">Minimum (Rp/month)</span>
+      <input type="text" id="lamaran_expected_salary_min" name="lamaran[expected_salary_min]" value="<%= values[:expected_salary_min] %>"
+             inputmode="numeric" autocomplete="off" placeholder="7.000.000" <%= 'aria-invalid="true"'.html_safe if fe[:expected_salary] %>>
+    </label>
+    <label for="lamaran_expected_salary_max"><span class="small">Maximum (Rp/month)</span>
+      <input type="text" id="lamaran_expected_salary_max" name="lamaran[expected_salary_max]" value="<%= values[:expected_salary_max] %>"
+             inputmode="numeric" autocomplete="off" placeholder="8.000.000" <%= 'aria-invalid="true"'.html_safe if fe[:expected_salary] %>>
+    </label>
+  </div>
+  <span class="small" id="lamaran_salary-hint">May be left empty. Not used to judge your application.</span>
+  <%= render "lamar/field_error", id: "lamaran_salary", message: fe[:expected_salary] %>
+</fieldset>

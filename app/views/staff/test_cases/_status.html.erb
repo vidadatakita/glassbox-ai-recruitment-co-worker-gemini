@@ -1,0 +1,27 @@
+<%# Overview: the version candidates get today, and the one next action with who owns it. %>
+<% waiting = latest && latest.draft? ? latest : nil %>
+<% problems = waiting ? TestCases::Readiness.problems(waiting) : [] %>
+<div class="test-case-status">
+  <div class="test-case-status__item">
+    <span class="test-case-status__label">In force for applicants</span>
+    <span class="test-case-status__value"><%= current ? "Version #{current.version}" : "None yet" %></span>
+    <span class="test-case-status__note"><%= current ? "Approved by #{current.approved_by.name}, #{wib(current.approved_at)}" : "Applicants cannot take the test until HR approves a version." %></span>
+  </div>
+  <div class="test-case-status__item">
+    <span class="test-case-status__label">Awaiting HR approval</span>
+    <span class="test-case-status__value"><%= waiting ? "Version #{waiting.version}" : "None" %></span>
+    <span class="test-case-status__note"><%= if waiting.nil? then "The consultant can create a new version with a reason." elsif problems.empty? then "Complete; ready for HR approval." else "#{problems.size} items still incomplete." end %></span>
+  </div>
+  <div class="test-case-status__item">
+    <span class="test-case-status__label">Time limit</span>
+    <span class="test-case-status__value"><%= (current || latest)&.time_limit_minutes || TechnicalTestCase::DEFAULT_TIME_LIMIT %> minutes</span>
+    <span class="test-case-status__note">At most <%= TechnicalTestCase::MAX_TIME_LIMIT %> minutes; default <%= TechnicalTestCase::DEFAULT_TIME_LIMIT %> minutes.</span>
+  </div>
+</div>
+<% if waiting && problems.any? %>
+  <div class="alert alert-warning job-brief-notice" role="status">
+    <i class="fa fa-list-ul" aria-hidden="true"></i>
+    <div><strong>Version <%= waiting.version %> cannot be approved yet.</strong>
+      <ul class="mb-0"><% problems.each do |p| %><li><%= p %></li><% end %></ul></div>
+  </div>
+<% end %>

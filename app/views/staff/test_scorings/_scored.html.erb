@@ -1,0 +1,28 @@
+<% rows = board.scored %>
+<div class="card custom-card">
+  <div class="card-header"><div class="card-title">Scored</div></div>
+  <div class="card-body">
+    <% if rows.empty? %>
+      <p class="text-muted mb-0">No scores yet. Every reviewer score is recorded here with its score and decision.</p>
+    <% else %>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead><tr><th>Candidate</th><th class="job-brief-num-col">Score</th><th>Decision</th><th>Reviewer</th><th>Scored</th><th>Answer</th></tr></thead>
+          <tbody>
+            <% rows.each do |row| %>
+              <tr>
+                <td><%= candidate_label(row.participation.job_application) %></td>
+                <td class="job-brief-num-col"><%= score_text(row.review.score_entry.value) %></td>
+                <td><%= gate_decision_badge(row.review.decision) %></td>
+                <td><%= row.review.reviewer.name %></td>
+                <td><%= wib(row.review.created_at) %></td>
+                <td><% if !row.attempt.repo_link? && TechnicalTests.answer_downloadable_by?(current_user, board.job) %><%= link_to "Download", answer_link(row.attempt), title: "Download answer (#{row.attempt.scan_label})" %><% else %><span class="text-muted">-</span><% end %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-muted small mb-0">Technical test pass score: <%= score_text(board.stage.threshold) %>.</p>
+    <% end %>
+  </div>
+</div>

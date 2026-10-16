@@ -1,0 +1,8 @@
+<%# D50: with no API key nothing is sent and nothing is scored; the page says so plainly. Since D51
+    (feature 09) CVs are still prepared locally and wait for the reviewer, so they count as waiting. %>
+<% unless board.enabled? %>
+  <div class="alert alert-warning screening-off" role="status">
+    <p class="mb-1"><strong><%= ScreeningBoard::OFF_MESSAGE %></strong></p>
+    <p class="mb-0"><%= board.waiting.size + board.queued.size + board.awaiting_release.size %> applications are waiting for screening. No CV is sent to the AI and no score is produced until the server admin configures the API key.<% if board.awaiting_release.any? %> The prepared CVs wait in Review before AI.<% end %></p>
+  </div>
+<% end %>

@@ -1,0 +1,40 @@
+<%# One answer to score: who and when, the file (scan state BEFORE the download), then the pinned
+    version's rubric with the 1-5 rating per criterion and the reviewer's note. %>
+<% attempt = row.attempt %>
+<% version = attempt.test_case %>
+<div class="card custom-card test-scoring-item" id="jawaban-<%= attempt.id %>">
+  <div class="card-header justify-content-between flex-wrap gap-2">
+    <div class="card-title"><%= candidate_label(row.participation.job_application) %></div>
+    <% unless attempt.repo_link? %><span class="portal-state portal-state--<%= attempt.answer_scan_state == "clean" ? "success" : "warning" %>"><%= attempt.scan_label %></span><% end %>
+  </div>
+  <div class="card-body">
+    <dl class="job-brief-facts job-brief-facts--inline">
+      <dt>Answer sent</dt><dd><%= wib(attempt.answered_at) %></dd>
+      <dt>Test version</dt><dd>Version <%= version.version %> · <%= version.time_limit_minutes %> minutes</dd>
+      <% if attempt.repo_link? %>
+        <%# The candidate's own URL: opened by the reviewer, never fetched by the server; no referrer leaks. %>
+        <dt>Repository</dt><dd><%= link_to attempt.answer_url, attempt.answer_url, target: "_blank", rel: "noopener noreferrer nofollow" %></dd>
+      <% else %>
+        <dt>File</dt><dd><%= TechnicalTestCase::ANSWER_TYPES.fetch(attempt.answer_kind) %> · <%= number_to_human_size(attempt.answer_bytes) %></dd>
+      <% end %>
+    </dl>
+    <%# Who may download is feature 07's one rule (TechnicalTests.answer_downloadable_by?); a repository
+        link answer has no file to download (its URL is shown above). %>
+    <% if !attempt.repo_link? && TechnicalTests.answer_downloadable_by?(current_user, row.participation.stage.job) %>
+      <p class="mb-3"><%= label_link "Download answer", "fa-download", answer_link(attempt), purpose: :neutral %>
+        <span class="text-muted small ms-2">File not scanned by antivirus: open it on a safe computer.</span></p>
+    <% end %>
+    <% if can_score && Screening::Config.enabled? && TechnicalTests::AiScore.allowed?(current_user, attempt) %>
+      <%# The reviewer chooses: score by hand below, or ask the AI for a proposal first (preview, then send). %>
+      <p class="mb-3"><%= link_to staff_test_attempt_ai_path(attempt), class: "btn btn-outline-primary btn-sm ai-btn" do %>
+        <%= render "staff/shared/ai_sparkle" %><span><%= local_assigns[:ai] ? "Refresh AI advice" : "Ask for AI advice" %></span>
+      <% end %><span class="text-muted small ms-2">Optional. Or score it yourself below.</span></p>
+    <% end %>
+    <% if local_assigns[:ai] && local_assigns[:ai].payload["summary"].present? %>
+      <div class="alert alert-primary job-brief-notice" role="status"><%= render "staff/shared/ai_sparkle", size: 20 %>
+        <div><strong>AI advice, not yet a score.</strong> <%= ai_tier_badge(:test_scoring) %> <%= local_assigns[:ai].payload["summary"] %> Check every rating below before saving. A person decides every step.
+          <% if local_assigns[:ai].payload["injection"] %><br><strong class="text-danger">The answer contains sentences that try to steer the AI; do not rely on this advice.</strong><% end %></div></div>
+    <% end %>
+    <%= render "staff/test_scorings/rubric_form", attempt: attempt, version: version, can_score: can_score, ai: local_assigns[:ai] %>
+  </div>
+</div>

@@ -1,0 +1,15 @@
+<%= form_with url: staff_participation_calibration_path(participation), method: :post, data: { turbo: false, submit_guard: true } do %>
+  <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+    <div class="form-check form-check-inline mb-0">
+      <input class="form-check-input" type="radio" name="outcome" value="pass" id="pass_<%= participation.id %>" required>
+      <label class="form-check-label" for="pass_<%= participation.id %>">Passed</label>
+    </div>
+    <div class="form-check form-check-inline mb-0">
+      <input class="form-check-input" type="radio" name="outcome" value="eliminate" id="eliminate_<%= participation.id %>">
+      <label class="form-check-label" for="eliminate_<%= participation.id %>">Not passed</label>
+    </div>
+  </div>
+  <label class="visually-hidden" for="cal_note_<%= participation.id %>">Note</label>
+  <input class="form-control form-control-sm mb-2" type="text" name="note" id="cal_note_<%= participation.id %>" placeholder="Note (optional)">
+  <%= label_button "Save judgement", "fa-save", class: "btn-sm" %>
+<% end %>

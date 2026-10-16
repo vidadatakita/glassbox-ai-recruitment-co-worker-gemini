@@ -1,0 +1,8 @@
+<%# The technical test page (D60 slice 3, plan §b). One state at a time, from TechnicalTests::Status
+    (server clock). No score, threshold or other candidate is ever printed here. %>
+<% content_for :title, "Technical test" %>
+<%= render "candidate_shared/job_top", job: @application.job %>
+<h1>Technical test</h1>
+<p class="small"><%= @application.job.title %> · <%= @application.candidate.name %></p>
+<%= render "candidate_tests/#{@test.state}", test: @test %>
+<p class="small"><%= link_to "Back to the status page", candidate_status_path(params[:token]) %></p>

@@ -1,0 +1,12 @@
+<%# Rule 3 said on screen, not only enforced by the server. %>
+<% if locked && step.in?(%w[1 3 4]) %>
+  <div class="alert alert-warning job-brief-notice" role="status">
+    <i class="fa fa-lock" aria-hidden="true"></i>
+    <div><strong>The scoring parts are locked.</strong> A selection stage of this vacancy has opened, so the grade, requirements, knockout questions, package, stages, weights, pass scores and competencies cannot be changed. The other parts can still be saved.</div>
+  </div>
+<% elsif knockout_locked && step == "3" %>
+  <div class="alert alert-warning job-brief-notice" role="status">
+    <i class="fa fa-lock" aria-hidden="true"></i>
+    <div><strong>The knockout questions are locked.</strong> Applications are in and the applicants' answers are bound to these questions, so their text cannot be changed.</div>
+  </div>
+<% end %>

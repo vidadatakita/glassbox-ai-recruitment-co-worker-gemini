@@ -1,0 +1,33 @@
+<aside class="app-sidebar sticky" id="sidebar">
+  <div class="main-sidebar-header">
+    <a href="<%= staff_root_path %>" class="header-logo">
+      <%= render "layouts/brand", variant: :header %>
+    </a>
+  </div>
+  <div class="main-sidebar" id="sidebar-scroll">
+    <nav class="main-menu-container nav nav-pills flex-column sub-open" aria-label="Main menu">
+      <ul class="main-menu">
+        <li class="slide__category"><span class="category-name">Recruitment</span></li>
+        <li class="slide">
+          <%= nav_item :jobs, "My vacancies", "fa-briefcase", staff_jobs_path %>
+        </li>
+        <% unless demo_mode? %>
+          <li class="slide">
+            <%= nav_item :work_queue, "Work queue", "fa-tasks", staff_work_queue_path %>
+          </li>
+        <% end %>
+        <% if current_user.role.in?(%w[hr_pic owner consultant admin]) %>
+          <li class="slide">
+            <%= nav_item :impact, "Impact summary", "fa-line-chart", staff_impact_path %>
+          </li>
+        <% end %>
+        <% if current_user.role == "admin" && !demo_mode? %>
+          <li class="slide__category"><span class="category-name">System</span></li>
+          <li class="slide">
+            <%= nav_item :settings, "System settings", "fa-cog", staff_settings_path %>
+          </li>
+        <% end %>
+      </ul>
+    </nav>
+  </div>
+</aside>

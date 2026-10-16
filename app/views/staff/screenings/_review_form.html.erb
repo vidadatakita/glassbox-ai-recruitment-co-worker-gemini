@@ -1,0 +1,19 @@
+<%# One form per result; the pressed button's value is not needed (the verdict is a radio), and no
+    button is ever disabled (house hard rule). %>
+<% result = item.result %>
+<%= form_with url: staff_screening_result_review_path(result), method: :post, data: { turbo: false, submit_guard: true } do %>
+  <fieldset class="mb-2">
+    <legend class="form-label fs-14">Reviewer's decision</legend>
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="radio" name="verdict" value="confirm" id="confirm_<%= result.id %>" required>
+      <label class="form-check-label" for="confirm_<%= result.id %>">Follow AI advice (<%= outcome_label(item.outcome) %>)</label>
+    </div>
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="radio" name="verdict" value="reverse" id="reverse_<%= result.id %>">
+      <label class="form-check-label" for="reverse_<%= result.id %>">Reverse to <%= outcome_label(item.outcome == :pass ? :eliminate : :pass) %></label>
+    </div>
+  </fieldset>
+  <label class="form-label" for="note_<%= result.id %>">Note<%= %w[unverified protected_attribute].include?(item.reason) ? "" : " (required when reversing)" %></label>
+  <textarea class="form-control mb-2" id="note_<%= result.id %>" name="note" rows="2"<%= " required" if %w[unverified protected_attribute].include?(item.reason) %>></textarea>
+  <%= label_button "Save review", "fa-save" %>
+<% end %>

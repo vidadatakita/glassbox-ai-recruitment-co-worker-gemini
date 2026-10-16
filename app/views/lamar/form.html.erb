@@ -1,0 +1,70 @@
+<% content_for :title, "Apply · #{@job.title}" %>
+<%= render "candidate_shared/job_top", job: @job %>
+<%= render "lamar/aside", job: @job %>
+<div class="cand-head">
+  <%= render "lamar/stepper", step: 2 %>
+  <h1>Your application</h1>
+  <p class="small">Step 2 of 2. Four fields and your consent, about five minutes.</p>
+</div>
+<%= render "candidate_shared/errors", errors: @errors %>
+<% values = @values || {} %>
+<% fe = @field_errors || {} %>
+<%# Native checks (required, pattern, accept) stop most mistakes BEFORE the round trip, so the
+    chosen CV is not lost; the server checks everything again (SubmitApplication). %>
+<%= form_with url: lamar_path(@job.public_code, ch: params[:ch]), method: :post, multipart: true, class: "cand-form lamar-form", data: { turbo: false, submit_guard: true } do %>
+  <%# What the candidate is shown, signed (D35; test engine F5/F6). %>
+  <input type="hidden" name="lamaran[consent_token]" value="<%= @consent_token %>">
+  <% @answers.each do |question_id, answer| %>
+    <input type="hidden" name="knockout[<%= question_id %>]" value="<%= answer %>">
+  <% end %>
+  <div class="field <%= "has-error" if fe[:name] %>">
+    <label for="lamaran_name">Full name</label>
+    <input type="text" id="lamaran_name" name="lamaran[name]" value="<%= values[:name] %>" autocomplete="name" required
+           aria-describedby="lamaran_name-hint<%= " lamaran_name-error" if fe[:name] %>" <%= 'aria-invalid="true"'.html_safe if fe[:name] %>>
+    <span class="small" id="lamaran_name-hint">As on your ID card (KTP).</span>
+    <%= render "lamar/field_error", id: "lamaran_name", message: fe[:name] %>
+  </div>
+  <div class="field <%= "has-error" if fe[:phone] %>">
+    <label for="lamaran_phone">WhatsApp number</label>
+    <input type="tel" id="lamaran_phone" name="lamaran[phone]" value="<%= values[:phone] %>" autocomplete="tel" inputmode="tel"
+           placeholder="0812 3456 7890" required pattern="(\+62|62|0)8[0-9\s\-]{7,16}" title="A WhatsApp number starting with 08, 628 or +628."
+           aria-describedby="<%= "lamaran_phone-error" if fe[:phone] %>" <%= 'aria-invalid="true"'.html_safe if fe[:phone] %>>
+    <%= render "lamar/field_error", id: "lamaran_phone", message: fe[:phone] %>
+  </div>
+  <div class="field <%= "has-error" if fe[:email] %>">
+    <label for="lamaran_email">E-mail</label>
+    <input type="email" id="lamaran_email" name="lamaran[email]" value="<%= values[:email] %>" autocomplete="email" required
+           aria-describedby="lamaran_email-hint<%= " lamaran_email-error" if fe[:email] %>" <%= 'aria-invalid="true"'.html_safe if fe[:email] %>>
+    <span class="small" id="lamaran_email-hint">The status link and the offer code are sent to this address.</span>
+    <%= render "lamar/field_error", id: "lamaran_email", message: fe[:email] %>
+  </div>
+  <div class="field <%= "has-error" if fe[:cv] || @cv_dropped %>">
+    <span class="field-label" id="lamaran_cv-label">CV (PDF or Word .docx, 5 MB at most)</span>
+    <%# The browser's own file button wording differs per phone and locale; a label styled as a
+        button carries the page's own text, and the input stays real and keyboard-reachable. %>
+    <label class="file-pick" for="lamaran_cv">
+      <input type="file" id="lamaran_cv" name="lamaran[cv]" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required
+             aria-labelledby="lamaran_cv-label" aria-describedby="lamaran_cv-name<%= " lamaran_cv-error" if fe[:cv] || @cv_dropped %>">
+      <span class="file-pick__button">Choose file</span>
+      <span class="file-pick__name" id="lamaran_cv-name" data-empty="No file chosen">No file chosen</span>
+    </label>
+    <%# A CV is never stored before the application is: keeping it across an error would hold a
+        person's CV with no application and no consent record (UU 27/2022). So it is said plainly. %>
+    <% if @cv_dropped && !fe[:cv] %>
+      <span class="field-error" id="lamaran_cv-error">For your security the file was not stored. Please choose your CV again.</span>
+    <% else %>
+      <%= render "lamar/field_error", id: "lamaran_cv", message: fe[:cv] && "#{fe[:cv]} Please choose the file again." %>
+    <% end %>
+  </div>
+  <%= render "lamar/expected_salary", values: values, field_errors: fe %>
+  <%= render "lamar/domicile_city", values: values, field_errors: fe %>
+  <%= render "lamar/consent", consent: @consent, retention_days: @retention_days %>
+  <label class="consent-check <%= "has-error" if fe[:consent] %>">
+    <input type="checkbox" name="lamaran[consent]" value="1" required <%= "checked" if values[:consent] == "1" %>>
+    <span>I have read and agree to the use of my data as written above.</span>
+  </label>
+  <%= render "lamar/field_error", id: "lamaran_consent", message: fe[:consent] %>
+  <%# The button's value is its label: no controller reads params[:commit] on the candidate forms. %>
+  <button type="submit" class="btn primary" name="commit" value="Send application">Send application</button>
+<% end %>
+<p class="small">There is no time limit. If you close this page before sending, the form has to be filled in again.</p>

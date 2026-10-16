@@ -1,0 +1,17 @@
+<%# Overview first (Shneiderman): the gate result as parts of the whole, then what needs a person. %>
+<% total = board.rows.size %>
+<% pct = ->(n) { total.zero? ? 0 : (n * 100.0 / total).round } %>
+<% failed = board.counts.fetch(:failed_cv, 0) + board.counts.fetch(:failed_test, 0) %>
+<div class="row loan-index-summary">
+  <%= render "staff/shared/metric", variant: "success", icon: "fa-check-circle", label: "Passed CV screening",
+             value: board.counts.fetch(:passed, 0), caption: "#{pct.(board.counts.fetch(:passed, 0))}% of #{total} applicants" %>
+  <%= render "staff/shared/metric", variant: "info", icon: "fa-hourglass-half", label: "Awaiting decision",
+             value: board.counts.fetch(:open, 0), caption: "#{pct.(board.counts.fetch(:open, 0))}% of #{total} applicants" %>
+  <%= render "staff/shared/metric", variant: "danger", icon: "fa-times-circle", label: "Not passed",
+             value: failed, caption: "CV #{board.counts.fetch(:failed_cv, 0)} · test #{board.counts.fetch(:failed_test, 0)}" %>
+  <%= render "staff/shared/metric", variant: "warning", icon: "fa-tag", label: "Labels not confirmed",
+             value: board.labels_to_confirm, caption: "AI advice awaiting the reviewer" %>
+</div>
+<% if board.labels_to_confirm.positive? %>
+  <p class="portal-insight report-insight"><i class="fa fa-exclamation-circle me-1" aria-hidden="true"></i><%= board.labels_to_confirm %> label(s) are still AI advice. The label is advice only; the CV screening result (gate <%= board.gated? ? "30%" : "CV screening" %>) decides whether an applicant continues.</p>
+<% end %>

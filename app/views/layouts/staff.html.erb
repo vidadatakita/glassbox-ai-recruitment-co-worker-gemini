@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-nav-layout="vertical" data-theme-mode="light" data-header-styles="light" data-menu-styles="light" data-toggled="close">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= content_for(:title) || "GlassBox" %></title>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= favicon_link_tag "glassbox-favicon.png", type: "image/png" %>
+    <%# Cascade order per zynix-css §3: shell pinning before main.js, vendor CSS, then the house
+        override layers LAST. Every file is local; no request leaves the server (ONP-7). %>
+    <script src="/template/assets/js/hris-layout.js"></script>
+    <script src="/template/assets/js/main.js"></script>
+    <link id="style" href="/template/assets/libs/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/template/assets/css/styles.css" rel="stylesheet">
+    <link href="/template/assets/css/glassbox-tokens.css" rel="stylesheet">
+    <link href="/template/assets/libs/node-waves/waves.min.css" rel="stylesheet">
+    <link href="/template/assets/libs/simplebar/simplebar.min.css" rel="stylesheet">
+    <link href="/plugins/stylesheets/font-awesome.css" rel="stylesheet">
+    <link href="/template/assets/css/hris-zynix.css" rel="stylesheet">
+    <link href="/template/assets/css/layout-decoration.css" rel="stylesheet">
+    <%= stylesheet_link_tag "staff" %>
+    <%= stylesheet_link_tag "brand" %>
+    <%= stylesheet_link_tag "technical_test" %>
+    <%= stylesheet_link_tag "screening_report" %>
+    <%= stylesheet_link_tag "ai_release" %>
+    <%= javascript_importmap_tags %>
+  </head>
+  <body>
+    <div class="page">
+      <%= render "staff/shared/header" %>
+      <%= render "staff/shared/sidebar" %>
+      <div class="main-content app-content">
+        <div class="container-fluid">
+          <% flash.each do |type, message| %>
+            <% next if message.blank? %>
+            <div class="alert alert-<%= type.to_s == "notice" ? "success" : "warning" %> alert-dismissible fade show mt-3" role="alert">
+              <%= message %>
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          <% end %>
+          <div class="row"><%= yield %></div>
+        </div>
+      </div>
+      <%# "Ask AI": the chat window behind the button at the bottom right, on every staff page. %>
+      <%= render "staff/shared/data_chat" if current_user&.role.in?(DataChat::ROLES) && ai_on? %>
+      <footer class="footer mt-auto py-3 bg-white text-center">
+        <span class="text-muted">GlassBox Team · <span id="year"></span></span>
+      </footer>
+    </div>
+    <script src="/template/assets/libs/@popperjs/core/umd/popper.min.js"></script>
+    <script src="/template/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/template/assets/js/defaultmenu.min.js"></script>
+    <script src="/template/assets/libs/node-waves/waves.min.js"></script>
+    <script src="/template/assets/js/sticky.js"></script>
+    <script src="/template/assets/libs/simplebar/simplebar.min.js"></script>
+    <script src="/template/assets/js/simplebar.js"></script>
+  </body>
+</html>

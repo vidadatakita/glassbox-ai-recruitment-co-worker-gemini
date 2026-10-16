@@ -1,0 +1,26 @@
+<% content_for :title, "Apply · #{@job.title}" %>
+<%= render "candidate_shared/job_top", job: @job %>
+<%= render "lamar/aside", job: @job %>
+<%# Card head: progress, title and the one-line instruction read as one group, set apart from
+    the questions by a rule (proximity, info-display §2.2 rule 2). %>
+<div class="cand-head">
+  <%= render "lamar/stepper", step: 1 %>
+  <h1>Apply for <%= @job.title %></h1>
+  <p class="small">Step 1 of 2. Answer the requirement questions first. No personal data is asked for in this step.</p>
+</div>
+<%# AI Builder Cup step 02: the job ad HR approved (Briefs::SaveAd), before the questions. Folded on a
+    phone by the browser's own details element; open by default. %>
+<% if @job.ad_approved_at && @job.ad_text.present? %>
+  <details class="job-ad" open>
+    <summary>About this vacancy</summary>
+    <div class="job-ad__text"><%= ad_html(@job.ad_text) %></div>
+  </details>
+<% end %>
+<%= render "candidate_shared/errors", errors: @errors %>
+<%# The submit button's value is its label: no controller reads params[:commit] on the candidate
+    forms, so the value changes with the label (A3 English pass). %>
+<%= form_with url: lamar_check_path(@job.public_code, ch: params[:ch]), method: :post, class: "cand-form lamar-form", data: { turbo: false, submit_guard: true } do %>
+  <%= render "lamar/knockout_fields", job: @job, answers: @answers %>
+  <button type="submit" class="btn primary" name="commit" value="Next">Next</button>
+<% end %>
+<p class="small">There is no time limit.</p>

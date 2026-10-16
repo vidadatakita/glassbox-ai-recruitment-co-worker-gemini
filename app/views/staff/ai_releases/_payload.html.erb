@@ -1,0 +1,35 @@
+<%# The exact payload. The <pre> text content equals AiRelease#payload_text byte for byte: lines
+    are joined with "\n", highlights wrap existing characters, and the cut checkboxes (CV lines only)
+    hold no text. This partial IS the "Delete lines" form when the reviewer may act. %>
+<% lines = release.lines %>
+<% by_line = spans.group_by(&:line) %>
+<% body = capture do %>
+  <%# Each line's "\n" sits INSIDE its span (the text content is unchanged: the same characters in
+      the same order), so the technical lines (<requirements> JSON, tags) can be folded away without
+      leaving blank lines. Lines with a red (must-remove) mark come pre-ticked. %>
+  <pre class="release-payload" data-payload-sha256="<%= release.payload_sha256 %>"><%= safe_join(lines.each_with_index.map { |line, i|
+    cv = release.cv_range.cover?(i)
+    risky = by_line.fetch(i, []).any?(&:blocking)
+    box = can_act && cv && line != Screening::Redactor::MARK ? tag.input(type: "checkbox", name: "lines[]", value: i, class: "release-cut", checked: risky, "aria-label": "Delete line #{i + 1}") : "".html_safe
+    tag.span(safe_join([box, release_line_html(line, by_line.fetch(i, [])), (i < lines.size - 1 ? "\n" : "")]),
+             class: "release-line#{' release-line--cv' if cv}#{' release-line--risky' if risky}", data: { line: i + 1 })
+  }) %></pre>
+<% end %>
+<div class="card custom-card">
+  <div class="card-header d-flex flex-wrap justify-content-between gap-2">
+    <div class="card-title"><%= release.released? ? "CV approved for sending" : "CV content the AI will read" %></div>
+    <label class="small text-muted ai-release-tech-toggle"><input type="checkbox" class="form-check-input me-1" id="show-tech"> Show the full technical text (requirements in data format)</label>
+  </div>
+  <div class="card-body">
+    <p class="small text-muted mb-2">The AI receives this text exactly as shown.</p>
+    <% if can_act %>
+      <%= form_with url: staff_ai_release_cut_path(release), method: :post, data: { turbo: false, submit_guard: true } do %>
+        <p class="small text-muted">Lines marked red are already ticked. Tick or untick as needed, then press the button below. Each line is replaced by <%= Screening::Redactor::MARK %> and recorded under your name.</p>
+        <%= body %>
+        <%= label_button "Delete ticked lines", "fa-scissors", purpose: :rework %>
+      <% end %>
+    <% else %>
+      <%= body %>
+    <% end %>
+  </div>
+</div>

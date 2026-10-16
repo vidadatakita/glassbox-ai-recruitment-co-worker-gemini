@@ -1,0 +1,9 @@
+<%# Feature 09 (D51 B): texts waiting for release, per job. Reviewer only: the count leads to CV
+    text, which HR PIC, owner and consultants never open. %>
+<% if current_user.role == "reviewer" %>
+  <% waiting = boards.map { |b| [b, b.awaiting_release.size] }.select { |(_, n)| n.positive? } %>
+  <% waiting.each do |(b, n)| %>
+    <p class="mb-1"><strong><%= b.job.title %></strong>: <%= n %> CVs awaiting review before being sent to the AI.
+      <%= link_to "Open Review before AI", staff_job_ai_releases_path(b.job) %></p>
+  <% end %>
+<% end %>

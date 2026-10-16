@@ -1,0 +1,24 @@
+<header class="app-header sticky" id="header">
+  <div class="main-header-container container-fluid">
+    <div class="header-content-left">
+      <div class="header-element">
+        <a aria-label="Show menu" class="sidemenu-toggle header-link" data-bs-toggle="sidebar" href="javascript:void(0);">
+          <i class="fa fa-bars header-link-icon"></i>
+        </a>
+      </div>
+      <div class="header-element d-flex align-items-center">
+        <%= render "layouts/brand", variant: :header, company: current_user.client_company&.name %>
+      </div>
+    </div>
+    <ul class="header-content-right">
+      <li class="header-element d-flex align-items-center me-2">
+        <span class="text-muted"><i class="fa fa-user-o me-1"></i><%= current_user.name %> · <%= User::ROLE_LABELS.fetch(current_user.role) %></span>
+      </li>
+      <li class="header-element d-flex align-items-center">
+        <%= button_to session_path, method: :delete, class: "btn btn-light btn-sm", form: { data: { turbo: false } } do %>
+          <i class="fa fa-sign-out"></i> Sign out
+        <% end %>
+      </li>
+    </ul>
+  </div>
+</header>

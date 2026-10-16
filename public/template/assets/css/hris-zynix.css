@@ -1,0 +1,5005 @@
+/* ==========================================================================
+   HRIS presentation layer — built on the bundled Zynix (Bootstrap 5) theme.
+
+   Structure of this file:
+     1. Design tokens ............ the single source of truth for the HRIS look
+     2. Brand / theme overrides .. link colour, menu/header chrome
+     3. Utilities ................ reusable helpers that replace inline styles
+     4. Components ............... auth, buttons, breadcrumbs, forms, cards …
+     5. Page modules ............. loans, salary schema, people profile …
+
+   Design principle: every surface is an elegant, formal, low-chrome card on a
+   soft neutral canvas. Reach for the tokens below instead of hard-coding a
+   colour, radius, shadow, or focus ring so the whole app stays consistent.
+   ========================================================================== */
+
+/* 1. DESIGN TOKENS ---------------------------------------------------------- */
+:root {
+  --primary-rgb: 37, 99, 235;
+
+  /* Link colour. This variable only reaches Bootstrap's own link utilities
+     (.link-primary, .link-opacity-*); on its own it does NOT turn ordinary
+     links blue, because styles.css hard-codes the anchor colour rather than
+     reading this token:
+
+         a        { color: rgba(var(--dark-rgb), var(--bs-link-opacity, 1)) }
+         a:hover  { color: rgba(var(--dark-rgb), var(--bs-link-opacity, 1)) }
+
+     --bs-link-color-rgb is never consulted there, so the real override is the
+     `a` / `a:hover` rule in section 2. Keep both: this line for the Bootstrap
+     utilities, that rule for every plain <a>. */
+  --bs-link-color-rgb: var(--primary-rgb);
+
+  /* Hover/focus state for links — a darker step of the corporate blue so the
+     state change is visible (#1d4ed8, already used by .loan-index-code). */
+  --hris-link-hover-rgb: 29, 78, 216;
+
+  /* Chrome */
+  --body-bg-rgb: 245, 247, 251;
+  --menu-bg: #ffffff;
+  --header-bg: #ffffff;
+  --menu-border-color: #e7edf6;
+  --header-border-color: #e7edf6;
+
+  /* --- HRIS semantic tokens ------------------------------------------------
+     Prefixed hris-* so they never collide with Zynix's own variables. Values
+     are the ones that already recur throughout this layer, promoted to tokens
+     so a single edit re-themes the whole app. */
+
+  /* Corner radii — one small / medium / large scale (was 0.45/0.55/0.75/0.85). */
+  --hris-radius-sm: 0.45rem;   /* inputs, chips, small controls   */
+  --hris-radius-md: 0.55rem;   /* inner tiles, nested panels      */
+  --hris-radius-lg: 0.75rem;   /* cards, shells, page surfaces     */
+
+  /* Elevation — soft, formal shadows on a light canvas. */
+  --hris-shadow-sm: 0 0.125rem 0.5rem rgba(31, 55, 91, 0.04);
+  --hris-shadow-card: 0 0.25rem 1rem rgba(15, 23, 42, 0.04);
+  --hris-shadow-raised: 0 0.5rem 1.5rem rgba(15, 23, 42, 0.1);
+  --hris-shadow-modal: 0 1.5rem 4rem rgba(31, 55, 91, 0.18);
+
+  /* Surfaces & lines. */
+  --hris-surface: var(--custom-white, #ffffff);
+  --hris-surface-muted: rgba(var(--light-rgb), 0.28);  /* card headers/footers */
+  --hris-surface-tile: rgba(var(--light-rgb), 0.24);   /* info tiles           */
+  --hris-hairline: var(--default-border, #e9edf6);
+  --hris-table-head-bg: rgba(var(--light-rgb), 0.55);
+
+  /* Text ramp — replaces the scattered #263442/#536273/#667381/#7b8794 greys. */
+  --hris-heading: var(--default-text-color, #263442);
+  --hris-text: var(--default-text-color, #384657);
+  --hris-text-soft: var(--text-muted, #7b8794);
+  --hris-label: #536273;   /* uppercase field / column labels */
+
+  /* Interaction. */
+  --hris-focus-ring: 0 0 0 0.18rem var(--primary01);
+  --hris-focus-ring-strong: 0 0 0 0.2rem var(--primary02);
+  --hris-transition: 0.15s ease;
+  --hris-eyebrow-tracking: 0.08em;
+}
+
+.schema-salary-section-header {
+  margin: 0;
+}
+
+.schema-salary-section-toggle {
+  padding: 1rem 1.25rem;
+  color: var(--default-text-color);
+  background: rgba(var(--light-rgb), 0.28);
+  box-shadow: none;
+}
+
+.schema-salary-section-toggle:hover,
+.schema-salary-section-toggle:focus {
+  color: var(--primary-color);
+  background: var(--primary01);
+}
+
+.schema-salary-section-toggle:not(.collapsed) {
+  color: var(--default-text-color);
+  background: rgba(var(--light-rgb), 0.28);
+  box-shadow: none;
+}
+
+.schema-salary-section-toggle__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.schema-salary-section-toggle__copy strong {
+  color: var(--default-text-color);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.schema-salary-section-toggle__copy small {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.77rem;
+  font-weight: 400;
+  text-align: left;
+}
+
+/* 2. BRAND / THEME OVERRIDES ------------------------------------------------ */
+
+/* Links are blue, not black.
+   styles.css paints every anchor with --dark-rgb (see the note in section 1),
+   so plain content links — a `link_to` in a table cell, a card title, a
+   description — render as body text and give the operator no signal that they
+   are clickable. These two rules put them back on the corporate blue.
+
+   Deliberately kept at the lowest possible specificity (a bare `a`, 0-0-1).
+   Every component that owns its own link colour is written as a class rule
+   (0-1-0) and therefore still wins without needing an exclusion list here:
+   .btn and its variants, .side-menu__item, .header-link, .dropdown-item,
+   .page-link, .nav-link, .breadcrumb a. Do not add `:not(...)` to these
+   selectors — that would lift them to 0-1-0 and start overriding exactly the
+   components we want left alone. */
+a {
+  color: rgba(var(--primary-rgb), var(--bs-link-opacity, 1));
+}
+a:hover,
+a:focus {
+  color: rgba(var(--hris-link-hover-rgb), var(--bs-link-opacity, 1));
+}
+
+[data-nav-layout="horizontal"][data-theme-mode="light"] {
+  --menu-bg: #ffffff;
+  --header-bg: #ffffff;
+  --menu-prime-color: #52657e;
+  --header-prime-color: #52657e;
+}
+
+/* 3. UTILITIES -------------------------------------------------------------
+   Small, prefixed helpers that replace repeated inline style="" attributes in
+   the views. Prefer Bootstrap 5 natives where they exist (w-100, mt-2, text-
+   start/-end, d-none); these cover the cases BS5 doesn't, using hris- prefixes
+   so nothing collides with the theme. */
+
+/* Fixed image/column sizing (icon avatars, numbering columns, thumbnails). */
+.hris-img-avatar { width: 40px; height: 40px; object-fit: cover; border-radius: 50%; }
+.hris-col-num   { width: 10px; white-space: nowrap; }
+.hris-col-min   { min-width: 100px; }
+.hris-thumb-cap { max-height: 64px; width: auto; }
+
+/* Chart / report canvases (were inline height:250px / 300px and #output). */
+.hris-chart-sm { height: 250px; }
+.hris-chart-md { height: 300px; }
+.hris-report-output { overflow: auto; max-height: 80vh; min-height: 24rem; }
+
+/* Pointer affordance — replaces the invalid `display:pointer` in legacy views. */
+.hris-clickable { cursor: pointer; }
+
+/* Compact action-button cell for index/list tables (Detail / Edit / Void). */
+.hris-table-actions { white-space: nowrap; }
+.hris-table-actions .btn {
+  min-height: 1.9rem;
+  padding: 0.25rem 0.6rem;
+  margin: 0.1rem 0.15rem 0.1rem 0;
+  font-size: 0.75rem;
+}
+
+.summary-absensi-rekap .btn-xs {
+  min-height: 1.5rem;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.6875rem;
+  line-height: 1.25;
+}
+
+/* Slim gradient progress bar for summary/overview cards. */
+.hris-progress {
+  width: 100%;
+  height: 0.75rem;
+  margin: 0;
+  border: 0;
+  border-radius: 2rem;
+  overflow: hidden;
+  background: rgb(var(--light-rgb));
+  appearance: none;
+  -webkit-appearance: none;
+}
+.hris-progress::-webkit-progress-bar { background: rgb(var(--light-rgb)); border-radius: 2rem; }
+.hris-progress::-webkit-progress-value {
+  background: linear-gradient(90deg, rgb(var(--success-rgb)), var(--primary-color));
+  border-radius: 2rem;
+}
+.hris-progress::-moz-progress-bar {
+  background: linear-gradient(90deg, rgb(var(--success-rgb)), var(--primary-color));
+  border-radius: 2rem;
+}
+.hris-progress-meta { color: var(--text-muted); font-size: 0.75rem; }
+
+/* 3b. SHARED WIDGETS (consolidated from duplicated inline <style> blocks) ---- */
+
+/* DataTables sizing & toolbar alignment. Previously copy-pasted into the app
+   and people layouts; now defined once here (the layout loads this file). */
+.dataTables_wrapper { width: 100%; }
+.dataTables_scrollBody,
+.salary-adjustment-table-scroll {
+  scrollbar-color: #8b9bb8 #edf1f7;
+  scrollbar-width: auto;
+}
+.dataTables_scrollBody::-webkit-scrollbar,
+.salary-adjustment-table-scroll::-webkit-scrollbar {
+  width: 22px;
+  height: 22px;
+}
+.dataTables_scrollBody::-webkit-scrollbar-track,
+.salary-adjustment-table-scroll::-webkit-scrollbar-track {
+  background: #edf1f7;
+  border-radius: 999px;
+}
+.dataTables_scrollBody::-webkit-scrollbar-thumb,
+.salary-adjustment-table-scroll::-webkit-scrollbar-thumb {
+  background: #8b9bb8;
+  border: 5px solid #edf1f7;
+  border-radius: 999px;
+}
+.dataTables_scrollBody::-webkit-scrollbar-thumb:hover,
+.salary-adjustment-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: #667a9d;
+}
+table.dataTable,
+table.dt-tbl { width: 100% !important; }
+table.dt-tbl.dt-wide {
+  width: max-content !important;
+  min-width: 100%;
+}
+table.dt-tbl.dt-wide thead th,
+table.dt-tbl.dt-wide tbody td { white-space: nowrap; }
+table.dt-tbl.dt-wide tbody td:nth-child(14) { white-space: normal; min-width: 260px; }
+.dataTables_wrapper { padding: 1.25rem; }
+/* Length ("Show N entries") and filter ("Search:") default to half-width columns
+   that collide in narrow containers (e.g. 3 THR tables side by side) because the
+   length label can't wrap. Stack them full-width so both labels stay readable. */
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter {
+  float: none;
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 0.5rem;
+  text-align: left;
+}
+.dataTables_wrapper .dataTables_filter label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+}
+.dataTables_wrapper .dataTables_filter input {
+  flex: 1 1 auto;
+  min-width: 7rem;
+  margin-left: 0;
+}
+/* Same collision on the bottom toolbar: "Showing X of Y" (info) overlapping the
+   pagination. Stack them full-width too. */
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_paginate,
+.dataTables_wrapper .dt-info,
+.dataTables_wrapper .dt-paging {
+  float: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  text-align: left !important;
+  margin-top: 0.5rem;
+  white-space: normal;
+}
+.dataTables_wrapper .dataTables_paginate,
+.dataTables_wrapper .dt-paging { padding-top: 0; }
+/* The Bootstrap5 DataTables layout wraps each toolbar piece in a grid column
+   (col-md-*), so the inner width:100% is still only half the row → overlap.
+   Force every DataTables toolbar column to span the full row so they stack. */
+.dataTables_wrapper > .row > [class*="col-"] {
+  flex: 0 0 100% !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* c3.js charts — identical styling was duplicated across 6 report views. */
+.c3-line, .c3-focused { stroke-width: 3px !important; }
+.c3-bar { stroke: #ffffff !important; stroke-width: 1; }
+.c3 text { font-size: 12px; color: var(--hris-text-soft); }
+.c3-axis path { stroke: var(--hris-text-soft); }
+.tick line { stroke: #ffffff; }
+.c3-circle { opacity: 1 !important; }
+.c3-xgrid-focus { visibility: hidden !important; }
+
+/* salary_adjustments date-part picker — duplicated across the two adjustment
+   forms; the markup keeps its .salary-adjustment-* classes, styled once here. */
+.salary-adjustment-date-group select.salary-adjustment-date-part {
+  width: 32%;
+  display: inline-block;
+  margin-right: 2%;
+}
+.salary-adjustment-date-group select.salary-adjustment-date-part:last-child { margin-right: 0; }
+.salary-adjustment-checkbox-group { padding-top: 30px; }
+@media (max-width: 767px) {
+  .salary-adjustment-checkbox-group { padding-top: 0; }
+}
+
+/* 4. COMPONENTS ------------------------------------------------------------- */
+.auth-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  background:
+    radial-gradient(circle at top right, rgba(var(--primary-rgb), 0.14), transparent 34rem),
+    var(--default-body-bg-color);
+}
+
+.auth-card {
+  width: min(100%, 28rem);
+  padding: 2rem;
+  background: #ffffff;
+  border: 1px solid var(--default-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 1rem 2.5rem rgba(31, 55, 91, 0.1);
+}
+
+.auth-brand {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.auth-brand__link {
+  color: var(--primary-color);
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+}
+
+.auth-brand p,
+.auth-card__header p {
+  margin: 0.35rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.auth-card__header {
+  margin-bottom: 1.5rem;
+}
+
+.auth-card__header h1 {
+  margin: 0;
+  color: var(--default-text-color);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.auth-card .error_explanation {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  color: #a31d2c;
+  background: rgba(var(--danger-rgb), 0.08);
+  border: 1px solid rgba(var(--danger-rgb), 0.2);
+  border-radius: 0.375rem;
+}
+
+.auth-card .error_explanation h2 {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+}
+
+.auth-card .error_explanation ul {
+  padding-left: 1.1rem;
+  margin: 0;
+  font-size: 0.8125rem;
+}
+
+.auth-card__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin-top: 1.5rem;
+  font-size: 0.8125rem;
+}
+
+.auth-link {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-link:hover,
+.auth-link:focus {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+.application-navigation-toggle {
+  border: 0;
+  background: transparent;
+}
+
+.application-navigation-toggle__label {
+  margin-right: 0.5rem;
+  color: var(--header-prime-color);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.application-navigation-modal .modal-content {
+  box-shadow: 0 1.5rem 4rem rgba(31, 55, 91, 0.18);
+}
+
+.application-navigation-search {
+  position: relative;
+}
+
+.application-navigation-search > i {
+  position: absolute;
+  top: 50%;
+  left: 1rem;
+  z-index: 1;
+  color: var(--text-muted);
+  transform: translateY(-50%);
+}
+
+.application-navigation-search .form-control {
+  min-height: 3rem;
+  padding-left: 2.75rem;
+}
+
+.application-navigation-groups {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.application-navigation-group {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.5rem;
+  background: var(--default-background);
+}
+
+.application-navigation-group__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  color: var(--default-text-color);
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.application-navigation-group__title i {
+  color: var(--primary-color);
+  font-size: 1rem;
+}
+
+.application-navigation-links {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.application-navigation-link {
+  display: block;
+  padding: 0.4rem 0.5rem;
+  overflow: hidden;
+  color: var(--default-text-color);
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.application-navigation-link:hover,
+.application-navigation-link:focus {
+  color: var(--primary-color);
+  background: var(--primary01);
+}
+
+/* Consistent Zynix action buttons for legacy and modern forms. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2.375rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 0.375rem;
+  font-weight: 700;
+  line-height: 1.25;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-primary,
+.btn-theme {
+  color: #ffffff !important;
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-theme:hover,
+.btn-theme:focus {
+  color: #ffffff !important;
+  background-color: rgb(29, 78, 216) !important;
+  border-color: rgb(29, 78, 216) !important;
+  box-shadow: 0 0 0 0.2rem var(--primary02);
+}
+
+.btn-info {
+  color: #ffffff !important;
+  background-color: rgb(var(--info-rgb)) !important;
+  border-color: rgb(var(--info-rgb)) !important;
+}
+.btn-success {
+  color: #ffffff !important;
+  background-color: rgb(var(--success-rgb)) !important;
+  border-color: rgb(var(--success-rgb)) !important;
+}
+.btn-warning {
+  color: #4a2800 !important;
+  background-color: rgb(var(--warning-rgb)) !important;
+  border-color: rgb(var(--warning-rgb)) !important;
+}
+.btn-danger {
+  color: #ffffff !important;
+  background-color: rgb(var(--danger-rgb)) !important;
+  border-color: rgb(var(--danger-rgb)) !important;
+}
+.btn-default {
+  color: var(--default-text-color) !important;
+  background-color: #ffffff !important;
+  border-color: var(--input-border) !important;
+}
+.btn-default:hover,
+.btn-default:focus {
+  color: var(--primary-color) !important;
+  background-color: var(--primary005) !important;
+  border-color: var(--primary-color) !important;
+}
+.btn-info:hover,
+.btn-info:focus,
+.btn-success:hover,
+.btn-success:focus,
+.btn-warning:hover,
+.btn-warning:focus,
+.btn-danger:hover,
+.btn-danger:focus {
+  filter: brightness(0.93);
+  box-shadow: 0 0 0 0.2rem rgba(31, 55, 91, 0.08);
+}
+.btn.bg-purple { color: #ffffff !important; background-color: rgb(var(--purple-rgb)) !important; border-color: rgb(var(--purple-rgb)) !important; }
+.btn.bg-green { color: #ffffff !important; background-color: rgb(var(--success-rgb)) !important; border-color: rgb(var(--success-rgb)) !important; }
+/* ⛔ YELLOW NEVER CARRIES WHITE TEXT (owner 2026-09-19, on the "Belum diisi"
+   badge of /draft_approvals: "label nya tidak bisa dibaca karena kombinasi label
+   kuning dan tulisan putih, jangan ulangi kombinasi ini, gunakan warna hitam
+   untuk text label"). The theme's .bg-yellow paints neon #fff621 and .label
+   defaults to white text, so every yellow badge, menu counter and icon circle
+   was white-on-yellow. This one rule, in the override layer that loads last,
+   makes the text black on ALL of them, including ones added later. Do not add
+   a yellow or warning background anywhere with light text; if a rule here
+   stops applying, the fix is here, not per page.
+   Labels and badges also take the theme's warning tone instead of neon, so a
+   "Belum diisi" badge matches the "Berstatus Pengajuan" badge beside it. */
+.bg-yellow, .bg-yellow-active, .label-warning, .badge-warning,
+.badge.bg-warning, .label.bg-warning {
+  color: #111111 !important;
+}
+.label.bg-yellow, .badge.bg-yellow {
+  background-color: rgb(var(--warning-rgb)) !important;
+}
+
+.btn.bg-yellow { color: #4a2800 !important; background-color: rgb(var(--warning-rgb)) !important; border-color: rgb(var(--warning-rgb)) !important; }
+.btn.bg-aqua { color: #ffffff !important; background-color: rgb(var(--info-rgb)) !important; border-color: rgb(var(--info-rgb)) !important; }
+.btn:disabled,
+.btn.disabled {
+  pointer-events: none;
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+/* The requested Zynix light-primary treatment wins over older semantic
+ * Bootstrap 3 classes while preserving those classes in the markup. */
+/* .btn.btn-primary-light {
+  color: var(--primary-color) !important;
+  background-color: var(--primary01) !important;
+  border-color: transparent !important;
+  box-shadow: none;
+}
+.btn.btn-primary-light:hover,
+.btn.btn-primary-light:focus,
+.btn.btn-primary-light:active {
+  color: #ffffff !important;
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 0.2rem var(--primary02);
+}*/
+.btn.btn-block {
+  display: flex;
+  width: 100%;
+}
+.btn.btn-block.me-2 {
+  margin-right: 0 !important;
+}
+
+/* Consistent breadcrumb treatment for legacy <li> markup and Zynix
+ * .breadcrumb-item markup. Keep the trail readable on narrow screens. */
+.content-header .breadcrumb,
+.app-content .breadcrumb,
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  overflow-wrap: anywhere;
+  list-style: none;
+  color: var(--text-muted, #667085);
+  background: var(--custom-white, #ffffff);
+  border: 1px solid var(--default-border, #e9edf6);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.125rem 0.5rem rgba(31, 55, 91, 0.04);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.breadcrumb > li,
+.breadcrumb > .breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  color: var(--text-muted, #667085);
+  font-weight: 600;
+}
+
+.breadcrumb > li + li::before,
+.breadcrumb > .breadcrumb-item + .breadcrumb-item::before {
+  display: inline-block;
+  padding: 0 0.55rem;
+  color: var(--text-muted, #98a5c3);
+  content: "/";
+  font-weight: 700;
+}
+
+.breadcrumb a,
+.breadcrumb > li a,
+.breadcrumb > .breadcrumb-item a {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  color: var(--primary-color, #2563eb);
+  text-decoration: none;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.breadcrumb a:hover,
+.breadcrumb a:focus {
+  color: rgb(29, 78, 216);
+  text-decoration: underline;
+  text-underline-offset: 0.15rem;
+}
+
+.breadcrumb a i,
+.breadcrumb a .fa,
+.breadcrumb a .ti,
+.breadcrumb a .ri {
+  margin-right: 0.35rem;
+  color: var(--primary-color, #2563eb);
+}
+
+.breadcrumb > li.active,
+.breadcrumb > .breadcrumb-item.active,
+.breadcrumb > .breadcrumb-item[aria-current="page"] {
+  padding: 0.2rem 0.5rem;
+  color: var(--primary-color, #2563eb);
+  background: var(--primary01, rgba(37, 99, 235, 0.08));
+  border-radius: 0.25rem;
+  font-weight: 700;
+}
+
+.content-header {
+  gap: 1rem;
+}
+
+@media (max-width: 575.98px) {
+  .content-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .content-header .breadcrumb,
+  .app-content .breadcrumb,
+  .breadcrumb {
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+  }
+
+  .breadcrumb > li,
+  .breadcrumb > .breadcrumb-item {
+    max-width: 100%;
+  }
+}
+
+.form-horizontal .btn-block,
+.hris-horizontal-form .btn-block {
+  width: auto;
+  min-width: 7rem;
+  min-height: 2.375rem;
+  padding: 0.45rem 1rem;
+}
+
+/* System-wide form foundation. Add .zynix-form-opt-out to exceptional forms. */
+.zynix-system-form {
+  color: var(--default-text-color);
+}
+
+.zynix-form-shell {
+  overflow: hidden;
+  border: 1px solid var(--default-border) !important;
+  border-radius: 0.75rem !important;
+  background: var(--custom-white);
+  box-shadow: 0 0.25rem 1rem rgba(15, 23, 42, 0.04) !important;
+}
+
+.zynix-form-shell > .box-header,
+.zynix-form-shell > .card-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--default-border);
+  background: rgba(var(--light-rgb), 0.28);
+}
+
+.zynix-form-shell > .box-body,
+.zynix-form-shell > .card-body {
+  padding: 1.25rem;
+}
+
+.zynix-system-form .form-group {
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.zynix-system-form .control-label,
+.zynix-system-form .form-label {
+  padding-top: 0.65rem;
+  color: var(--default-text-color);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.zynix-system-form .form-control,
+.zynix-system-form select.form-control,
+.zynix-system-form textarea.form-control {
+  min-height: 2.55rem;
+  border-color: var(--default-border);
+  border-radius: 0.45rem;
+  color: var(--default-text-color);
+  background-color: var(--custom-white);
+  font-size: 0.85rem;
+  box-shadow: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.zynix-system-form textarea.form-control {
+  min-height: 6.5rem;
+  resize: vertical;
+}
+
+.zynix-system-form .form-control:focus,
+.zynix-system-form select.form-control:focus,
+.zynix-system-form textarea.form-control:focus {
+  border-color: var(--primary-color);
+  outline: 0;
+  box-shadow: 0 0 0 0.18rem var(--primary01);
+}
+
+.zynix-system-form .form-control[readonly],
+.zynix-system-form .form-control:disabled,
+.zynix-system-form select.form-control:disabled {
+  color: var(--text-muted);
+  background: rgba(var(--light-rgb), 0.58);
+  cursor: not-allowed;
+}
+
+.zynix-system-form input[type="file"].form-control {
+  height: auto;
+  padding: 0.45rem 0.65rem;
+}
+
+.zynix-field-hint {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--text-muted) !important;
+  font-size: 0.71rem !important;
+  font-style: normal !important;
+  line-height: 1.45;
+}
+
+.zynix-form-section-title {
+  margin: 0.5rem 0 1rem !important;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--default-border);
+  color: var(--default-text-color) !important;
+  font-size: 0.88rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.02em;
+}
+
+.zynix-system-form hr {
+  margin: 1.1rem 0;
+  border-color: var(--default-border);
+  opacity: 1;
+}
+
+.zynix-form-actions,
+.zynix-system-form .box-footer {
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 1rem 1.25rem !important;
+  border-top: 1px solid var(--default-border) !important;
+  background: rgba(var(--light-rgb), 0.22) !important;
+}
+
+.zynix-form-actions [class*="col-"],
+.zynix-system-form .box-footer [class*="col-"] {
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.zynix-form-actions .btn,
+.zynix-system-form .box-footer .btn {
+  width: auto !important;
+  min-width: 7rem;
+  margin: 0 !important;
+  white-space: normal;
+}
+
+.zynix-toggle-input {
+  position: relative;
+  width: 2.45rem !important;
+  height: 1.35rem !important;
+  margin: 0 0.55rem 0 0 !important;
+  border: 0 !important;
+  border-radius: 2rem !important;
+  vertical-align: middle;
+  background: rgb(var(--light-rgb));
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.zynix-toggle-input:before {
+  content: "";
+  position: absolute;
+  top: 0.18rem;
+  left: 0.2rem;
+  width: 0.98rem;
+  height: 0.98rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.22);
+  transition: transform 0.15s ease;
+}
+
+.zynix-toggle-input:checked { background: var(--primary-color); }
+.zynix-toggle-input:checked:before { transform: translateX(1.05rem); }
+.zynix-toggle-input:focus { outline: 0; box-shadow: 0 0 0 0.18rem var(--primary02); }
+
+.zynix-form-errors,
+.zynix-system-form #error_explanation {
+  width: 100%;
+  margin: 0 0 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(var(--danger-rgb), 0.22);
+  border-radius: 0.55rem;
+  color: rgb(var(--danger-rgb));
+  background: rgba(var(--danger-rgb), 0.07);
+}
+
+.zynix-form-errors h2,
+.zynix-system-form #error_explanation h2 {
+  margin: 0 0 0.4rem;
+  color: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.zynix-form-errors ul,
+.zynix-system-form #error_explanation ul { margin: 0; padding-left: 1.1rem; }
+.zynix-system-form .field_with_errors { display: block; width: 100%; }
+.zynix-system-form .field_with_errors .form-control { border-color: rgb(var(--danger-rgb)); }
+
+.zynix-system-form .select2-container,
+.zynix-system-form .select2-container--default { max-width: 100%; }
+
+/* People edit: scoped after the global form foundation so this legacy form can
+ * use the Zynix hierarchy without changing any submitted fields or routes. */
+.people-edit-page { max-width: 1280px; margin: 0 auto; padding-bottom: 3rem; }
+.people-edit-header__eyebrow,
+.people-context-menu__eyebrow { display: block; margin-bottom: .3rem; color: var(--primary-color); font-size: .7rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+.people-edit-content { padding: 0; }
+.people-edit-form { display: block; overflow: hidden; border: 1px solid var(--default-border); border-radius: .65rem; background: var(--custom-white); box-shadow: 0 .25rem 1rem rgba(15,23,42,.04); }
+.people-edit-form__section { padding: 1.25rem; border-bottom: 1px solid var(--default-border); }
+.people-edit-form__section:last-of-type { border-bottom: 0; }
+.people-edit-form__section-header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .5rem 1rem; margin-bottom: 1.15rem; }
+.people-edit-form__section-header > div { display: flex; align-items: center; gap: .55rem; }
+.people-edit-form__section-header span { display: inline-flex; align-items: center; justify-content: center; width: 1.8rem; height: 1.8rem; border: 1px solid var(--default-border); border-radius: .35rem; color: var(--primary-color); background: var(--primary01); font-size: .68rem; font-weight: 800; }
+.people-edit-form__section h2 { margin: 0; color: var(--default-text-color); font-size: .95rem; font-weight: 700; }
+.people-edit-form__section-header p { margin: 0; color: var(--text-muted); font-size: .75rem; }
+.people-edit-form .row { margin-right: -.55rem; margin-left: -.55rem; }
+.people-edit-form .form-group { padding-right: .55rem; padding-left: .55rem; }
+.people-edit-form .control-label { display: block; padding-top: 0; margin-bottom: .38rem; }
+.people-edit-form__hint--danger { color: rgb(var(--danger-rgb)) !important; }
+.people-edit-form__toggle { display: flex; align-items: center; gap: .5rem; min-height: 2.55rem; margin: 0; padding: .45rem .65rem; border: 1px solid var(--default-border); border-radius: .45rem; color: var(--default-text-color); background: rgba(var(--light-rgb),.25); font-size: .8rem; font-weight: 600; cursor: pointer; }
+.people-edit-form__toggle input { flex: 0 0 auto; margin: 0; }
+.people-edit-form__actions { margin-top: 0; }
+/* width:auto is load-bearing. Every view renders inside <div class="row">
+   in the application layout, so a top-level element is a direct child of a
+   Bootstrap row and inherits width:100% from `.row > *`. Without this the
+   trigger is a fixed box at right:0 spanning the whole viewport — a blue
+   bar across the page instead of a tab on its edge. */
+.people-context-trigger { width: auto; position: fixed; top: 5.5rem; right: 0; z-index: 1061; display: inline-flex; align-items: center; gap: .45rem; min-height: 2.5rem; padding: .55rem .8rem; border: 1px solid rgba(255,255,255,.18); border-right: 0; border-radius: .45rem 0 0 .45rem; color: #fff; background: var(--primary-color); box-shadow: 0 .2rem .8rem rgba(15,23,42,.16); font-size: .76rem; font-weight: 700; }
+.people-context-trigger:hover,
+.people-context-trigger:focus { color: #fff; background: var(--primary-color); outline: 0; box-shadow: 0 0 0 .18rem var(--primary02); }
+.people-context-trigger.is-open { right: 18rem; }
+.people-context-menu { position: fixed; top: 4.75rem; right: 0; z-index: 1060; width: 18rem; max-width: calc(100vw - 1.25rem); padding: 1rem; border: 1px solid var(--default-border); border-right: 0; border-radius: .55rem 0 0 .55rem; background: var(--custom-white); box-shadow: 0 .35rem 1.15rem rgba(15,23,42,.15); transform: translateX(100%); transition: transform .18s ease; }
+.people-context-menu.is-open { transform: translateX(0); }
+.people-context-menu__header { margin-bottom: .75rem; padding-bottom: .75rem; border-bottom: 1px solid var(--default-border); }
+.people-context-menu__header strong { display: block; overflow: hidden; color: var(--default-text-color); font-size: .88rem; text-overflow: ellipsis; white-space: nowrap; }
+.people-context-menu__link,
+.people-context-menu__back { display: flex; align-items: center; gap: .6rem; min-height: 2.55rem; padding: .5rem .55rem; border-radius: .35rem; color: var(--default-text-color); font-size: .78rem; font-weight: 600; }
+.people-context-menu__link:hover,
+.people-context-menu__link:focus,
+.people-context-menu__link.is-active { color: var(--primary-color); background: var(--primary01); text-decoration: none; }
+.people-context-menu__link i { width: 1rem; color: var(--text-muted); text-align: center; }
+.people-context-menu__link.is-active i { color: var(--primary-color); }
+.people-context-menu__back { margin-top: .75rem; padding-top: .85rem; border-top: 1px solid var(--default-border); color: var(--text-muted); }
+.people-context-menu__back:hover,
+.people-context-menu__back:focus { color: var(--primary-color); text-decoration: none; }
+
+@media (max-width: 767.98px) {
+  .people-edit-form__section { padding: 1rem; }
+  .people-edit-form__section-header { align-items: flex-start; flex-direction: column; }
+  .people-context-trigger { top: auto; right: 1rem; bottom: 1rem; border-right: 1px solid rgba(255,255,255,.18); border-radius: .45rem; }
+  .people-context-trigger.is-open { right: 1rem; }
+  .people-context-menu { top: auto; right: .6rem; bottom: 4.2rem; border-right: 1px solid var(--default-border); border-radius: .55rem; transform: translateY(calc(100% + 5rem)); }
+  .people-context-menu.is-open { transform: translateY(0); }
+}
+
+@media (max-width: 767.98px) {
+  .zynix-form-shell > .box-body,
+  .zynix-form-shell > .card-body { padding: 1rem; }
+  .zynix-system-form .control-label,
+  .zynix-system-form .form-label { padding-top: 0; margin-bottom: 0.35rem; }
+  .zynix-form-actions,
+  .zynix-system-form .box-footer { align-items: stretch; flex-direction: column-reverse; }
+  .zynix-form-actions .btn,
+  .zynix-system-form .box-footer .btn { width: 100% !important; }
+}
+
+/* Loan index */
+.loan-index-page{max-width:1520px;margin:0 auto;padding-bottom:3rem;color:#263442}.loan-index-header{display:flex;align-items:center;justify-content:space-between;gap:1rem;max-width:1520px;margin:0 auto 1.25rem}.loan-index-header__eyebrow{display:block;margin-bottom:.3rem;color:var(--primary-color);font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.loan-index-header h1{margin:0;font-size:clamp(1.45rem,2.3vw,2rem);font-weight:700}.loan-index-header p{margin:.4rem 0 0;color:#7b8794}.loan-index-summary{margin-bottom:.25rem}.loan-index-metric{display:flex;min-height:120px;margin-bottom:1rem;overflow:hidden;border:1px solid var(--default-border);border-radius:.7rem;background:var(--custom-white);box-shadow:0 .22rem .8rem rgba(15,23,42,.04)}.loan-index-metric__icon{display:inline-flex;flex:0 0 72px;align-items:center;justify-content:center;color:var(--primary-color);background:var(--primary01);font-size:1.45rem}.loan-index-metric>div{display:flex;flex:1;flex-direction:column;justify-content:center;min-width:0;padding:1rem}.loan-index-metric span:not(.loan-index-metric__icon),.loan-index-metric small{color:#7b8794;font-size:.72rem}.loan-index-metric strong{margin:.23rem 0;color:#263442;font-size:1.55rem;line-height:1.2;white-space:nowrap}.loan-index-metric__currency{font-size:1.05rem!important}.loan-index-metric--success .loan-index-metric__icon{color:rgb(var(--success-rgb));background:rgba(var(--success-rgb),.1)}.loan-index-metric--info .loan-index-metric__icon{color:rgb(var(--info-rgb));background:rgba(var(--info-rgb),.1)}.loan-index-metric--warning .loan-index-metric__icon{color:rgb(var(--warning-rgb));background:rgba(var(--warning-rgb),.12)}.loan-index-metric--danger .loan-index-metric__icon{color:rgb(var(--danger-rgb));background:rgba(var(--danger-rgb),.1)}
+.loan-index-shell,.loan-index-table-card,.loan-index-guide-card,.loan-index-status-card{overflow:hidden;border:1px solid var(--default-border);border-radius:.75rem;background:var(--custom-white);box-shadow:0 .25rem 1rem rgba(15,23,42,.04)}.loan-index-shell{margin:0 0 1.25rem}.loan-index-shell__header,.loan-index-table-card__header{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 1.25rem;border-bottom:1px solid var(--default-border);background:rgba(var(--light-rgb),.28)}.loan-index-shell__title{display:flex;align-items:center;gap:.7rem}.loan-index-shell__title>span{display:inline-flex;align-items:center;justify-content:center;width:2.3rem;height:2.3rem;border-radius:.55rem;color:var(--primary-color);background:var(--primary01)}.loan-index-shell h2,.loan-index-table-card h2{margin:0;color:#263442;font-size:1rem;font-weight:700}.loan-index-shell p,.loan-index-table-card p{margin:.2rem 0 0;color:#7b8794;font-size:.77rem}.loan-index-filter-state{padding:.34rem .55rem;border-radius:2rem;color:rgb(var(--success-rgb));background:rgba(var(--success-rgb),.1);font-size:.72rem;font-weight:700}.loan-index-shell__body{padding:1.15rem 1.25rem}.loan-index-filter-form label{display:block;margin-bottom:.4rem;color:#536273;font-size:.75rem;font-weight:700}.loan-index-filter-form .form-control{min-height:2.55rem;border-color:var(--default-border);border-radius:.45rem;box-shadow:none;font-size:.84rem}.loan-index-filter-form .form-control:focus{border-color:var(--primary-color);box-shadow:0 0 0 .18rem var(--primary01)}.loan-index-input-icon{position:relative}.loan-index-input-icon i{position:absolute;z-index:2;top:50%;left:.8rem;color:#9aa4af;transform:translateY(-50%);pointer-events:none}.loan-index-input-icon .form-control{padding-left:2.3rem}.loan-index-filter-form__actions{display:flex;align-items:flex-end;gap:.45rem}.loan-index-filter-form__actions .btn{display:inline-flex;flex:1;align-items:center;justify-content:center;min-height:2.55rem;margin:0!important;white-space:nowrap}.loan-index-filter-form__actions .btn-light{border:1px solid var(--default-border)}
+.loan-index-table-card__header{background:var(--custom-white)}.loan-index-table-wrap{border-radius:0 0 .75rem .75rem}.loan-index-table{min-width:1500px;margin:0}.loan-index-table>thead>tr>th{padding:.85rem .75rem;border-bottom:1px solid var(--default-border);color:#667381;background:#f7f9fb;font-size:.68rem;font-weight:800;letter-spacing:.045em;text-transform:uppercase;white-space:nowrap}.loan-index-table>tbody>tr>td{padding:.82rem .75rem;border-top-color:#edf0f3;vertical-align:middle;font-size:.8rem}.loan-index-table>tbody>tr:hover{background:rgba(var(--primary-rgb),.025)}.loan-index-code{display:inline-block;padding:.3rem .48rem;border-radius:.35rem;color:#1d4ed8;background:var(--primary01);font-size:.74rem;font-weight:800;white-space:nowrap}.loan-index-person,.loan-index-user{display:block;color:#263442;font-size:.8rem}.loan-index-table td small{display:block;margin-top:.22rem;color:#8a96a3;font-size:.7rem}.loan-index-company{color:#536273}.loan-index-date{color:#536273;font-size:.74rem;white-space:nowrap}.loan-index-date i{margin-right:.25rem;color:#9aa4af}.loan-index-installment{display:inline-block;min-width:2.35rem;padding:.23rem .4rem;border-radius:.3rem;background:#eef3f7;font-size:.73rem;font-weight:800}.loan-index-amount{color:rgb(var(--success-rgb));white-space:nowrap}.loan-index-paid{color:rgb(var(--info-rgb));white-space:nowrap}.loan-index-outstanding{color:rgb(var(--danger-rgb));white-space:nowrap}.loan-index-note{display:inline-block;max-width:175px;color:#5d6b78;font-size:.72rem;line-height:1.35}.loan-index-note--rejected{padding:.25rem .4rem;border-radius:.3rem;color:rgb(var(--danger-rgb));background:rgba(var(--danger-rgb),.08)}.loan-index-detail{padding:.36rem .56rem;font-size:.72rem;white-space:nowrap}.loan-index-detail i{margin-left:.2rem}.loan-index-empty{padding:4.5rem 1.25rem;text-align:center}.loan-index-empty__icon{display:inline-flex;align-items:center;justify-content:center;width:4rem;height:4rem;margin-bottom:1rem;border-radius:50%;color:var(--primary-color);background:var(--primary01);font-size:1.35rem}.loan-index-empty h3{margin:0 0 .4rem;color:#263442;font-size:1.08rem;font-weight:700}.loan-index-empty p{margin:0 0 1.1rem;color:#7b8794}.loan-index-empty .btn{border:1px solid var(--default-border)}
+.company-index-distribution{margin:0 0 1.25rem;padding:1.15rem 1.25rem;border:1px solid var(--default-border);border-radius:.75rem;background:var(--custom-white);box-shadow:0 .25rem 1rem rgba(15,23,42,.04)}.company-index-distribution__header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem;padding-bottom:.85rem;border-bottom:1px solid var(--default-border)}.company-index-distribution__header h3{margin:0;color:#263442;font-size:.95rem;font-weight:700}.company-index-distribution__header p{margin:.18rem 0 0;color:#7b8794;font-size:.74rem}.company-index-distribution__total{flex:0 0 auto;padding:.3rem .6rem;border-radius:.35rem;color:var(--primary-color);background:var(--primary01);font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}.company-index-distribution__item{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:.5rem;margin-bottom:1rem;padding:.85rem .95rem;border:1px solid var(--default-border);border-radius:.5rem}.company-index-distribution__name{min-width:0;flex:1 1 auto}.company-index-distribution__name a{display:block;overflow:hidden;color:#263442;font-size:.84rem;font-weight:600;text-overflow:ellipsis;white-space:nowrap}.company-index-distribution__name a:hover{color:var(--primary-color)}.company-index-distribution__name>span{display:block;margin-top:.3rem}.company-index-distribution__value{flex:0 0 auto;text-align:right}.company-index-distribution__value strong{display:block;color:#263442;font-size:1.25rem;line-height:1.2}.company-index-distribution__value small{color:#7b8794;font-size:.7rem}.company-index-distribution__bar{flex:1 1 100%;overflow:hidden;height:.3rem;border-radius:.15rem;background:rgba(var(--light-rgb),.6)}.company-index-distribution__bar>span{display:block;height:100%;background:var(--primary-color)}.company-distribution-group{margin-bottom:.35rem}.company-distribution-group+.company-distribution-group{margin-top:1.15rem;padding-top:1.15rem;border-top:1px solid var(--default-border)}.company-distribution-group__title{display:flex;flex-wrap:wrap;align-items:baseline;gap:.5rem;margin:0 0 .85rem;color:#263442;font-size:.82rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase}.company-distribution-group__title>small{color:#7b8794;font-size:.72rem;font-weight:500;letter-spacing:0;text-transform:none}.company-distribution-group__empty,.company-distribution-group__no-match{margin:0 0 1rem;font-size:.78rem}@media (max-width:575.98px){.company-index-distribution{padding:1rem}.company-index-distribution__header{flex-direction:column}}.loan-index-bottom-cards{margin-top:1.25rem}.loan-index-guide-card,.loan-index-status-card{height:calc(100% - 1rem);margin-bottom:1rem;padding:1.15rem 1.25rem}.loan-index-guide-card__header{display:flex;align-items:center;gap:.7rem;margin-bottom:.9rem}.loan-index-guide-card__header>i{color:rgb(var(--warning-rgb));font-size:1.3rem}.loan-index-guide-card h3,.loan-index-status-card h3{margin:0;color:#263442;font-size:.95rem;font-weight:700}.loan-index-guide-card p{margin:.18rem 0 0;color:#7b8794;font-size:.74rem}.loan-index-guide-card ol{margin:0;padding:0;list-style:none}.loan-index-guide-card li{display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-top:1px solid #edf0f3;color:#536273;font-size:.78rem}.loan-index-guide-card li>span{display:inline-flex;flex:0 0 1.35rem;align-items:center;justify-content:center;width:1.35rem;height:1.35rem;border-radius:50%;color:var(--primary-color);background:var(--primary01);font-size:.68rem;font-weight:800}.loan-index-status-card>div{display:flex;align-items:center;gap:.5rem;padding:.5rem 0;border-bottom:1px solid #edf0f3;color:#536273;font-size:.77rem}.loan-index-status-card>div:last-child{border-bottom:0}.loan-index-status-card strong{margin-left:auto;color:#667381;font-size:.71rem;font-weight:600;text-align:right}.loan-index-status-dot{display:inline-block;flex:0 0 .55rem;width:.55rem;height:.55rem;border-radius:50%;background:var(--primary-color)}.loan-index-status-dot--success{background:rgb(var(--success-rgb))}.loan-index-status-dot--danger{background:rgb(var(--danger-rgb))}.loan-index-status-dot--muted{background:#9aa4af}
+@media(max-width:767.98px){.loan-index-header{align-items:flex-start;flex-direction:column}.loan-index-header__action,.loan-index-table-card__header .btn{width:100%}.loan-index-shell__header,.loan-index-table-card__header{align-items:flex-start;flex-direction:column}.loan-index-shell__body{padding:1rem}.loan-index-filter-form__actions{width:100%}.loan-index-filter-form__actions .btn{flex:1}.loan-index-metric{min-height:105px}}@media(max-width:420px){.loan-index-filter-form__actions{flex-direction:column}.loan-index-filter-form__actions .btn{width:100%}.loan-index-metric__currency{font-size:.94rem!important}}
+
+/* Salary adjustments */
+.salary-adjustment-form-note{display:flex;align-items:center;gap:.55rem;margin-bottom:1rem;padding:.75rem .9rem;border:1px solid rgba(var(--warning-rgb),.22);border-radius:.55rem;color:#7a5b16;background:rgba(var(--warning-rgb),.1);font-size:.8rem;font-weight:700}.salary-adjustment-form-note i{color:rgb(var(--warning-rgb));font-size:1rem}.salary-adjustment-form .form-group{margin-bottom:1rem}.salary-adjustment-form .select2-container .select2-selection--single{min-height:2.55rem;border-color:var(--default-border);border-radius:.45rem}.salary-adjustment-form .select2-container--default .select2-selection--multiple{min-height:2.55rem;border-color:var(--default-border);border-radius:.45rem}.salary-adjustment-form .select2-container--default .select2-selection--multiple .select2-selection__choice{border-color:var(--default-border);border-radius:.35rem;background:#eef3f7;color:#536273}.salary-adjustment-check{display:block;margin:0;padding:.75rem .9rem;border:1px solid var(--default-border);border-radius:.55rem;background:#f9fbfd;color:#263442}.salary-adjustment-check input{margin-right:.45rem}.salary-adjustment-check span{font-weight:700}.salary-adjustment-check small{display:block;margin:.25rem 0 0 1.35rem;color:#7b8794;font-size:.72rem;font-weight:400}.salary-adjustment-form-actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.1rem;padding-top:1rem;border-top:1px solid var(--default-border)}.salary-adjustment-form-actions .btn{display:inline-flex;align-items:center;justify-content:center;min-height:2.45rem;margin:0!important;white-space:nowrap}.salary-adjustment-download-help{margin:.7rem 0 0}.salary-adjustment-definition-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.85rem;margin:0}.salary-adjustment-definition-list>div{padding:.85rem;border:1px solid var(--default-border);border-radius:.55rem;background:#f9fbfd}.salary-adjustment-definition-list dt{margin:0 0 .3rem;color:#7b8794;font-size:.7rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase}.salary-adjustment-definition-list dd{margin:0;color:#263442;font-size:.88rem;font-weight:700}.salary-adjustment-detail-grid{margin-top:0}.salary-adjustment-action-shell{margin-top:.25rem}.salary-adjustment-actions{display:flex;flex-wrap:wrap;gap:.5rem}.salary-adjustment-actions .btn{display:inline-flex;align-items:center;justify-content:center;min-height:2.4rem;margin:0!important;white-space:nowrap}.salary-adjustment-detail-card{margin-top:1.25rem}.salary-adjustment-employee-table{min-width:900px}.salary-adjustment-processed-table{min-width:1650px}.salary-adjustment-table-body{padding:1rem 1.25rem}.salary-adjustment-table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}.salary-adjustment-table{min-width:1180px;margin:0}.salary-adjustment-table .form-control{min-width:130px;min-height:2.2rem;border-color:var(--default-border);border-radius:.45rem;box-shadow:none;font-size:.8rem}.salary-adjustment-table .form-control:focus{border-color:var(--primary-color);box-shadow:0 0 0 .18rem var(--primary01)}.salary-adjustment-table .js-adjustment-submit{white-space:nowrap}.salary-adjustment-table .js-increase-value{font-weight:800}.salary-adjustment-ajax-info{margin-bottom:10px}.salary-adjustment-ajax-info.is-hidden{display:none}.salary-adjustment-save-status{display:none;margin-left:8px;white-space:nowrap}
+@media(max-width:767.98px){.salary-adjustment-form-actions,.salary-adjustment-actions{flex-direction:column}.salary-adjustment-form-actions .btn,.salary-adjustment-actions .btn{width:100%}.salary-adjustment-definition-list{grid-template-columns:1fr}.salary-adjustment-table-body{padding:1rem}.salary-adjustment-table{min-width:960px}.salary-adjustment-table .form-control{font-size:12px;padding:6px 8px}.salary-adjustment-table .js-adjustment-submit{font-size:12px;padding:6px 10px}}
+
+/* Salary schema editor */
+.salary-schema-page {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding-bottom: 6rem;
+}
+
+.salary-schema-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 1440px;
+  margin: 0 auto 1.25rem;
+}
+
+.salary-schema-page-header__eyebrow {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--primary-color);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.salary-schema-page-header h1 {
+  margin: 0;
+  color: var(--default-text-color);
+  font-size: clamp(1.45rem, 2.3vw, 2rem);
+  font-weight: 700;
+}
+
+.salary-schema-page-header p {
+  margin: 0.4rem 0 0;
+  color: var(--text-muted);
+}
+
+.salary-schema-form {
+  display: grid;
+  gap: 1.25rem;
+}
+
+/* Form-section card.
+   Originally written for the salary schema form; the component is generic, so
+   the .hris-form-card* aliases below let other master-data forms (companies,
+   …) reuse it without implying a payroll context. Same component, neutral
+   name — do not fork the properties. */
+.salary-schema-card,
+.hris-form-card {
+  overflow: hidden;
+  border: 1px solid var(--default-border);
+  border-radius: 0.75rem;
+  background: var(--custom-white);
+  box-shadow: 0 0.25rem 1rem rgba(15, 23, 42, 0.035);
+}
+
+.salary-schema-card__header,
+.hris-form-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid var(--default-border);
+  background: rgba(var(--light-rgb), 0.32);
+}
+
+.salary-schema-card__header h3,
+.hris-form-card__header h3 {
+  margin: 0;
+  color: var(--default-text-color);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.salary-schema-card__header p,
+.hris-form-card__header p {
+  margin: 0.2rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.salary-schema-card__icon,
+.hris-form-card__icon {
+  display: inline-flex;
+  flex: 0 0 2.5rem;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.6rem;
+  color: var(--primary-color);
+  background: var(--primary01);
+  font-size: 1rem;
+}
+
+.salary-schema-card__icon--success,
+.hris-form-card__icon--success { color: rgb(var(--success-rgb)); background: rgba(var(--success-rgb), 0.1); }
+.salary-schema-card__icon--info,
+.hris-form-card__icon--info { color: rgb(var(--info-rgb)); background: rgba(var(--info-rgb), 0.1); }
+.salary-schema-card__icon--warning,
+.hris-form-card__icon--warning { color: rgb(var(--warning-rgb)); background: rgba(var(--warning-rgb), 0.12); }
+.salary-schema-card__body,
+.hris-form-card__body { padding: 1.25rem; }
+
+/* Action slot pinned to the right of a card header (e.g. "+ Brand Baru"). */
+.hris-form-card__action {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* Form footer — the submit row belongs to the card, not loose underneath it.
+   Right-aligned so the primary action sits where the eye finishes reading the
+   last field, separated from the body by a hairline and a muted surface. */
+.hris-form-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--default-border);
+  background: var(--hris-surface-muted);
+}
+
+.hris-form-card__footer .btn {
+  margin: 0 !important;
+}
+
+@media (max-width: 575.98px) {
+  .hris-form-card__footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}
+
+/* Outsourcing detail cards.
+   The company summary stays beside the contact/payment stack, while the
+   editable per-brand tariff table owns a full-width card below them. Keeping
+   the table out of a half-width Bootstrap column prevents the controls from
+   colliding and gives the cards one predictable reading order. */
+.outsourcings-show-details {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 1.25rem;
+  align-items: start;
+  margin-bottom: 1.25rem;
+}
+
+.outsourcings-show-stack {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.outsourcings-show-details > .hris-form-card,
+.outsourcings-show-stack > .hris-form-card,
+.outsourcing-brand-rates-card {
+  min-width: 0;
+  margin: 0;
+}
+
+.outsourcings-show-page .people-profile-list {
+  padding: 0;
+}
+
+.outsourcings-show-page .people-profile-list dd {
+  max-width: 65%;
+  word-break: break-word;
+}
+
+.outsourcings-show-page .people-profile-list dd p {
+  margin: 0;
+}
+
+.outsourcing-brand-rates-table {
+  min-width: 1080px;
+}
+
+.outsourcing-brand-rates-table__brand { min-width: 170px; }
+.outsourcing-brand-rates-table__percentage { width: 130px; }
+.outsourcing-brand-rates-table__management-fee { width: 175px; }
+/* Rupiah needs more room than a percentage: a longer heading ("Fee Nominal
+   (Rp)"), a two-character addon, and values in the hundreds of thousands. At
+   the percentage width the heading wrapped onto two lines and the row grew. */
+.outsourcing-brand-rates-table__nominal { width: 185px; }
+.outsourcing-brand-rates-table__status { width: 120px; }
+.outsourcing-brand-rates-table__audit { width: 190px; }
+.outsourcing-brand-rates-table__remove { width: 130px; }
+
+.outsourcing-brand-rates-table .form-control {
+  min-width: 6.5rem;
+}
+
+.outsourcing-brand-rates-table select.form-control {
+  min-width: 10.5rem;
+}
+
+.outsourcing-brand-rates-table > tbody > tr > td {
+  vertical-align: middle;
+}
+
+/* Jabatan per Brand (owner 2026-09-17): one block per brand below the tariff
+   table, tinted and separated so each reads as belonging to its brand. */
+.outsourcing-brand-rate-positions-section {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--default-border);
+}
+
+.outsourcing-brand-rate-positions-section__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+
+.outsourcing-brand-rate-positions {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem 0.75rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.5rem;
+  background: rgba(var(--light-rgb), 0.35);
+}
+
+.outsourcing-brand-rate-positions__title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin: 0.35rem 0 0.4rem;
+}
+
+.outsourcing-brand-rate-positions-table__position { min-width: 170px; }
+.outsourcing-brand-rate-positions-table__amount { min-width: 150px; white-space: nowrap; }
+
+.outsourcing-brand-rate-positions-input {
+  min-width: 9rem;
+  flex-wrap: nowrap;
+}
+
+.outsourcing-brand-rate-positions-new-row > td {
+  border-top: 2px solid var(--default-border);
+}
+
+.outsourcing-brand-rates-new-row > td {
+  border-top: 2px solid var(--default-border);
+  background: rgba(var(--light-rgb), 0.24);
+}
+
+.outsourcing-brand-rates-percentage-input {
+  min-width: 7.5rem;
+  flex-wrap: nowrap;
+}
+
+.outsourcing-brand-rates-percentage-input .form-control {
+  min-width: 0;
+}
+
+.outsourcing-brand-rates-percentage-input .input-group-addon {
+  min-width: 2.25rem;
+  justify-content: center;
+}
+
+.outsourcing-brand-rates-remove-button {
+  min-width: 7.5rem;
+  margin: 0;
+}
+
+.outsourcing-brand-rates-help {
+  margin: 0.9rem 0 0;
+  line-height: 1.55;
+}
+
+@media (max-width: 991.98px) {
+  .outsourcings-show-details {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A breadcrumb inside the page header card sits on the TITLE line, pushed to the
+   right edge by the auto left margin, with the action buttons on the line
+   directly below it (see the rule after this one). It also removes the need for a
+   second `.content-header`, which is itself a card and would render as a large
+   empty white box containing nothing but the breadcrumb.
+
+   `flex: 0 1 auto` — NOT a 100% basis — is what keeps it on the title line and
+   lets the chip shrink to its trail instead of stretching into a full-width bar.
+   The line break under it comes from the actions container, not from here. */
+.layout-decoration-header > .breadcrumb {
+  flex: 0 1 auto;
+  margin: 0.15rem 0 0 auto;
+  padding: 0.4rem 0.7rem;
+  background: transparent;
+}
+
+/* Page-header action buttons always sit on the RIGHT edge of the header.
+   `margin-left: auto` rather than a float, because the header is a flex row and
+   floats are ignored on flex items — a hand-added `.pull-right` there does
+   nothing, which is why the class is neutralised below rather than left to look
+   as if it works. `auto` right-aligns the group whichever line it lands on: next
+   to the title, or on its own line under the breadcrumb (which claims
+   `flex: 1 1 100%` above). The <=991.98px branch in layout-decoration.css turns
+   the header into a column and stretches the actions to full width; `auto`
+   margins collapse there, so the mobile layout is untouched. */
+.layout-decoration-header > .layout-decoration-actions {
+  /* `flex-basis: 100%` puts the buttons on a line of their own, directly under
+     the title + breadcrumb line; `justify-content: flex-end` then right-aligns
+     them so their right edge lines up with the breadcrumb above. `margin-left`
+     is redundant while the basis is 100% and kept only so the group still sits
+     right if a page ever renders it beside the title. */
+  flex: 1 1 100%;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+/* `!important` because the general `.pull-right` utility at the foot of this
+   file declares `float: right !important`; without a matching flag this
+   deliberate neutraliser would lose to it. The float is inert on a flex item
+   either way — the flag keeps the stylesheet honest about which rule governs
+   the header. */
+.layout-decoration-header > .layout-decoration-actions.pull-right {
+  float: none !important;
+}
+
+/* Inline advisory note inside a form card — points the operator at the screen
+   that actually owns a related field. Informational only, never an error. */
+.hris-form-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin-top: 1rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--default-border);
+  border-radius: var(--hris-radius-md, 0.55rem);
+  background: rgba(var(--light-rgb), 0.32);
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.hris-form-note > i {
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+  color: var(--primary-color);
+}
+.salary-field-grid > [class*="col-"],
+.hris-field-grid > [class*="col-"] { margin-bottom: 0.15rem; }
+
+/* Row gap for a form-card field grid.
+   The views here write `row g-3` because that is Bootstrap's gutter idiom, but
+   the theme ships a TRIMMED bootstrap.min.css with no .g-* classes in it at
+   all — verified by grep — so `g-3` is inert and a wrapped grid renders with
+   zero vertical gap, which reads as one run-on block. Setting the gutter
+   variable is what .g-3 would have done: .row > * already applies
+   margin-top: var(--bs-gutter-y), and .row cancels the first row with a
+   matching negative margin-top.
+   Scoped to its own class rather than defining .g-3 globally, because every
+   existing `row g-3` in the app was laid out and approved with no gap. */
+.hris-form-grid { --bs-gutter-y: 1rem; }
+
+.salary-schema-form .form-label,
+.hris-form .form-label {
+  margin-bottom: 0.45rem;
+  color: var(--default-text-color);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.salary-schema-form .form-control,
+.salary-schema-form .form-select,
+.hris-form .form-control,
+.hris-form .form-select {
+  min-height: 2.65rem;
+  border-color: var(--default-border);
+  border-radius: 0.45rem;
+  background-color: var(--custom-white);
+  font-size: 0.875rem;
+  box-shadow: none;
+}
+
+.salary-schema-form .form-control:focus,
+.salary-schema-form .form-select:focus,
+.hris-form .form-control:focus,
+.hris-form .form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.18rem var(--primary01);
+}
+
+.salary-field-hint,
+.hris-field-hint {
+  display: block;
+  margin-top: 0.38rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+/* Multi-value select2 (e.g. "Brand Dikelola"). The theme sizes the single-value
+   container only, so without this the multiple variant sits shorter than the
+   text inputs beside it and the chips crowd the border. */
+.hris-form .select2-container--default .select2-selection--multiple {
+  min-height: 2.65rem;
+  padding: 0.15rem 0.3rem;
+  border-color: var(--default-border);
+  border-radius: 0.45rem;
+}
+
+.hris-form .select2-container--default.select2-container--focus .select2-selection--multiple {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.18rem var(--primary01);
+}
+
+.hris-form .select2-container--default .select2-selection--multiple .select2-selection__choice {
+  margin: 0.2rem 0.25rem 0.2rem 0;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--primary02);
+  border-radius: 0.3rem;
+  color: var(--primary-color);
+  background: var(--primary01);
+  font-size: 0.76rem;
+}
+
+.salary-readonly[readonly],
+.hris-readonly[readonly] {
+  color: var(--text-muted);
+  background: rgba(var(--light-rgb), 0.6);
+  cursor: not-allowed;
+}
+
+.salary-input-icon,
+.salary-input-suffix,
+.hris-input-icon,
+.hris-input-suffix {
+  position: relative;
+}
+
+.salary-input-icon > i,
+.hris-input-icon > i {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 0.85rem;
+  color: var(--text-muted);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.salary-input-icon .form-control,
+.hris-input-icon .form-control { padding-left: 2.45rem; }
+.salary-input-suffix,
+.hris-input-suffix { display: flex; }
+.salary-input-suffix .form-control,
+.hris-input-suffix .form-control { border-radius: 0.45rem 0 0 0.45rem; }
+.salary-input-suffix > span,
+.hris-input-suffix > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--default-border);
+  border-left: 0;
+  border-radius: 0 0.45rem 0.45rem 0;
+  color: var(--text-muted);
+  background: rgba(var(--light-rgb), 0.55);
+  font-weight: 700;
+}
+
+/* The standard employee info card slot (owner 2026-09-19): the same card on
+   every single-employee page, spaced off the section that follows it. */
+.employee-info-card-slot { margin-bottom: 1rem; }
+.employee-info-card__details { overflow-wrap: anywhere; }
+
+.salary-employee-card {
+  display: flex;
+  position: relative;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 5.25rem;
+  padding: 0.85rem 3rem 0.85rem 0.9rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.6rem;
+  color: inherit;
+  background: rgba(var(--light-rgb), 0.25);
+  text-decoration: none !important;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+
+.salary-employee-card:hover {
+  border-color: var(--primary-color);
+  color: inherit;
+  background: var(--primary005);
+  transform: translateY(-1px);
+}
+
+.salary-employee-card__avatar {
+  display: inline-flex;
+  flex: 0 0 3rem;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  color: var(--primary-color);
+  background: var(--primary01);
+  font-size: 1.2rem;
+}
+
+.salary-employee-card__content { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; }
+.salary-employee-card__content strong { color: var(--default-text-color); font-size: 0.95rem; }
+.salary-employee-card__content span { margin-top: 0.1rem; color: var(--text-muted); font-size: 0.78rem; }
+.salary-employee-card__content small { margin-top: 0.15rem; color: var(--text-muted); font-size: 0.7rem; }
+.salary-employee-card__meta { display: flex; flex-direction: column; max-width: 35%; text-align: right; color: var(--default-text-color); font-size: 0.78rem; }
+.salary-employee-card__meta small { margin-top: 0.12rem; color: var(--text-muted); }
+.salary-employee-card__arrow { position: absolute; right: 1rem; color: var(--text-muted); }
+
+.salary-admin-setting {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--default-border);
+}
+
+.salary-switch-row,
+.hris-switch-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0;
+  cursor: pointer;
+}
+
+.salary-switch-row > span:last-child,
+.hris-switch-row > span:last-child { display: flex; flex-direction: column; }
+.salary-switch-row strong,
+.hris-switch-row strong { color: var(--default-text-color); font-size: 0.82rem; }
+.salary-switch-row small,
+.hris-switch-row small { margin-top: 0.12rem; color: var(--text-muted); font-size: 0.72rem; }
+.salary-switch-input,
+.hris-switch-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.salary-switch-control,
+.hris-switch-control {
+  position: relative;
+  flex: 0 0 2.45rem;
+  width: 2.45rem;
+  height: 1.35rem;
+  border-radius: 2rem;
+  background: rgb(var(--light-rgb));
+  transition: background-color 0.15s ease;
+}
+
+.salary-switch-control:after,
+.hris-switch-control:after {
+  content: "";
+  position: absolute;
+  top: 0.18rem;
+  left: 0.2rem;
+  width: 0.98rem;
+  height: 0.98rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2);
+  transition: transform 0.15s ease;
+}
+
+.salary-switch-input:checked + .salary-switch-control,
+.hris-switch-input:checked + .hris-switch-control { background: var(--primary-color); }
+.salary-switch-input:checked + .salary-switch-control:after,
+.hris-switch-input:checked + .hris-switch-control:after { transform: translateX(1.05rem); }
+.salary-switch-input:focus + .salary-switch-control,
+.hris-switch-input:focus + .hris-switch-control { box-shadow: 0 0 0 0.18rem var(--primary02); }
+.salary-toggle-field,
+.hris-toggle-field { display: flex; align-items: flex-end; padding-bottom: 0.45rem; }
+
+.salary-estimate-grid { margin-bottom: -0.25rem; }
+.salary-estimate-card {
+  height: calc(100% - 1rem);
+  margin-bottom: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--default-border);
+  border-left: 3px solid var(--primary-color);
+  border-radius: 0.55rem;
+  background: var(--custom-white);
+}
+
+.salary-estimate-card > span,
+.salary-estimate-card > small { display: block; color: var(--text-muted); font-size: 0.72rem; }
+.salary-estimate-card > strong { display: block; margin: 0.35rem 0 0.25rem; color: var(--default-text-color); font-size: 1.15rem; }
+.salary-estimate-card--danger { border-left-color: rgb(var(--danger-rgb)); }
+.salary-estimate-card--danger > strong { color: rgb(var(--danger-rgb)); }
+.salary-estimate-card--success { border-left-color: rgb(var(--success-rgb)); }
+.salary-estimate-card--success > strong { color: rgb(var(--success-rgb)); }
+
+.salary-form-divider,
+.hris-form-divider {
+  position: relative;
+  height: 1px;
+  margin: 0.7rem 0 0.35rem;
+  background: var(--default-border);
+}
+
+.salary-form-divider > span,
+.hris-form-divider > span {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  padding-right: 0.75rem;
+  color: var(--text-muted);
+  background: var(--custom-white);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: translateY(-50%);
+}
+
+.salary-subsection-title,
+.hris-subsection-title {
+  margin: 0 0 0.85rem;
+  color: var(--default-text-color);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.salary-schema-errors,
+.hris-form-errors {
+  display: flex;
+  gap: 0.85rem;
+  margin: 0;
+  border: 1px solid rgba(var(--danger-rgb), 0.2);
+  border-radius: 0.6rem;
+}
+
+.salary-schema-errors__icon,
+.hris-form-errors__icon { color: rgb(var(--danger-rgb)); font-size: 1.35rem; }
+.salary-schema-errors ul,
+.hris-form-errors ul { margin: 0.35rem 0 0; padding-left: 1rem; }
+
+.salary-schema-actions,
+.hris-form-actions {
+  display: flex;
+  position: sticky;
+  z-index: 10;
+  bottom: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.65rem;
+  background: var(--custom-white);
+  box-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.salary-schema-actions__note,
+.hris-form-actions__note { display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted); font-size: 0.75rem; }
+.salary-schema-actions__note i,
+.hris-form-actions__note i { color: var(--primary-color); }
+.salary-schema-actions__buttons,
+.hris-form-actions__buttons { display: flex; flex: 0 0 auto; align-items: center; gap: 0.5rem; }
+.salary-schema-actions .btn,
+.hris-form-actions .btn { width: auto !important; margin: 0 !important; white-space: nowrap; }
+.salary-submit-button,
+.hris-submit-button { min-width: 11rem; }
+.salary-cancel-button,
+.hris-cancel-button { border: 1px solid var(--default-border) !important; }
+
+@media (max-width: 767.98px) {
+  .salary-schema-page-header { align-items: flex-start; }
+  .salary-schema-page-header p { font-size: 0.78rem; }
+  .salary-schema-card__body { padding: 1rem; }
+  .salary-employee-card { align-items: flex-start; }
+  .salary-employee-card__meta { display: none; }
+.salary-schema-actions,
+  .hris-form-actions { position: static; flex-direction: column; align-items: stretch; }
+.salary-schema-actions__buttons,
+  .hris-form-actions__buttons { width: 100%; }
+.salary-schema-actions__buttons .btn,
+  .hris-form-actions__buttons .btn { flex: 1 1 auto; }
+.salary-schema-actions__note,
+  .hris-form-actions__note { justify-content: center; text-align: center; }
+}
+
+@media (max-width: 479.98px) {
+  .salary-schema-page-header { flex-direction: column; }
+.salary-schema-actions__buttons,
+  .hris-form-actions__buttons { flex-direction: column-reverse; }
+.salary-schema-actions__buttons .btn,
+  .hris-form-actions__buttons .btn { width: 100% !important; }
+  .salary-employee-card__avatar { display: none; }
+}
+
+@media (max-width: 991.98px) {
+  .application-navigation-groups {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 575.98px) {
+  .application-navigation-groups {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Normalize sidebar icon, label, and arrow alignment across menu depths. */
+.app-sidebar .main-menu .side-menu__item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem;
+  min-height: 2.45rem;
+  line-height: 1.25;
+}
+
+.app-sidebar .main-menu .side-menu__icon {
+  display: inline-flex;
+  flex: 0 0 1.25rem;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 1.25rem;
+  margin-inline-end: 0;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.app-sidebar .main-menu .side-menu__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.25;
+  display: inline-flex !important;
+  align-items: center !important;
+  text-align: start !important;
+}
+
+.app-sidebar .main-menu .side-menu__angle {
+  display: inline-flex !important;
+  flex: 0 0 auto;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-inline-start: auto;
+  position: static !important;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.app-sidebar .main-menu .slide-menu .side-menu__item {
+  gap: 0.5rem;
+  line-height: 1.25;
+}
+
+.app-sidebar .main-menu .slide-menu .side-menu__item .side-menu__angle {
+  align-self: center;
+}
+
+@media (min-width: 992px) {
+  [data-nav-layout="horizontal"] .app-sidebar .main-menu > .slide > .side-menu__item {
+    display: flex !important;
+    align-items: center !important;
+    text-align: start !important;
+  }
+
+  [data-nav-layout="horizontal"] .app-sidebar .main-menu > .slide > .side-menu__item .side-menu__icon,
+  [data-nav-layout="horizontal"] .app-sidebar .main-menu > .slide > .side-menu__item .side-menu__angle {
+    transform: translateY(0.12rem);
+  }
+}
+
+/* Keep the active horizontal section visible without adding a coloured bar. */
+@media (min-width: 992px) {
+  [data-nav-layout="horizontal"] .app-sidebar .main-menu > .slide > .side-menu__item.active,
+  [data-nav-layout="horizontal"] .app-sidebar .main-menu > .slide.active > .side-menu__item {
+    color: var(--primary-color);
+    font-weight: 700;
+    box-shadow: inset 0 -2px 0 var(--primary-color);
+  }
+
+  [data-nav-layout="horizontal"] .app-sidebar .main-menu > .slide > .side-menu__item.active .side-menu__label,
+  [data-nav-layout="horizontal"] .app-sidebar .main-menu > .slide.active > .side-menu__item .side-menu__label,
+  [data-nav-layout="horizontal"] .app-sidebar .main-menu > .slide > .side-menu__item.active .side-menu__icon,
+  [data-nav-layout="horizontal"] .app-sidebar .main-menu > .slide.active > .side-menu__item .side-menu__icon {
+    color: var(--primary-color);
+  }
+
+  [data-nav-layout="horizontal"] .app-content > .container-fluid {
+    max-width: 1680px;
+  }
+}
+
+/* The old contextual tools should remain visually aligned with the fixed blue shell. */
+#setting_thumb {
+  background: var(--primary-color) !important;
+}
+
+.hris-context-trigger {
+  background: var(--primary-color) !important;
+}
+
+.hris-context-menu,
+.hris-context-menu a,
+.hris-context-menu .control-sidebar-subheading {
+  color: #ffffff;
+}
+
+.hris-context-menu a:hover,
+.hris-context-menu a:focus {
+  color: #ffffff;
+  opacity: 0.9;
+}
+
+/* People profile show page */
+.people-profile-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.people-profile-header h1 {
+  margin: 0.15rem 0 0.3rem;
+  color: var(--default-text-color);
+  font-size: 1.45rem;
+  font-weight: 800;
+}
+
+.people-profile-header p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.people-profile-header__eyebrow {
+  color: var(--primary-color);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.people-profile-header__actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.people-profile-header__actions .btn,
+.people-profile-card__actions .btn {
+  width: auto !important;
+  margin: 0 !important;
+  white-space: nowrap;
+}
+
+.people-profile-page {
+  padding-bottom: 2rem;
+}
+
+.people-profile-card,
+.people-side-card,
+.people-detail-shell,
+.people-content-card {
+  margin-bottom: 1rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.7rem;
+  background: var(--custom-white);
+  box-shadow: 0 0.35rem 1rem rgba(15, 23, 42, 0.04);
+}
+
+.people-profile-card {
+  overflow: hidden;
+}
+
+.people-profile-card__media {
+  padding: 1.35rem 1rem 1.1rem;
+  text-align: center;
+  background: linear-gradient(180deg, var(--primary005), rgba(var(--light-rgb), 0.28));
+}
+
+.people-profile-card__avatar {
+  width: 6.25rem;
+  height: 6.25rem;
+  margin: 0 auto 0.85rem;
+  border: 4px solid var(--custom-white);
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0.5rem 1.3rem rgba(15, 23, 42, 0.12);
+}
+
+.people-profile-card__media h2 {
+  margin: 0;
+  color: var(--default-text-color);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.people-profile-card__media p {
+  margin: 0.25rem 0 0.65rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.people-status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.55rem;
+  padding: 0.22rem 0.65rem;
+  border-radius: 2rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.people-status-badge--success {
+  color: rgb(var(--success-rgb));
+  background: rgba(var(--success-rgb), 0.1);
+}
+
+.people-status-badge--danger {
+  color: rgb(var(--danger-rgb));
+  background: rgba(var(--danger-rgb), 0.1);
+}
+
+.people-profile-list {
+  margin: 0;
+  padding: 0.4rem 1rem 0.2rem;
+}
+
+.people-profile-list > div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--default-border);
+}
+
+.people-profile-list > div:last-child {
+  border-bottom: 0;
+}
+
+.people-profile-list dt {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.people-profile-list dd {
+  margin: 0;
+  color: var(--default-text-color);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-align: right;
+}
+
+.people-profile-list__highlight dd {
+  color: var(--primary-color);
+}
+
+.people-profile-card__actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-top: 1px solid var(--default-border);
+}
+
+/* A POST action (e.g. "Generate Ulang NIK") needs its own <form>. Without this
+   the form is the grid item and its button shrinks to its text, unlike the
+   full-width link buttons beside it. `display: contents` lifts the button into
+   the grid; the form still submits normally. */
+.people-profile-card__action-form {
+  display: contents;
+}
+
+.people-profile-card__action-form .btn {
+  width: 100% !important;
+}
+
+.people-profile-card__actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.45rem;
+}
+
+.people-side-card {
+  padding: 1rem;
+}
+
+.people-side-card__header,
+.people-content-card__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.people-side-card__header h3,
+.people-content-card__header h3 {
+  margin: 0;
+  color: var(--default-text-color);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.people-side-card__header p,
+.people-content-card__header p {
+  margin: 0.15rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.73rem;
+}
+
+.people-section-icon {
+  display: inline-flex;
+  flex: 0 0 2.25rem;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.55rem;
+  color: var(--primary-color);
+  background: var(--primary01);
+}
+
+.people-contact-list > div {
+  position: relative;
+  padding: 0 0 0.8rem 1.85rem;
+  margin-bottom: 0.8rem;
+  border-bottom: 1px dashed var(--default-border);
+}
+
+.people-contact-list > div:last-child {
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+
+.people-contact-list i {
+  position: absolute;
+  top: 0.1rem;
+  left: 0;
+  color: var(--primary-color);
+}
+
+.people-contact-list span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.people-contact-list strong {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--default-text-color);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.people-detail-shell {
+  overflow: hidden;
+}
+
+.people-profile-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.75rem 0.75rem 0;
+  border-bottom: 1px solid var(--default-border) !important;
+  background: rgba(var(--light-rgb), 0.32);
+}
+
+.people-profile-tabs > li {
+  margin: 0 !important;
+}
+
+.people-profile-tabs > li > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.35rem;
+  margin: 0 !important;
+  border: 1px solid transparent !important;
+  border-radius: 0.55rem 0.55rem 0 0 !important;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.people-profile-tabs > li.active > a,
+.people-profile-tabs > li.active > a:focus,
+.people-profile-tabs > li.active > a:hover {
+  border-color: var(--default-border) !important;
+  border-bottom-color: var(--custom-white) !important;
+  color: var(--primary-color) !important;
+  background: var(--custom-white) !important;
+}
+
+.people-profile-tab-content {
+  padding: 1rem;
+}
+
+.people-content-card {
+  padding: 1rem;
+}
+
+.people-timeline {
+  display: grid;
+  grid-template-columns: 2.3rem minmax(0, 1fr);
+  column-gap: 0.75rem;
+  row-gap: 1rem;
+}
+
+.people-timeline__marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  color: #fff;
+  box-shadow: 0 0.35rem 0.9rem rgba(15, 23, 42, 0.12);
+}
+
+.people-timeline__marker--primary { background: var(--primary-color); }
+.people-timeline__marker--info { background: rgb(var(--info-rgb)); }
+.people-timeline__marker--success { background: rgb(var(--success-rgb)); }
+.people-timeline__marker--danger { background: rgb(var(--danger-rgb)); }
+.people-timeline__marker--education { background: rgb(var(--warning-rgb)); }
+
+.people-timeline__content {
+  margin-bottom: 0;
+}
+
+.people-info-grid,
+.people-document-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.people-info-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.people-info-grid--five {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.people-info-grid > div,
+.people-document-item {
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.55rem;
+  background: rgba(var(--light-rgb), 0.24);
+}
+
+.people-info-grid span,
+.people-document-item span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.people-info-grid strong,
+.people-document-item strong {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--default-text-color);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.people-document-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.people-document-item img {
+  width: 100%;
+  height: 5.75rem;
+  margin-top: 0.7rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.45rem;
+  background: var(--custom-white);
+  object-fit: cover;
+}
+
+.people-data-table {
+  margin-bottom: 1rem;
+}
+
+.people-data-table th {
+  color: var(--default-text-color);
+  font-size: 0.76rem;
+}
+
+.people-data-table td {
+  color: var(--default-text-color);
+  font-size: 0.75rem;
+  vertical-align: middle !important;
+}
+
+.people-severance-rules {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.people-severance-rules > div {
+  padding: 0.9rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.55rem;
+  background: rgba(var(--light-rgb), 0.24);
+}
+
+.people-severance-rules h4 {
+  margin: 0 0 0.55rem;
+  color: var(--default-text-color);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.people-severance-rules ul {
+  padding-left: 1rem;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+.people-embedded-section {
+  margin-bottom: 1rem;
+}
+
+.people-embedded-section__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.people-embedded-section__header h3 {
+  margin: 0;
+  color: var(--default-text-color);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.people-embedded-section__header p {
+  margin: 0.15rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.73rem;
+}
+
+.people-family-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.people-family-card {
+  min-width: 0;
+  padding: 0.9rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.55rem;
+  background: rgba(var(--light-rgb), 0.24);
+}
+
+.people-family-card span,
+.people-form-section h4 {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.people-family-card strong {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--default-text-color);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.people-family-card dl {
+  margin: 0.45rem 0 0;
+}
+
+.people-family-card dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 0.25rem;
+}
+
+.people-family-card dt,
+.people-family-card dd {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.people-family-card dd {
+  color: var(--default-text-color);
+  text-align: right;
+}
+
+.people-embedded-form {
+  margin: 0;
+}
+
+.people-embedded-form .form-group {
+  margin-bottom: 1rem;
+}
+
+.people-embedded-form .form-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--default-text-color);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.people-embedded-form .form-control {
+  min-height: 2.5rem;
+  border-color: var(--default-border);
+  border-radius: 0.45rem;
+  box-shadow: none;
+}
+
+.people-embedded-form textarea.form-control {
+  min-height: 5.5rem;
+  resize: vertical;
+}
+
+.people-form-section {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px dashed var(--default-border);
+}
+
+.people-form-section:last-of-type {
+  border-bottom: 0;
+}
+
+.people-form-section h4 {
+  margin: 0 0 0.75rem;
+}
+
+.people-field-hint {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.people-child-row {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) minmax(0, 0.8fr) minmax(10rem, 0.65fr);
+  gap: 0.75rem;
+  align-items: end;
+  padding: 0.85rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.55rem;
+  background: rgba(var(--light-rgb), 0.2);
+}
+
+.people-child-row__number {
+  align-self: center;
+  color: var(--primary-color);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.people-inline-toggle {
+  min-height: 2.5rem;
+  padding: 0.55rem 0;
+}
+
+.people-inline-toggle label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  color: var(--default-text-color);
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.people-inline-toggle small {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.people-embedded-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--default-border);
+}
+
+.people-embedded-actions .btn {
+  width: auto !important;
+  min-width: 9rem;
+  margin: 0 !important;
+}
+
+.people-table-wrap {
+  width: 100%;
+}
+
+.people-table-actions {
+  white-space: nowrap;
+}
+
+.people-table-actions .btn,
+.people-data-table .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  width: auto !important;
+  margin: 0.1rem 0.15rem 0.1rem 0 !important;
+}
+
+.people-mini-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.35rem;
+  padding: 0.12rem 0.5rem;
+  border-radius: 2rem;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.people-mini-badge--success {
+  color: rgb(var(--success-rgb));
+  background: rgba(var(--success-rgb), 0.1);
+}
+
+.people-mini-badge--danger {
+  color: rgb(var(--danger-rgb));
+  background: rgba(var(--danger-rgb), 0.1);
+}
+
+@media (max-width: 1199.98px) {
+  .people-info-grid,
+  .people-document-grid,
+  .people-family-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .people-severance-rules {
+    grid-template-columns: 1fr;
+  }
+
+  .people-child-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .people-child-row__number {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .people-profile-header {
+    flex-direction: column;
+  }
+
+  .people-profile-header__actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .people-profile-header__actions .btn {
+    flex: 1 1 auto;
+  }
+
+  .people-profile-tab-content {
+    padding: 0.75rem;
+  }
+
+  .people-timeline {
+    grid-template-columns: 1fr;
+  }
+
+  .people-timeline__marker {
+    display: none;
+  }
+
+  .people-embedded-actions {
+    justify-content: stretch;
+  }
+
+  .people-embedded-actions .btn {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 479.98px) {
+  .people-info-grid,
+  .people-info-grid--two,
+  .people-document-grid,
+  .people-family-grid,
+  .people-child-row {
+    grid-template-columns: 1fr;
+  }
+
+  .people-profile-tabs > li,
+  .people-profile-tabs > li > a {
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   Absensi module — summary stat cards & report chrome
+   (layout-decoration guide, Section 2: elegant · corporate · formal.
+   Flat white surfaces, 1px border, small radius, uppercase micro-labels,
+   no gradients, no colored backgrounds.)
+   ============================================================ */
+.absensi-stat-row { margin-bottom: .25rem; }
+.absensi-stat-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  margin-bottom: 1rem;
+  padding: .9rem 1rem;
+  border: 1px solid var(--default-border);
+  border-radius: .45rem;
+  background: var(--custom-white);
+}
+.absensi-stat-card__label {
+  color: var(--text-muted);
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.absensi-stat-card__value {
+  color: var(--default-text-color);
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.absensi-stat-card__hint {
+  color: var(--text-muted);
+  font-size: .72rem;
+}
+.absensi-stat-card__icon {
+  position: absolute;
+  top: .85rem;
+  right: 1rem;
+  color: var(--text-muted);
+  font-size: 1.15rem;
+  line-height: 1;
+}
+.absensi-flow-card { margin-bottom: 1rem; }
+.absensi-flow-card__steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35rem .55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.absensi-flow-card__steps li {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  color: var(--text-muted);
+  font-size: .78rem;
+}
+.absensi-flow-card__steps li > a {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .4rem .65rem;
+  border: 1px solid var(--default-border);
+  border-radius: .4rem;
+  color: var(--default-text-color);
+  background: var(--custom-white);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.absensi-flow-card__steps li > a:hover,
+.absensi-flow-card__steps li > a:focus {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  text-decoration: none;
+}
+.absensi-flow-card__steps li > a i { color: var(--text-muted); font-size: .95rem; }
+.absensi-flow-card__steps li > a:hover i, .absensi-flow-card__steps li > a:focus i { color: var(--primary-color); }
+.absensi-flow-card__steps .absensi-flow-card__arrow { color: var(--text-muted); font-size: .9rem; }
+
+/* ==========================================================================
+   Slip gaji detail (app/views/salaries/show.html.erb)
+   Flat, formal report treatment — no gradients, squarer corners, hairline
+   dividers. Mirrors .people-profile-list for the definition lists.
+   ========================================================================== */
+.salary-slip-list {
+  margin: 0;
+  padding: 0.4rem 1rem 0.2rem;
+}
+.salary-slip-list > div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--default-border);
+}
+.salary-slip-list > div:last-child { border-bottom: 0; }
+.salary-slip-list dt {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.salary-slip-list dd {
+  margin: 0;
+  color: var(--default-text-color);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: right;
+}
+.salary-slip-list--total { padding-left: 0; padding-right: 0; }
+.salary-slip-list--total dd { font-size: 0.95rem; }
+.salary-slip-list--total > div:first-child dd { color: var(--primary-color); }
+.salary-slip-absence-summary {
+  width: min(100%, 20rem);
+}
+.salary-slip-absence-summary > strong {
+  display: block;
+  color: var(--default-text-color);
+  font-size: 0.95rem;
+}
+.salary-slip-absence-summary__caption {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+.salary-slip-absence-breakdown {
+  margin: 0.55rem 0 0;
+  padding: 0.15rem 0.7rem;
+  list-style: none;
+  background: rgb(var(--light-rgb));
+  border: 1px solid var(--default-border);
+  border-radius: 0.25rem;
+}
+.salary-slip-absence-breakdown li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--default-border);
+  font-size: 0.72rem;
+  text-align: left;
+}
+.salary-slip-absence-breakdown li:last-child { border-bottom: 0; }
+.salary-slip-absence-breakdown li span { color: var(--text-muted); }
+.salary-slip-absence-breakdown li b {
+  color: var(--default-text-color);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.salary-slip-table thead th {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--default-border);
+  white-space: nowrap;
+}
+.salary-slip-table tbody td {
+  font-size: 0.8rem;
+  vertical-align: middle;
+}
+.salary-slip-amount { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.salary-slip-amount--negative { color: rgb(var(--danger-rgb)); }
+
+.salary-slip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--default-border);
+}
+.salary-slip-actions__note {
+  flex: 1 1 14rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+.salary-slip-actions__danger { margin-left: 0.75rem; }
+
+@media (max-width: 575.98px) {
+  .salary-slip-actions { flex-direction: column; align-items: stretch; }
+  .salary-slip-actions__danger { margin-left: 0; }
+  .salary-slip-list dd { font-size: 0.74rem; }
+  .salary-slip-absence-row { flex-direction: column; gap: 0.45rem; }
+  .salary-slip-absence-summary { width: 100%; text-align: left; }
+}
+
+/* ==========================================================================
+   Horizontal nav — nested submenu (child2) flyout positioning
+   The theme pins the child2 flyout at a fixed 12rem from its parent dropdown
+   (`inset-inline-start: 12rem`), assuming the parent is exactly 12rem wide.
+   A longer label makes the parent dropdown wider, so the flyout lands ON TOP
+   of the parent's items (overlap). Anchor the flyout to the parent's ACTUAL
+   right edge (100%) instead, and cap the dropdown width so labels wrap rather
+   than widen the column indefinitely.
+   ========================================================================== */
+[data-nav-style=menu-click][data-nav-layout=horizontal] .app-sidebar .slide-menu.child1 {
+  min-width: 14rem;
+  max-width: 18rem;
+}
+[data-nav-style=menu-click][data-nav-layout=horizontal] .app-sidebar .slide-menu.child1 > .slide.has-sub {
+  position: relative;
+}
+[data-nav-style=menu-click][data-nav-layout=horizontal] .app-sidebar .slide-menu.child1 .side-menu__item {
+  white-space: normal;
+}
+[data-nav-style=menu-click][data-nav-layout=horizontal] .app-sidebar .slide.has-sub .slide-menu.child2 {
+  inset-inline-start: 100% !important;
+  inset-inline-end: auto !important;
+  inset-block-start: 0 !important;
+  margin-inline-start: 0.125rem;
+  min-width: 14rem;
+}
+/* child3 (e.g. Skema Gaji > Salary Adjustment) — same right-anchored flyout so it
+   opens beside its parent item instead of the theme's default (which overlaps). */
+[data-nav-style=menu-click][data-nav-layout=horizontal] .app-sidebar .slide-menu.child2 > .slide.has-sub {
+  position: relative;
+}
+[data-nav-style=menu-click][data-nav-layout=horizontal] .app-sidebar .slide.has-sub .slide-menu.child3 {
+  inset-inline-start: 100% !important;
+  inset-inline-end: auto !important;
+  inset-block-start: 0 !important;
+  margin-inline-start: 0.125rem;
+  min-width: 14rem;
+}
+
+/* ==========================================================================
+   DataTables loading indicator (server-side "processing") — zynix themed
+   Replaces the plain "Processing..." text with a centered spinner card.
+   CSS-only, applies to every DataTable. font-size:0 hides the default text
+   node; ::after supplies the localized label.
+   ========================================================================== */
+/* DataTables loading overlay — instead of styling DataTables' own processing
+   badge (version-specific, inline styles, tricky show/hide), we render our OWN
+   overlay on the wrapper via a .dt-loading class toggled by the processing.dt
+   handler in the layout. Fully under our control, hides cleanly. */
+.dataTables_wrapper { position: relative; }
+.dataTables_processing,
+div.dt-processing { display: none !important; }
+/* ::before/::after are always present but faded out; .dt-loading fades them in.
+   The transition turns a fast on/off (which reads as a hard blink) into a smooth
+   pulse. pointer-events/visibility keep them inert when idle. */
+.dataTables_wrapper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* near-opaque so the stale rows underneath don't show through during load. */
+  background: rgba(249, 250, 251, 0.97);
+  z-index: 45;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+.dataTables_wrapper::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: -1.25rem 0 0 -1.25rem;
+  border: 3px solid rgba(67, 97, 238, 0.16);
+  border-top-color: var(--primary-color, #4361ee);
+  border-radius: 50%;
+  animation: dtZynixSpin 0.65s linear infinite;
+  z-index: 46;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+.dataTables_wrapper.dt-loading::before,
+.dataTables_wrapper.dt-loading::after {
+  opacity: 1;
+  visibility: visible;
+}
+:root[data-theme-mode="dark"] .dataTables_wrapper.dt-loading::before { background: rgba(20, 24, 47, 0.94); }
+:root[data-theme-mode="dark"] .dataTables_wrapper.dt-loading::after { border-color: rgba(255, 255, 255, 0.16); border-top-color: var(--primary-color, #4361ee); }
+@keyframes dtZynixSpin { to { transform: rotate(360deg); } }
+
+/* Standalone loading indicator — used by the pivot report pages while their JSON
+   feed loads (list_karyawan, employee_report, sia). Rendered as a full-screen
+   overlay: a translucent backdrop over the page with a centered spinner card so
+   the user can't interact with stale content while it loads. */
+/* Pivot loader is scoped to its own #output box (the component being loaded), not
+   the whole page — the rest of the page stays usable. */
+#output { position: relative; }
+.hris-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  min-height: 12rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+  padding: 2rem 1rem;
+  color: #5b6472;
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-align: center;
+  /* backdrop tied to the app theme (NOT the OS) — a clean, barely-there dim. */
+  background: rgba(248, 250, 252, 0.78);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+/* clean spinner: a light full track ring with a single primary arc rotating. */
+.hris-loading::before {
+  content: "";
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 3px solid rgba(67, 97, 238, 0.16);
+  border-top-color: var(--primary-color, #4361ee);
+  border-radius: 50%;
+  animation: dtZynixSpin 0.65s linear infinite;
+}
+.hris-loading--error { color: #dc3545; }
+.hris-loading--error::before { display: none; }
+:root[data-theme-mode="dark"] .hris-loading {
+  background: rgba(20, 24, 47, 0.8);
+  color: #cbd2e0;
+}
+:root[data-theme-mode="dark"] .hris-loading::before {
+  border-color: rgba(255, 255, 255, 0.16);
+  border-top-color: var(--primary-color, #4361ee);
+}
+
+/* ==========================================================================
+   Absensi entry form (views/absensis/_form*.html.erb, new, edit)
+   Flat/corporate per layout-decoration §2: 1px var(--default-border), radius
+   <= 0.75rem, no gradients, accent on the icon tile only. The information card
+   block reuses .loan-index-* verbatim (§17.7) -- the rules below only add the
+   feature-scoped pieces that have no shared equivalent.
+   ========================================================================== */
+
+.absensi-form-summary { margin-bottom: 0.25rem; }
+.absensi-form-summary__note {
+  margin: 0 0 1.25rem;
+  color: #667381;
+  font-size: 0.74rem;
+}
+.absensi-form-info { margin-bottom: 1.25rem; }
+
+/* Error summary and overwrite warning share an icon-plus-body anatomy with the
+   shipped .salary-schema-errors block; kept feature-prefixed per §13. */
+.absensi-form-errors,
+.absensi-overwrite-warning {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  border-radius: 0.5rem;
+}
+.absensi-form-errors__icon,
+.absensi-overwrite-warning__icon { flex: 0 0 auto; font-size: 1.05rem; line-height: 1.5; }
+.absensi-form-errors strong,
+.absensi-overwrite-warning strong { display: block; font-weight: 600; }
+.absensi-form-errors p,
+.absensi-overwrite-warning p { margin: 0.25rem 0 0; font-size: 0.82rem; }
+.absensi-form-errors ul { margin: 0.5rem 0 0; padding-left: 1.1rem; font-size: 0.82rem; }
+.absensi-overwrite-warning__existing strong { display: inline; }
+.absensi-overwrite-warning .btn { margin-top: 0.6rem; }
+
+/* Injected incentive panel states (_form_scripts.html.erb writes these into
+   #attendance_insentive). Non-blocking: the operator can still save. */
+.absensi-insentif-state {
+  display: block;
+  margin-bottom: 1rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.5rem;
+  font-size: 0.82rem;
+}
+.absensi-insentif-state--loading {
+  border: 1px solid var(--default-border);
+  color: #667381;
+  background: rgba(var(--light-rgb), 0.28);
+}
+
+/* People index: rangkuman 5 metrik jadi satu baris (bukan 4+1). Discope ke
+   .people-index-page saja supaya loan-index-summary di halaman lain (loan,
+   absensi, salary, dll) yang berkartu 4 tetap 4 per baris. Di bawah lg tetap
+   ikut col-sm-6 (2 per baris). */
+@media (min-width: 992px) {
+  .people-index-page .loan-index-summary > [class*="col-"] {
+    flex: 0 0 20%;
+    max-width: 20%;
+    width: 20%;
+  }
+}
+
+/* Sub-judul section di dalam box people index (mis. "Download Data Karyawan"). */
+.people-index-page .people-index-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+
+
+/* Employee filter bar: placeholder select2 multiple sering terpotong karena
+   search field default-nya sempit. Paksa lebar penuh (discope ke bar). */
+[data-emp-filter-bar] .select2-container { width: 100% !important; }
+[data-emp-filter-bar] .select2-selection--multiple .select2-search--inline { width: 100%; }
+[data-emp-filter-bar] .select2-selection--multiple .select2-search__field {
+  width: 100% !important;
+  min-width: 8rem;
+}
+
+/* Master tax tables — numeric column alignment.
+   Right alignment puts the units digit of every row on one vertical line and
+   tabular figures guarantee equal digit widths, so a value with fewer digit
+   groups reads as a real notch in the column rather than a font artefact. This
+   is what lets an operator see a broken progression in a rupiah scale without
+   the page asserting that any particular row is wrong. */
+.hris-tax-figure {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ==========================================================================
+   PPh 21 breakdown card (app/views/schema_salaries/_show_tax_breakdown.html.erb)
+   Flat, formal step-by-step tax computation for the schema salary detail
+   page. Mirrors .salary-slip-list for the definition list and reuses the
+   .loan-index-table-card shell; only breakdown-specific rules live here
+   (§13 feature scope: schema-salary-tax-*).
+   ========================================================================== */
+.schema-salary-tax-card { margin-bottom: 1.25rem; }
+
+/* The Gate 0 C1 estimate framing — must be visible before any figure, so it
+   sits directly under the card header, tinted like a muted info note (flat,
+   no gradient). */
+.schema-salary-tax-card__estimate {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid rgba(var(--info-rgb), 0.25);
+  border-radius: 0.5rem;
+  background: rgba(var(--info-rgb), 0.06);
+  color: var(--default-text-color);
+  font-size: 0.78rem;
+}
+.schema-salary-tax-card__estimate .fa { color: rgb(var(--info-rgb)); }
+
+.schema-salary-tax-steps {
+  margin: 0 0 1rem;
+  padding: 0;
+}
+.schema-salary-tax-steps > div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--default-border);
+}
+.schema-salary-tax-steps > div:last-child { border-bottom: 0; }
+.schema-salary-tax-steps dt {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.schema-salary-tax-steps dt small {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.schema-salary-tax-steps dd {
+  margin: 0;
+  color: var(--default-text-color);
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.schema-salary-tax-steps__deduction { color: rgb(var(--danger-rgb)); }
+.schema-salary-tax-steps__empty dd {
+  font-weight: 400;
+  white-space: normal;
+  color: var(--text-muted);
+}
+.schema-salary-tax-steps--total > div:last-child dd {
+  color: var(--primary-color);
+  font-size: 0.95rem;
+}
+
+.schema-salary-tax-band-table { margin-bottom: 1rem; }
+.schema-salary-tax-band-table thead th {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--default-border);
+  white-space: nowrap;
+}
+.schema-salary-tax-band-table tbody td {
+  font-size: 0.78rem;
+  vertical-align: middle;
+}
+.schema-salary-tax-band-table__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.schema-salary-tax-band-table__empty {
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.schema-salary-tax-method-note {
+  margin-bottom: 1rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.5rem;
+  background: var(--custom-white);
+  font-size: 0.78rem;
+}
+.schema-salary-tax-method-note p { margin: 0; }
+.schema-salary-tax-method-note p + p { margin-top: 0.35rem; }
+.schema-salary-tax-method-note__audit { color: var(--text-muted); }
+
+.schema-salary-tax-ter {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--default-border);
+}
+.schema-salary-tax-ter h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.schema-salary-tax-ter p { margin: 0 0 0.35rem; font-size: 0.78rem; }
+.schema-salary-tax-ter__note { color: var(--text-muted); }
+
+@media (max-width: 575.98px) {
+  .schema-salary-tax-steps > div { flex-direction: column; gap: 0.25rem; }
+  .schema-salary-tax-steps dd { text-align: left; white-space: normal; }
+}
+
+/* ==========================================================================
+   PPh 21 breakdown card — rapih pass (UI/UX seat). Supplements the
+   schema-salary-tax-* block directly above; this pass's stylesheet lane is
+   append-only, so overrides land here and win by cascade.
+
+   Why each rule exists:
+   - __body: the card borrowed the .loan-index-table-card shell, whose
+     children are flush to the card edge by design (built for full-bleed
+     tables). Non-table content needs the side padding that
+     .loan-index-shell__body gives its cards.
+   - __section-title: one quiet label per section so the operator can follow
+     bruto -> potongan -> PKP -> lapisan tarif -> hasil -> TER top to bottom.
+     Slightly darker and heavier than the dt labels so the two levels of the
+     hierarchy stay distinguishable.
+   - band-wrap + thead tint: the per-band table joins the house table idiom
+     (#f7f9fb muted thead, as .loan-index-table) inside a bordered panel,
+     since it now sits mid-card instead of filling the card bottom.
+   - --total strip: the two result rows sit on a flat muted panel so the eye
+     lands on the outcome after the band walk. Flat tint, no gradient (§2).
+   - ONE decorative accent per card (§2): the primary left border on the
+     method note. The estimate note's info tint and the red deduction figures
+     are functional status colours, not decoration.
+   ========================================================================== */
+.schema-salary-tax-card__body { padding: 1.15rem 1.25rem 1.25rem; }
+
+.schema-salary-tax-card__section-title {
+  margin: 1.1rem 0 0.5rem;
+  color: #536273;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+/* Inside the TER block the pre-existing `.schema-salary-tax-ter h3` rule
+   above is (0,1,1) and beats the single class (0,1,0) on every property, so
+   the shared heading style must be restated at (0,2,0) or the TER heading
+   silently keeps the old 0.8rem/700/muted look and breaks the rhythm. */
+.schema-salary-tax-ter .schema-salary-tax-card__section-title {
+  margin-top: 0;
+  color: #536273;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.schema-salary-tax-band-wrap {
+  margin-bottom: 1rem;
+  overflow: hidden;
+  border: 1px solid var(--default-border);
+  border-radius: 0.5rem;
+}
+.schema-salary-tax-band-wrap .schema-salary-tax-band-table { margin-bottom: 0; }
+.schema-salary-tax-band-table thead th {
+  padding: 0.6rem 0.75rem;
+  background: #f7f9fb;
+}
+.schema-salary-tax-band-table tbody td { padding: 0.6rem 0.75rem; }
+.schema-salary-tax-band-table tbody tr:last-child td { border-bottom: 0; }
+
+.schema-salary-tax-steps--total {
+  padding: 0.15rem 0.85rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.5rem;
+  background: rgba(var(--light-rgb), 0.45);
+}
+
+.schema-salary-tax-method-note { border-left: 3px solid var(--primary-color); }
+
+/* Edit-page placement: the reference card renders below the form inside the
+   same .salary-schema-page section; margin matches the form grid gap
+   (.salary-schema-form { gap: 1.25rem }) so the page keeps one rhythm. */
+.schema-salary-tax-reference { margin-top: 1.25rem; }
+
+@media (max-width: 767.98px) {
+  .schema-salary-tax-card__body { padding: 1rem; }
+}
+
+/* ==========================================================================
+   PPh 21 breakdown card — readability pass (operator feedback 2026-08-19).
+   The muted-grey label treatment of the two blocks above was reported as
+   hard to read on this card, with "BPJS & Jaminan Pensiun" named as the
+   reference look. Append-only lane: these rules override by cascade.
+
+   - Step labels, table heads, hint lines: near-black (--default-text-color),
+     matching the form section headers. Hierarchy now rests on weight, case
+     and size instead of grey ink.
+   - Section titles: corporate primary — the "different colour for headings"
+     the operator asked for; one hue, used only on the three h3 titles.
+   - __title: flex wrapper for the icon-chip header added to the partial
+     (reuses .salary-schema-card__icon, same idiom as the form sections).
+   Functional colours are untouched: red deduction figures, primary totals.
+   ========================================================================== */
+.schema-salary-tax-card__title {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.schema-salary-tax-card p { color: var(--default-text-color); }
+
+.schema-salary-tax-steps dt {
+  color: var(--default-text-color);
+  font-size: 0.78rem;
+}
+.schema-salary-tax-steps dt small {
+  color: var(--default-text-color);
+  font-size: 0.73rem;
+}
+.schema-salary-tax-steps__empty dd { color: var(--default-text-color); }
+
+.schema-salary-tax-card__section-title { color: var(--primary-color); }
+/* (0,2,0) restatement — same specificity story as the rapih pass above:
+   without it the earlier `.schema-salary-tax-ter .schema-salary-tax-card__
+   section-title` rule keeps the TER heading grey. */
+.schema-salary-tax-ter .schema-salary-tax-card__section-title { color: var(--primary-color); }
+
+.schema-salary-tax-band-table thead th { color: var(--default-text-color); }
+.schema-salary-tax-band-table__empty { color: var(--default-text-color); }
+
+.schema-salary-tax-method-note__audit { color: var(--default-text-color); }
+.schema-salary-tax-ter__note { color: var(--default-text-color); }
+
+/* ==========================================================================
+   POSITIONING UTILITIES — .pull-left / .pull-right that also work inside flex
+   ==========================================================================
+
+   Bootstrap 3's `.pull-right` was a plain `float: right`. Zynix is Bootstrap 5,
+   and most of its containers — page headers, `.card-header`, `.d-flex` rows,
+   button groups — are FLEX. Floats are ignored on flex items, so `.pull-right`
+   did nothing on exactly the containers people reach for it in, while still
+   working in an ordinary block. The class looked broken at random, which is
+   what made button positioning a guessing game.
+
+   The fix is one declaration pair that is correct in BOTH layouts:
+
+     float: right;        acts in a normal block flow, as it always did
+     margin-left: auto;   acts when the parent is flex (or grid), pushing the
+                          element to the far end of the line
+
+   They cannot fight each other. CSS 2.1 §10.3.5 computes an `auto` margin on a
+   FLOATED element to zero, so in block flow the float wins and the margin is
+   inert; in a flex container the float is ignored and the auto margin is the
+   only thing left standing. Nothing has to detect the parent's display type.
+
+   `.pull-left` is the mirror: it hugs the start of the line and pushes whatever
+   follows it to the far end — the same visual result `float: left` gives.
+
+   USE IT ON: any button, button group, badge, link, or block you want pinned to
+   one side, whatever the parent turns out to be.
+
+   ONE EXCEPTION, ALREADY HANDLED: page-header actions
+   (`.layout-decoration-header > .layout-decoration-actions`) own their alignment
+   in the rule further up this file and neutralise `.pull-right` deliberately.
+   Do not add `.pull-right` there; the header is a wrapping flex row and the
+   actions claim a line of their own.
+
+   These override the plain floats in bs3-compat.css, which loads before this
+   file and keeps its copy for markup that only ever lives in a block. */
+
+.pull-right {
+  float: right !important;
+  margin-left: auto !important;
+}
+
+.pull-left {
+  float: left !important;
+  margin-right: auto !important;
+}
+
+/* A floated child does not stretch its parent, so a card whose only content is
+   a `.pull-right` button collapses to zero height. `.clearfix` on the PARENT
+   restores it — the Bootstrap 3 helper, kept because the markup that needs
+   `.pull-*` is the same markup that expects `.clearfix` to exist. Flex parents
+   never need it: a flex item is not floated, so nothing collapses. */
+.clearfix::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
+/* ==========================================================================
+   SALARIES — ADMIN REPORT WORKSPACE
+   ========================================================================== */
+
+.salaries-admin-report-page {
+  width: 100%;
+}
+
+.salaries-admin-report-content {
+  padding: 0;
+}
+
+.salaries-admin-report-loader {
+  position: fixed;
+  z-index: 1080;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(var(--body-bg-rgb), 0.88);
+}
+
+.salaries-admin-report-loader[hidden] {
+  display: none;
+}
+
+.salaries-admin-report-loader.is-visible {
+  display: flex;
+}
+
+.salaries-admin-report-loader__panel {
+  display: flex;
+  width: min(100%, 360px);
+  align-items: center;
+  flex-direction: column;
+  padding: 1.5rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.5rem;
+  background: var(--custom-white);
+  box-shadow: var(--hris-shadow-card);
+  text-align: center;
+}
+
+.salaries-admin-report-loader__panel strong {
+  margin-top: 0.75rem;
+  color: var(--default-text-color);
+  font-size: 0.92rem;
+}
+
+.salaries-admin-report-loader__panel small {
+  margin-top: 0.25rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.salaries-admin-report-summary__period {
+  overflow-wrap: anywhere;
+  font-size: 1rem !important;
+  white-space: normal !important;
+}
+
+.salaries-admin-report-toolbar,
+.salaries-admin-report-card {
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+  border: 1px solid var(--default-border);
+  border-radius: 0.75rem;
+  background: var(--custom-white);
+  box-shadow: var(--hris-shadow-card);
+  scroll-margin-top: 1rem;
+}
+
+.salaries-admin-report-toolbar__main,
+.salaries-admin-report-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.salaries-admin-report-toolbar__main {
+  align-items: flex-end;
+}
+
+.salaries-admin-report-card__header {
+  border-bottom: 1px solid var(--default-border);
+  background: var(--hris-surface-muted);
+}
+
+.salaries-admin-report-card--featured {
+  border-top: 3px solid var(--primary-color);
+}
+
+.salaries-admin-report-section-heading {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.salaries-admin-report-section-heading__icon {
+  display: inline-flex;
+  flex: 0 0 2.4rem;
+  width: 2.4rem;
+  height: 2.4rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  color: var(--primary-color);
+  background: var(--primary01);
+  font-size: 1rem;
+}
+
+.salaries-admin-report-section-heading__eyebrow {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--primary-color);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.salaries-admin-report-section-heading h2 {
+  margin: 0;
+  color: var(--default-text-color);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.salaries-admin-report-section-heading p {
+  max-width: 760px;
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.salaries-admin-report-period-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  flex: 0 1 380px;
+  min-width: 280px;
+}
+
+.salaries-admin-report-period-control label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--default-text-color);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.salaries-admin-report-period-control .form-select,
+.salaries-admin-report-period-control .select2-container .select2-selection--single {
+  min-height: 2.65rem;
+  border-color: var(--default-border);
+  border-radius: 0.45rem;
+}
+
+.salaries-admin-report-period-control small {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.salaries-admin-report-shortcuts {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--default-border);
+  background: var(--custom-white);
+}
+
+.salaries-admin-report-shortcuts > span {
+  margin-right: 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.salaries-admin-report-shortcuts a {
+  display: inline-flex;
+  min-height: 2.25rem;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.4rem;
+  color: var(--default-text-color);
+  background: var(--custom-white);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.salaries-admin-report-shortcuts a:hover,
+.salaries-admin-report-shortcuts a:focus {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: var(--primary01);
+}
+
+.salaries-admin-report-card__header > .btn,
+.salaries-admin-report-primary-action {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-height: 2.55rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0 !important;
+  white-space: nowrap;
+}
+
+.salaries-admin-report-card__body {
+  padding: 1.25rem;
+}
+
+.salaries-admin-report-card__body--table {
+  padding: 0;
+}
+
+.salaries-admin-report-output-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.salaries-admin-report-output-grid article {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.5rem;
+  background: var(--custom-white);
+}
+
+.salaries-admin-report-output-grid article > span {
+  display: inline-flex;
+  flex: 0 0 2rem;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.4rem;
+  color: var(--primary-color);
+  background: var(--primary01);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.salaries-admin-report-output-grid h3 {
+  margin: 0;
+  color: var(--default-text-color);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.salaries-admin-report-output-grid p {
+  margin: 0.3rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.salaries-admin-report-period-note {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.9rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.salaries-admin-report-period-note i {
+  color: var(--primary-color);
+}
+
+.salaries-admin-report-period-note strong {
+  color: var(--default-text-color);
+}
+
+.salaries-admin-report-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.salaries-admin-report-kbb-table {
+  min-width: 980px;
+  margin: 0;
+}
+
+.salaries-admin-report-kbb-table > thead > tr > th,
+.salaries-admin-report-data-table > thead > tr > th {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--default-border);
+  color: var(--text-muted);
+  background: var(--hris-table-head-bg);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.salaries-admin-report-kbb-table > tbody > tr > td {
+  padding: 1rem;
+  border-top-color: var(--default-border);
+  vertical-align: top;
+  font-size: 0.78rem;
+}
+
+.salaries-admin-report-account__entity,
+.salaries-admin-report-account__region,
+.salaries-admin-report-kbb-table td > small {
+  display: block;
+}
+
+.salaries-admin-report-account__entity {
+  color: var(--default-text-color);
+  font-size: 0.86rem;
+}
+
+.salaries-admin-report-account__region {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+}
+
+.salaries-admin-report-kbb-table td > small {
+  margin-top: 0.45rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.salaries-admin-report-format-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.salaries-admin-report-format-actions .btn {
+  display: inline-flex;
+  min-height: 2.15rem;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 !important;
+  white-space: nowrap;
+}
+
+.salaries-admin-report-vendors {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.salaries-admin-report-vendor-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--default-border);
+}
+
+.salaries-admin-report-vendor-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.salaries-admin-report-vendor-row > strong {
+  color: var(--default-text-color);
+  font-size: 0.76rem;
+}
+
+.salaries-admin-report-no-vendor {
+  display: inline-block;
+  max-width: 320px;
+  color: var(--text-muted);
+  font-size: 0.73rem;
+  line-height: 1.5;
+}
+
+.salaries-admin-report-access-badge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid rgba(var(--danger-rgb), 0.2);
+  border-radius: 0.4rem;
+  color: rgb(var(--danger-rgb));
+  background: rgba(var(--danger-rgb), 0.08);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* Chip periode: netral (bukan danger), diletakkan di bawah judul section. */
+.salaries-admin-report-period-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+  padding: 0.28rem 0.6rem;
+  border: 1px solid rgba(var(--primary-rgb), 0.25);
+  border-radius: 0.4rem;
+  color: rgb(var(--primary-rgb));
+  background: rgba(var(--primary-rgb), 0.10);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.salaries-admin-report-restricted-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.salaries-admin-report-data-panel {
+  overflow: hidden;
+  border: 1px solid var(--default-border);
+  border-radius: 0.5rem;
+  background: var(--custom-white);
+}
+
+.salaries-admin-report-data-panel__toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border: 0;
+  color: var(--default-text-color);
+  background: var(--custom-white);
+  text-align: left;
+}
+
+.salaries-admin-report-data-panel__toggle:hover,
+.salaries-admin-report-data-panel__toggle:focus,
+.salaries-admin-report-data-panel__toggle[aria-expanded="true"] {
+  color: var(--default-text-color);
+  background: var(--hris-surface-muted);
+}
+
+.salaries-admin-report-data-panel__toggle:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: -2px;
+}
+
+.salaries-admin-report-data-panel__identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.salaries-admin-report-data-panel__identity > i {
+  display: inline-flex;
+  flex: 0 0 2.25rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.45rem;
+  color: var(--primary-color);
+  background: var(--primary01);
+}
+
+.salaries-admin-report-data-panel__identity strong,
+.salaries-admin-report-data-panel__identity small {
+  display: block;
+}
+
+.salaries-admin-report-data-panel__identity strong {
+  font-size: 0.82rem;
+}
+
+.salaries-admin-report-data-panel__identity small {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.salaries-admin-report-data-panel__action {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary-color);
+  font-size: 0.73rem;
+  font-weight: 700;
+}
+
+.salaries-admin-report-data-panel__body {
+  padding: 1rem;
+  border-top: 1px solid var(--default-border);
+}
+
+.salaries-admin-report-data-panel__body[hidden],
+.salaries-admin-report-table-error[hidden] {
+  display: none;
+}
+
+.salaries-admin-report-table-error {
+  margin-bottom: 0.75rem;
+  font-size: 0.76rem;
+}
+
+.salaries-admin-report-data-table {
+  width: 100% !important;
+  margin: 0 !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.salaries-admin-report-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 150px;
+  padding: 1.25rem;
+  color: var(--text-muted);
+  text-align: left;
+}
+
+.salaries-admin-report-empty--compact {
+  min-height: 0;
+  padding: 0.75rem 0;
+}
+
+.salaries-admin-report-empty > i {
+  color: var(--primary-color);
+  font-size: 1.4rem;
+}
+
+.salaries-admin-report-empty strong,
+.salaries-admin-report-empty span {
+  display: block;
+}
+
+.salaries-admin-report-empty strong {
+  color: var(--default-text-color);
+  font-size: 0.82rem;
+}
+
+.salaries-admin-report-empty span {
+  margin-top: 0.2rem;
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.salaries-admin-report-information {
+  margin-top: 0;
+}
+
+@media (max-width: 991.98px) {
+  .salaries-admin-report-toolbar__main,
+  .salaries-admin-report-card__header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .salaries-admin-report-period-control {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .salaries-admin-report-card__header > .btn,
+  .salaries-admin-report-primary-action,
+  .salaries-admin-report-access-badge {
+    width: 100%;
+  }
+
+  .salaries-admin-report-output-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .salaries-admin-report-vendor-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .salaries-admin-report-toolbar__main,
+  .salaries-admin-report-card__header,
+  .salaries-admin-report-card__body,
+  .salaries-admin-report-data-panel__body {
+    padding: 1rem;
+  }
+
+  .salaries-admin-report-shortcuts {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 0.75rem 1rem;
+  }
+
+  .salaries-admin-report-shortcuts > span {
+    margin: 0 0 0.15rem;
+  }
+
+  .salaries-admin-report-shortcuts a,
+  .salaries-admin-report-format-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .salaries-admin-report-data-panel__toggle {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .salaries-admin-report-data-panel__action {
+    align-self: flex-end;
+  }
+}
+
+/* ==========================================================================
+   SALARIES INDEX — DOWNLOADS AND PERIOD CONTROLS
+   Presentation-only grouping for the existing payroll output links and admin
+   controls. Business conditions, URLs, formats, and form contracts stay in ERB.
+   ========================================================================== */
+
+.salaries-index-downloads,
+.salaries-index-period-control {
+  margin-top: 1.25rem;
+  overflow: hidden;
+  border: 1px solid var(--default-border);
+  border-radius: 0.5rem;
+  background: var(--custom-white);
+}
+
+.salaries-index-downloads__header,
+.salaries-index-period-control__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--default-border);
+}
+
+.salaries-index-downloads__eyebrow {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--primary-color);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.salaries-index-downloads h2,
+.salaries-index-period-control h2 {
+  margin: 0;
+  color: var(--default-text-color);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.salaries-index-downloads__header p,
+.salaries-index-period-control__header p {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.salaries-index-downloads__scope {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.375rem;
+  color: var(--default-text-color);
+  background: var(--light);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.salaries-index-downloads__groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.salaries-index-download-group {
+  min-width: 0;
+  padding: 1.25rem;
+  border-right: 1px solid var(--default-border);
+}
+
+.salaries-index-download-group:last-child {
+  border-right: 0;
+}
+
+.salaries-index-download-group__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  min-height: 3.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.salaries-index-download-group__header > i {
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+  color: var(--primary-color);
+  font-size: 1rem;
+}
+
+.salaries-index-download-group h3,
+.salaries-index-period-control__body h3 {
+  margin: 0;
+  color: var(--default-text-color);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.salaries-index-download-group p,
+.salaries-index-period-control__body p {
+  margin: 0.2rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.salaries-index-download-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.salaries-index-download-actions > .btn,
+.salaries-index-download-actions > .layout-decoration-actions,
+.salaries-index-download-actions > .layout-decoration-actions > .btn {
+  margin: 0;
+}
+
+.salaries-index-download-actions > .layout-decoration-actions {
+  display: flex;
+  flex: 0 1 auto;
+  padding: 0;
+}
+
+.salaries-index-download-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.55rem;
+  border-radius: 0.375rem;
+  white-space: normal;
+}
+
+.salaries-index-period-control__status {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.salaries-index-period-control__status .label {
+  border-radius: 0.375rem;
+}
+
+.salaries-index-period-control__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.salaries-index-period-control__action,
+.salaries-index-period-control__form {
+  display: flex;
+  min-width: 0;
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--default-border);
+}
+
+.salaries-index-period-control__action:last-child,
+.salaries-index-period-control__form:last-child {
+  border-bottom: 0;
+}
+
+.salaries-index-period-control__action {
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.salaries-index-period-control__action .btn {
+  flex: 0 1 auto;
+  max-width: 24rem;
+  white-space: normal;
+}
+
+.salaries-index-period-control__form {
+  display: block;
+}
+
+.salaries-index-period-control__form > div:first-child {
+  margin-bottom: 0.85rem;
+}
+
+.salaries-index-transfer-form {
+  display: block;
+  margin: 0;
+}
+
+.salaries-index-transfer-form__errors {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(var(--danger-rgb), 0.2);
+  border-radius: 0.375rem;
+  color: rgb(var(--danger-rgb));
+  background: rgba(var(--danger-rgb), 0.06);
+  font-size: 0.75rem;
+}
+
+.salaries-index-transfer-form__errors ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.salaries-index-transfer-form__field {
+  width: 100%;
+  max-width: 28rem;
+  min-width: 0;
+}
+
+.salaries-index-transfer-form__field label {
+  display: block;
+  margin-bottom: 0.35rem;
+  padding-top: 0;
+  color: var(--default-text-color);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.salaries-index-transfer-form.zynix-system-form .salaries-index-transfer-form__field .form-label {
+  padding-top: 0;
+}
+
+.salaries-index-transfer-form__input {
+  position: relative;
+}
+
+.salaries-index-transfer-form__input > i {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 0.75rem;
+  color: var(--text-muted);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.salaries-index-transfer-form__input .form-control {
+  min-height: 2.55rem;
+  padding-left: 2.25rem;
+  border-color: var(--default-border);
+  border-radius: 0.375rem;
+  box-shadow: none;
+}
+
+.salaries-index-transfer-form__input .form-control:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.18rem var(--primary01);
+}
+
+.salaries-index-transfer-form__field small {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.salaries-index-transfer-form__actions {
+  margin-top: 0.75rem;
+}
+
+.salaries-index-transfer-form__actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.55rem;
+  margin: 0;
+  border-radius: 0.375rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 991.98px) {
+  .salaries-index-download-group:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .salaries-index-download-group:nth-child(n + 3) {
+    border-top: 1px solid var(--default-border);
+  }
+
+  .salaries-index-period-control__action,
+  .salaries-index-period-control__form {
+    border-right: 0;
+    border-bottom: 1px solid var(--default-border);
+  }
+
+  .salaries-index-period-control__body > :last-child {
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .salaries-index-downloads__header,
+  .salaries-index-period-control__header,
+  .salaries-index-period-control__action {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .salaries-index-downloads__scope,
+  .salaries-index-period-control__status {
+    align-self: flex-start;
+  }
+
+  .salaries-index-downloads__groups,
+  .salaries-index-period-control__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .salaries-index-download-group,
+  .salaries-index-download-group:nth-child(2n) {
+    border-top: 1px solid var(--default-border);
+    border-right: 0;
+  }
+
+  .salaries-index-download-group:first-child {
+    border-top: 0;
+  }
+
+  .salaries-index-download-actions,
+  .salaries-index-download-actions > .layout-decoration-actions,
+  .salaries-index-transfer-form {
+    width: 100%;
+  }
+
+  .salaries-index-download-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .salaries-index-transfer-form__actions {
+    margin-top: 0.75rem;
+  }
+
+  .salaries-index-download-actions > .btn,
+  .salaries-index-download-actions > .layout-decoration-actions > .btn,
+  .salaries-index-period-control__action .btn,
+  .salaries-index-transfer-form__actions .btn {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* ==========================================================================
+   PAF — Personnel Action Form (ADR 021 D5). Feature-scoped block, appended.
+   Nothing above this fence is modified. Feature-specific naming per §13; the
+   shared .loan-index-* card system is REUSED rather than forked (§17.7), so
+   only genuinely new components are defined here: the stepper, the progress
+   bar and the status chip.
+   Flat surfaces, no gradients, muted tinted status colour, radius <= .75rem,
+   theme variables only (§2).
+   ========================================================================== */
+
+/* PAF page headers use the house .layout-decoration-actions container, which
+   owns its own alignment (see the header rule near the top of this file). */
+
+.paf-progress { display: flex; align-items: center; gap: .6rem; }
+.paf-progress__track { flex: 1; height: .5rem; min-width: 70px; overflow: hidden; border-radius: .25rem; background: rgba(var(--light-rgb), .55); }
+.paf-progress__fill { height: 100%; background: var(--primary-color); }
+.paf-progress__fill--done { background: rgb(var(--success-rgb)); }
+.paf-progress__label { white-space: nowrap; color: #263442; font-size: .78rem; font-weight: 700; }
+.paf-progress__label small { display: block; color: #7b8794; font-size: .68rem; font-weight: 400; }
+
+/* The stepper. One row per APPLICABLE stage — stages that do not apply to this
+   document are never rendered, so the list length is itself information. */
+.paf-stepper { margin: 1.1rem 0 0; padding: 0; list-style: none; }
+.paf-stepper__item { display: flex; gap: .85rem; padding: 0 0 1.1rem; border-left: 2px solid var(--default-border); margin-left: 1rem; padding-left: 1.4rem; position: relative; }
+.paf-stepper__item:last-child { border-left-color: transparent; padding-bottom: 0; }
+.paf-stepper__marker { position: absolute; left: -1rem; display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border: 1px solid var(--default-border); border-radius: .5rem; background: var(--custom-white); color: #7b8794; font-size: .78rem; font-weight: 700; }
+.paf-stepper__body h4 { margin: 0; color: #263442; font-size: .92rem; font-weight: 700; }
+.paf-stepper__body p { margin: .2rem 0 0; color: #7b8794; font-size: .77rem; }
+.paf-stepper__state { font-weight: 700; }
+
+/* State is carried by the marker AND by the written label in the body, never by
+   colour alone (§2). */
+.paf-stepper__item--done .paf-stepper__marker { border-color: rgba(var(--success-rgb), .35); color: rgb(var(--success-rgb)); background: rgba(var(--success-rgb), .1); }
+.paf-stepper__item--done .paf-stepper__state { color: rgb(var(--success-rgb)); }
+.paf-stepper__item--current .paf-stepper__marker { border-color: var(--primary-color); color: var(--primary-color); background: var(--primary01); }
+.paf-stepper__item--current .paf-stepper__state { color: var(--primary-color); }
+.paf-stepper__item--waiting .paf-stepper__state { color: #7b8794; }
+
+.paf-status { display: inline-block; padding: .2rem .5rem; border-radius: .35rem; font-size: .72rem; font-weight: 700; color: #7b8794; background: rgba(var(--light-rgb), .55); }
+.paf-status--in_progress { color: var(--primary-color); background: var(--primary01); }
+.paf-status--completed { color: rgb(var(--success-rgb)); background: rgba(var(--success-rgb), .1); }
+.paf-status--rejected { color: rgb(var(--danger-rgb)); background: rgba(var(--danger-rgb), .1); }
+/* Cancelled is red, like rejected (owner, 2026-09-12): a cancelled PAF is a
+   terminated document, and grey made it read the same as a quiet draft. */
+.paf-status--cancelled { color: rgb(var(--danger-rgb)); background: rgba(var(--danger-rgb), .1); }
+
+.paf-row--waiting > td { background: rgba(var(--warning-rgb), .06); }
+/* A row that waits on the viewer gets an accent edge as well as the tint, so it
+   still reads when the tint is faint and does not depend on colour alone: the
+   "Menunggu Approval Anda" text stays on the number cell. */
+.paf-row--waiting > td:first-child { box-shadow: inset 3px 0 0 rgb(var(--warning-rgb)); }
+/* Status cell (_document_row): pill, then the stage, then the refusal note. */
+.paf-row__stage { margin-top: .3rem; color: #51606f; font-size: .76rem; line-height: 1.35; }
+.paf-row__note { margin-top: .35rem; }
+.paf-status--draft { color: #51606f; background: rgba(var(--light-rgb), .8); }
+/* Filter bar checkbox: the bar styles every <label> as a small bold caption, so the
+   checkbox text needs its own plain label. */
+/* ⚠ select2 keeps the NATIVE select 1px wide (.select2-hidden-accessible). The
+   house `.hris-filter-bar .form-control { width: 100% }` out-ranks that rule, so
+   the hidden select stretched to the width of its positioned ancestor and made the
+   whole PAF page scroll sideways by ~18px (measured 2026-10-08: scrollWidth 1443
+   against clientWidth 1425). Re-asserted here for this form only; the same flaw
+   exists in the shared component for any select2 field placed in a filter bar. */
+#paf_filter_form .select2-hidden-accessible { width: 1px; }
+.paf-filter-check { display: flex; align-items: center; gap: .5rem; min-height: 2.55rem; }
+.hris-filter-bar label.paf-filter-check__text { display: inline; min-height: 0; margin: 0; color: var(--default-text-color, #263442); font-size: .84rem; font-weight: 400; letter-spacing: 0; line-height: 1.3; cursor: pointer; }
+.paf-row__badge { color: rgb(var(--warning-rgb)); font-weight: 700; }
+
+@media (max-width: 767.98px) {
+  .paf-progress { flex-direction: column; align-items: flex-start; gap: .3rem; }
+  .paf-progress__track { width: 100%; }
+}
+
+/* PAF create form (ADR 021 D4o). A muted option is UNCHECKED and dimmed — it is
+   never `disabled`, because a disabled control is not serialised and the server
+   would silently receive a request missing a field it expects to read. */
+.paf-case-option { padding: .6rem .75rem; border: 1px solid var(--default-border); border-radius: .5rem; background: var(--custom-white); }
+.paf-case-option label { display: flex; align-items: center; gap: .5rem; margin: 0; font-weight: 600; color: #263442; cursor: pointer; }
+.paf-case-option--muted { opacity: .5; }
+.paf-case-option__note { margin: .35rem 0 0; color: #7b8794; font-size: .72rem; }
+.paf-new-actions { display: flex; gap: .5rem; margin-top: 1rem; }
+
+/* PAF create form busy overlay (_new_busy_overlay). The ring animates `transform`
+   only, so it keeps turning while the main thread is busy. Backdrop blur is
+   deliberately NOT used: it is repainted by the busy thread and would make the
+   stall longer. `[hidden]` must be restated because `display:flex` below would
+   otherwise beat the UA `hidden` rule. */
+.paf-busy { position: fixed; inset: 0; z-index: 2100; display: flex; align-items: center; justify-content: center; background: rgba(15, 23, 42, .38); }
+.paf-busy[hidden] { display: none; }
+.paf-busy__card { display: flex; align-items: center; gap: 1rem; max-width: 22rem; padding: 1.1rem 1.4rem; border-radius: .75rem; background: var(--custom-white, #fff); box-shadow: 0 12px 32px rgba(15, 23, 42, .28); }
+.paf-busy__ring { flex: 0 0 auto; width: 2.4rem; height: 2.4rem; border-radius: 50%; border: .28rem solid rgba(var(--primary-rgb), .18); border-top-color: rgb(var(--primary-rgb)); animation: pafBusySpin .8s linear infinite; }
+.paf-busy__text { display: flex; flex-direction: column; gap: .15rem; line-height: 1.3; }
+.paf-busy__text strong { color: var(--hris-heading, #263442); font-size: .95rem; }
+.paf-busy__text span { color: var(--hris-text-soft, #7b8794); font-size: .78rem; }
+@keyframes pafBusySpin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) { .paf-busy__ring { animation-duration: 2.4s; } }
+
+
+/* PAF stage actions (ADR 021 D5). */
+.paf-action-group { padding: .9rem 0; border-top: 1px solid var(--default-border); }
+.paf-action-group:first-child { padding-top: 0; border-top: 0; }
+.paf-action-group h4 { margin: 0 0 .2rem; color: #263442; font-size: .92rem; font-weight: 700; }
+.paf-action-group p { margin: 0 0 .6rem; color: #7b8794; font-size: .77rem; }
+.paf-action-form { display: flex; gap: .5rem; align-items: center; margin-bottom: .5rem; flex-wrap: wrap; }
+.paf-action-form .form-control { max-width: 380px; }
+
+/* PAF stepper — HORIZONTAL (owner, 2026-09-08). The vertical list ate the page
+   height and pushed the document's own detail below the fold.
+   ⛔ The horizontal scroll lives on .paf-stepper-scroll, NEVER on the page body.
+   Below 768px the nodes stack, which is the legible shape on a phone. */
+.paf-stepper-scroll { overflow-x: auto; margin-top: 1.1rem; padding-bottom: .35rem; }
+.paf-stepper--horizontal { display: flex; align-items: flex-start; gap: 0; margin: 0; padding: 0; list-style: none; min-width: min-content; }
+.paf-stepper--horizontal .paf-stepper__item { flex: 1 1 0; min-width: 150px; display: block; margin: 0; padding: 0 .35rem; border: 0; position: static; text-align: center; }
+.paf-stepper__track { display: flex; align-items: center; gap: 0; }
+.paf-stepper__line { flex: 1; height: 2px; background: var(--default-border); }
+.paf-stepper--horizontal .paf-stepper__item:first-child .paf-stepper__line--before,
+.paf-stepper--horizontal .paf-stepper__item:last-child .paf-stepper__line--after { background: transparent; }
+.paf-stepper--horizontal .paf-stepper__marker { position: static; flex: 0 0 auto; }
+.paf-stepper--horizontal .paf-stepper__body { padding-top: .55rem; }
+.paf-stepper--horizontal .paf-stepper__body h4 { font-size: .84rem; line-height: 1.25; }
+.paf-stepper--horizontal .paf-stepper__body p { font-size: .72rem; line-height: 1.3; }
+/* The acted-by line stays VISIBLE, never hover-only: hover does not exist on a
+   tablet and this is an audit trail. */
+.paf-stepper--horizontal .paf-stepper__event { color: #263442; font-weight: 600; }
+.paf-stepper__item--done .paf-stepper__line { background: rgba(var(--success-rgb), .45); }
+.paf-stepper__item--current .paf-stepper__line--before { background: rgba(var(--success-rgb), .45); }
+
+@media (max-width: 767.98px) {
+  .paf-stepper-scroll { overflow-x: visible; }
+  .paf-stepper--horizontal { display: block; }
+  .paf-stepper--horizontal .paf-stepper__item { min-width: 0; padding: 0 0 1rem; text-align: left; display: flex; gap: .75rem; }
+  .paf-stepper--horizontal .paf-stepper__track { flex-direction: column; }
+  .paf-stepper--horizontal .paf-stepper__line { width: 2px; height: 100%; min-height: 14px; flex: 0 0 auto; }
+  .paf-stepper--horizontal .paf-stepper__body { padding-top: 0; }
+}
+
+/* PAF timeline — a non-completion event (reject, cancellation request, a
+   refused attempt) is muted so it cannot be skim-read as an approval. The word
+   in the cell carries the meaning; the tint only reinforces it. */
+.paf-event--noncompletion > td { color: #7b8794; background: rgba(var(--light-rgb), .35); }
+.paf-event--noncompletion small { color: rgb(var(--warning-rgb)); font-weight: 600; }
+
+/* PAF Current -> New table (D4o). The new value is emphasised because it is
+   what the approver signs for; the arrow is decorative and aria-hidden, so the
+   meaning survives without it. */
+.paf-change-table__current { color: #7b8794; }
+.paf-change-table__arrow { color: #7b8794; text-align: center; }
+.paf-change-table__new { color: rgb(var(--success-rgb)); font-weight: 700; }
+/* Before/after for the four change cases: an unchanged line is legible but
+   plainly quiet, so the eye lands on the ones that move (owner, 2026-09-12).
+   The value is repeated rather than blanked — a blank cell cannot distinguish
+   "unchanged" from "cleared". */
+.paf-change-table__unchanged { color: #9aa4af; }
+.paf-change-row--same th[scope="row"] { color: #6b7280; font-weight: 600; }
+.paf-change-legend { margin-top: 0.75rem; display: flex; align-items: center; gap: 0.4rem; font-size: 0.76rem; }
+
+/* ⛔ THE CONVERTED PAF CARDS NEED THEIR OWN SPACING. The old shell was
+   `.box`, which supplied `margin-bottom: 1.25rem` (bs3-compat.css:61);
+   `.hris-form-card` supplies none, because schema_salaries#edit spaces its
+   cards with a wrapper. Without this every PAF card would sit flush against
+   the next one. */
+.paf-show-page .hris-form-card,
+.paf-index-page .hris-form-card,
+.paf-new-page .hris-form-card { margin-bottom: 1.25rem; }
+
+/* The PAF floating bars use the house component; these only fix what differs
+   inside a card: the prepare footer IS the bar, so it must not also carry the
+   card footer's own padding, and a bar nested in a card needs no side margin. */
+.paf-prepare-tabs__footer.hris-form-actions { margin: 0 1.25rem 1.25rem; }
+.paf-approval-actions .hris-form-actions,
+.paf-action-group .hris-form-actions { margin-top: 0.75rem; }
+
+/* PAF final-approval confirmation. The figures are the thing being signed for,
+   so they are set apart from the labels rather than blending into the table. */
+.paf-final-figure { color: #263442; font-weight: 700; text-align: right; }
+
+/* PAF temporary-access banner. Deliberately conspicuous: it marks a state that
+   must not survive the test it was opened for. */
+.paf-testing-banner { border-left: 4px solid rgb(var(--warning-rgb)); }
+
+/* Stage 2: a field that may only change through a PAF. Read-only TEXT, never a
+   disabled input — a disabled control is not serialised and its value vanishes
+   from the request with no error. */
+.paf-locked-field__value { margin: 0; color: #263442; font-weight: 600; }
+.paf-locked-field__hint { color: #7b8794; }
+.paf-locked-field__hint .fa-lock { margin-right: .25rem; }
+
+/* ---------------------------------------------------------------------------
+   PAF — Persiapan Administrasi sebagai deretan tab (ADR 021).
+   Datar, tanpa gradien, satu warna korporat lewat var(--primary-color).
+   Tab yang sudah lengkap ditandai centang; tab aktif diberi garis bawah tebal.
+   --------------------------------------------------------------------------- */
+.paf-tabstrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  border-bottom: 1px solid #e3e6ec;
+}
+.paf-tabstrip__item { margin: 0; }
+.paf-tabstrip__link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  color: #6b7280;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0.375rem 0.375rem 0 0;
+}
+.paf-tabstrip__link:hover { background: #f6f7f9; color: #374151; text-decoration: none; }
+.paf-tabstrip__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  border: 1px solid #d7dbe2;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+.paf-tabstrip__item--complete .paf-tabstrip__index {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #fff;
+}
+.paf-tabstrip__item--active .paf-tabstrip__link {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+  font-weight: 600;
+}
+.paf-tab-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+.paf-prepare-tabs__blocked { display: flex; align-items: flex-start; gap: 0.5rem; }
+
+/* The prepare strip reads as one line with its panel below it, matching the
+   page tabs (owner, 2026-09-12). The rounded top corners and hover fill made
+   each step look like a separate button floating above the form. */
+.paf-tabstrip { gap: 0; margin-bottom: 1rem; }
+.paf-tabstrip__link {
+  border-radius: 0;
+  border-bottom-width: 2px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.paf-tabstrip__link:hover { background: transparent; color: var(--primary-color); }
+.paf-tabpanel { padding-top: 0.25rem; }
+@media (max-width: 575px) {
+  .paf-tabstrip { overflow-x: auto; flex-wrap: nowrap; }
+  .paf-tabstrip__link { white-space: nowrap; }
+}
+
+/* ---- PAF detail page: task tabs (owner 2026-09-11, _page_tabs.html.erb) ----
+   Mirrors .people-profile-tabs (the house detail-page tab strip) under a PAF
+   name, written for Bootstrap 5 markup: the active state sits on the button,
+   not the <li>. Flat, hairline, primary colour only on the active label. */
+.paf-page-tabs-shell { margin-top: 1rem; }
+/* ⛔ INLINE TABS, NOT BOXED (owner, 2026-09-12: "buat tabnya lebih inline
+   dengan body tab nya", reference HRTemplate dist/html/navs_tabs.html:1076
+   `tab-style-8 scaleX`). The boxed active state below — a bordered tab whose
+   bottom edge was painted white to fuse with a panel underneath — only reads
+   as attached when the panel starts immediately after it. Here the panel is
+   itself a card with its own border and margin, so the tab appeared to hang
+   above the content (owner's screenshot). Underline only: nothing to fuse.
+   The theme's own tab-style-8 does this, and these rules load AFTER it, so
+   they must agree with it rather than restore the box. */
+.paf-page-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  padding: 0 0.25rem;
+  border-bottom: 1px solid var(--default-border) !important;
+}
+.paf-page-tabs > .nav-item { margin: 0; }
+.paf-page-tabs .nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.15rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: transparent;
+}
+.paf-page-tabs .nav-link:hover { color: var(--default-text-color); background: transparent; }
+.paf-page-tabs .nav-link.active,
+.paf-page-tabs .nav-link.active:focus,
+.paf-page-tabs .nav-link.active:hover {
+  border: 0;
+  border-bottom: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  background: transparent;
+}
+.paf-page-tabs__count {
+  min-width: 1.4rem;
+  padding: 0 0.35rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.3rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+.paf-page-tab-content { padding-top: 1rem; }
+
+/* Draft "Approval Lain": the secondary actions as one compact row instead of
+   three stacked sections; stacks again on narrow screens. */
+.paf-other-actions .layout-decoration-shell__body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.paf-other-actions .paf-action-group {
+  flex: 1 1 16rem;
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.5rem;
+}
+.paf-other-actions .paf-action-group h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.25rem; }
+.paf-other-actions .paf-action-group p { font-size: 0.8rem; }
+@media (max-width: 575.98px) {
+  .paf-page-tabs { flex-wrap: nowrap; overflow-x: auto; }
+  .paf-page-tabs .nav-link { white-space: nowrap; }
+}
+
+/* PAF reason boxes: a visible label above the field (placeholders vanish on
+   typing). .paf-action-form is a flex row, so the label takes a full line. */
+.paf-action-form .paf-action-label {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--default-text-color);
+}
+
+/* PAF Approval card outside draft: one bordered card per action in a grid,
+   the reason box as wide as its card and the button directly under it.
+   Before, the box was capped at 380px on the left while the pull-right button
+   floated at the far edge of a 1900px screen, so the two read as unrelated.
+   auto-fit collapses empty tracks, so a single card (or the "no action"
+   sentence) spans the full width. Cards stretch to one height and the button
+   is pushed to the bottom, so buttons in neighbouring cards line up. */
+.paf-approval-actions .layout-decoration-shell__body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+/* bs3-compat.css gives .box-body a clearfix ::after (display: table). In a grid
+   that pseudo-element is a GRID ITEM: it took the third track and left the two
+   cards in two-thirds of the width (measured on the rendered page). A grid
+   needs no clearfix. */
+.paf-approval-actions .layout-decoration-shell__body::before,
+.paf-approval-actions .layout-decoration-shell__body::after { display: none; }
+.paf-approval-actions .paf-action-group,
+.paf-approval-actions .paf-action-group:first-child {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.5rem;
+}
+/* Doubled class: the :first-child selector above resets `border` and would
+   otherwise erase the accent on whichever card comes first. */
+.paf-approval-actions .paf-action-group.paf-action-group--warning { border-top: 3px solid rgb(var(--warning-rgb)); }
+.paf-approval-actions .paf-action-group.paf-action-group--danger { border-top: 3px solid rgb(var(--danger-rgb)); }
+.paf-approval-actions .paf-action-group { display: flex; flex-direction: column; }
+/* nowrap is load-bearing: the base .paf-action-form wraps, and a WRAPPING
+   column whose child has flex-basis 100% sends the button into a second
+   column beside a squeezed reason box (measured on the rendered page). */
+.paf-approval-actions .paf-action-form {
+  flex: 1 1 auto;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  margin-bottom: 0;
+}
+.paf-approval-actions .paf-reason-field { flex: 0 0 auto; }
+.paf-approval-actions .paf-action-form .form-control { max-width: none; }
+.paf-approval-actions .paf-action-form .btn { align-self: flex-end; margin-top: auto; }
+
+/* PAF required reason left empty: the service refused with :note_required and
+   the controller named this box (@missing_note). Red, blinking a
+   few times and then STAYING red — a finite blink, because endless blinking
+   is distracting and fails WCAG 2.2.2. Reduced-motion users get the red
+   without the blink. */
+.paf-reason-field { flex: 1 1 100%; display: flex; flex-direction: column; gap: 0.35rem; }
+.paf-reason-field--missing .paf-action-label,
+.paf-reason-field__error { color: rgb(var(--danger-rgb)); }
+.paf-reason-field--missing .form-control {
+  border-color: rgb(var(--danger-rgb));
+  box-shadow: 0 0 0 0.2rem rgba(var(--danger-rgb), 0.15);
+}
+.paf-reason-field--missing .paf-action-label,
+.paf-reason-field--missing .form-control,
+.paf-reason-field__error { animation: pafReasonMissingBlink 0.7s ease-in-out 5; }
+.paf-reason-field__error { margin: 0; font-size: 0.78rem; font-weight: 600; }
+@keyframes pafReasonMissingBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .paf-reason-field--missing .paf-action-label,
+  .paf-reason-field--missing .form-control,
+  .paf-reason-field__error { animation: none; }
+}
+
+/* ---- PAF attachments (ADR 021, owner 2026-09-12) -------------------------
+   The five supporting files, read-only on every workflow stage. One row per
+   slot so a missing mandatory file is visible as a GAP in a list rather than
+   as an absence the reader has to notice. */
+.paf-attachments { display: grid; gap: 0.5rem; }
+.paf-attachment {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.5rem;
+}
+.paf-attachment--empty { border-style: dashed; background: rgba(var(--light-rgb), 0.28); }
+.paf-attachment__icon {
+  flex: 0 0 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.4rem;
+  color: var(--primary-color);
+  background: var(--primary01);
+}
+.paf-attachment--empty .paf-attachment__icon { color: var(--text-muted); background: rgba(var(--light-rgb), 0.6); }
+.paf-attachment__body { min-width: 0; display: flex; flex-direction: column; gap: 0.1rem; }
+.paf-attachment__label { color: var(--default-text-color); font-size: 0.82rem; font-weight: 700; }
+.paf-attachment__required {
+  margin-left: 0.35rem;
+  padding: 0 0.35rem;
+  border-radius: 0.25rem;
+  color: rgb(var(--danger-rgb));
+  background: rgba(var(--danger-rgb), 0.1);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.paf-attachment__file { font-size: 0.82rem; word-break: break-all; }
+.paf-attachment__meta { color: var(--text-muted); font-size: 0.72rem; }
+.paf-attachment-formats { font-size: 0.76rem; }
+
+/* The stored-file line under each upload input (owner, 2026-09-12: "perbesar
+   tulisan informasi dari file yang Tersimpan"). It is not a footnote: the
+   operator reads the file NAME to decide whether to replace the file, and the
+   names are long download-style strings. Bigger than .hris-field-hint's
+   0.7rem, and wrapping rather than widening the column — the PAF list already
+   showed what an unconstrained wide cell does to this layout. */
+.paf-attachment-stored {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.85rem !important;
+  line-height: 1.45;
+  color: var(--default-text-color);
+}
+.paf-attachment-stored__name {
+  font-weight: 600;
+  overflow-wrap: break-word;
+  word-break: break-all;
+}
+.paf-attachment-stored__hint {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+/* The salary proposal card rendered INSIDE the prepare tab strip: one card,
+   not a card inside a card with the same title twice. Presentation only —
+   _prepare_salary renders the identical form either way. */
+.paf-prepare-salary--embedded > .col-xs-12,
+.paf-prepare-salary--embedded > .col-12 { padding-left: 0; padding-right: 0; }
+.paf-prepare-salary--embedded .box {
+  margin-bottom: 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.paf-prepare-salary--embedded .box-header { display: none; }
+.paf-prepare-salary--embedded .box-body { padding: 0; }
+
+/* PAF list: the reject / cancellation note column (owner 2026-09-12). */
+.paf-refusal-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgb(var(--danger-rgb));
+  background: rgba(var(--danger-rgb), 0.1);
+}
+.paf-refusal-note--reject { color: #8a5300; background: rgba(var(--warning-rgb), 0.16); }
+.paf-refusal-note__text { display: block; margin-top: 0.2rem; font-size: 0.76rem; }
+/* DataTables inside the PAF list card: the plugin's own wrapper already pads
+   itself (3b. Shared widgets), so the card body must not pad it again. */
+.paf-documents-table_wrapper { padding: 0 !important; }
+
+/* PAF unstaffed-stage warning: one closed line, list behind <details>. */
+.paf-unstaffed-warning { padding: 0.6rem 0.9rem; }
+.paf-unstaffed-warning summary { cursor: pointer; list-style: none; }
+.paf-unstaffed-warning summary::-webkit-details-marker { display: none; }
+.paf-unstaffed-warning__toggle { margin-left: 0.35rem; text-decoration: underline; }
+.paf-unstaffed-warning details[open] .paf-unstaffed-warning__toggle { display: none; }
+.paf-unstaffed-warning ul { margin: 0.5rem 0 0; padding-left: 1.2rem; }
+.paf-unstaffed-warning summary:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
+
+/* PAF — proposed salary figures, shown read-only on every approval screen.
+   Added 2026-09-12: the figures used to render only on the final-approval card,
+   so the approvers before it signed a pay change they could not see. The
+   "Sekarang" column is muted so the eye lands on the proposed value, which is
+   the number being decided. */
+.paf-scheme-figures__table th[scope="row"] {
+  font-weight: 500;
+}
+/* BOTH money columns right-aligned with tabular figures. The whole purpose of
+   the "Sekarang" column is that an approver can see the size of the change at a
+   glance; left-aligned against a right-aligned "Usulan" the digits never line
+   up and the comparison has to be read instead of seen. Tabular figures keep
+   the columns of digits vertical when the two amounts differ in length. */
+.paf-scheme-figures__current,
+.paf-scheme-figures__new {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.paf-scheme-figures__current {
+  color: var(--text-muted, #6c757d);
+}
+.paf-scheme-figures__new {
+  font-weight: 600;
+}
+/* Measured on PAF #7: six of the seven components are Rp.0, so without this the
+   one figure that carries the money reads with the same weight as six zeros.
+   The rows are MUTED, never hidden — a zero transport allowance is a fact the
+   approver signs for, and hiding it would repeat the defect this card exists to
+   fix. Selective emphasis, not selective disclosure. */
+.paf-scheme-figures__row--zero th[scope="row"],
+.paf-scheme-figures__row--zero td {
+  color: var(--text-muted, #6c757d);
+  font-weight: 400;
+}
+
+/* PAF — the new-employee summary on a hiring document. A hiring PAF sets no
+   proposed_* column, so without this block the screen said "nothing is being
+   proposed" while asking for a person to be put on the payroll. */
+.paf-hiring-summary__table th[scope="row"] {
+  font-weight: 500;
+  width: 34%;
+}
+
+/* ============================================================================
+   LABEL BUTTONS — house button shape (owner, 2026-09-12)
+   Appended block, owned by direction_panel. dev1 edits this file mid-file; this
+   section is append-only and deliberately touches NO global `.btn` rule — no
+   float, width or margin on `.btn` — so it cannot override the PAF-local button
+   rules earlier in this file.
+
+   The layout itself (.label-btn, .label-btn-icon, .label-btn.label-end,
+   .btn-list) already ships in template/assets/css/styles.css and is loaded
+   before this file. Nothing is duplicated here; these are only the corrections
+   that stylesheet needs for THIS application.
+   ========================================================================= */
+
+/* THE ICON BOX IS INVISIBLE ON LIGHT BUTTONS, and that is a real defect rather
+   than a taste question. The base rule paints it `var(--white-2)`, which in the
+   light theme is rgba(255,255,255,.2) — designed for a coloured button. On
+   btn-light (75 call sites) and btn-default (158) the button face is already
+   white, so a 20%-white box over white renders nothing and the button appears
+   to have lost its icon. A neutral ink tint reads correctly on both. */
+.btn-light .label-btn-icon,
+.btn-default .label-btn-icon,
+.btn-secondary .label-btn-icon,
+.btn-outline-primary .label-btn-icon,
+.btn-outline-secondary .label-btn-icon {
+  background-color: rgba(15, 23, 42, 0.07);
+}
+
+/* Squarer corners than the reference: the icon box sits flush inside the
+   button's own radius instead of the pill the HRTemplate screenshot shows
+   (§2 — radius <= 0.5rem, no pills). Inheriting keeps one radius scale. */
+.label-btn-icon {
+  border-start-start-radius: inherit;
+  border-end-start-radius: inherit;
+}
+.label-btn.label-end .label-btn-icon {
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
+  border-start-end-radius: inherit;
+  border-end-end-radius: inherit;
+}
+
+/* The icon must never shrink under a long Indonesian label ("Simpan Perubahan
+   Skema Gaji"), or the glyph clips against the label's first letter. */
+.label-btn-icon {
+  flex: 0 0 auto;
+}
+
+/* ⛔ THE THEME'S LABEL-BUTTON LAYOUT WAS BEING OVERRIDDEN, TWICE, BY CASCADE
+   ORDER — fixed 2026-09-14 after the owner found every label_link on /people
+   broken (glyph stuck top-left, label text running under the icon box).
+
+   styles.css (layout line 26) defines `.label-btn { padding-inline-start:
+   2.6rem }` and `.label-btn-icon { display: flex; align-items/justify-content:
+   center }`. Two stylesheets loaded LATER carry equal-specificity rules that
+   win on load order alone:
+     1. font-awesome.css (line 49): `.fa { display: inline-block }` — every
+        label-button icon is also `.fa`, so the flex centring was dropped and
+        the glyph fell to the top-left corner of its box;
+     2. this file, :502: `.btn { padding: 0.45rem 0.85rem }` — the shorthand
+        resets padding-inline-start to 0.85rem, so the label ran under the
+        2.25rem icon box.
+   Measured in Chromium before this block: 5 of 6 test buttons padL=13.6px,
+   icon display=block, label text starting INSIDE the icon box. `.label-end`
+   alone was correct, because `.label-btn.label-end` (two classes) already
+   out-ranked the one-class `.btn`.
+
+   The fix is SPECIFICITY, not load order and not !important: two-class
+   selectors beat `.btn` and `.fa` wherever the files are loaded, so moving a
+   <link> later cannot re-break it. Do not "simplify" these back to one class.
+   2.85rem = the 2.25rem icon box + the 0.6rem gap the theme leaves. */
+.btn.label-btn {
+  padding-inline-start: 2.85rem;
+}
+.btn.label-btn.label-end {
+  padding-inline-start: 0.85rem;
+  padding-inline-end: 2.85rem;
+}
+.label-btn .fa.label-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* `me-2`/`ms-2` from the helper shift the glyph off-centre inside its box;
+     the box owns the spacing. The ONE !important in this block, and it is
+     forced: Bootstrap's spacing utilities are themselves `!important`
+     (`.me-2 { margin-right: .5rem !important }`), so no specificity can beat
+     them. Everything above is fixed by specificity alone. */
+  margin: 0 !important;
+  line-height: 1;
+}
+
+/* ============================================================================
+   COLLAPSIBLE PANEL — shared/_collapsible_panel (layout-decoration §18,
+   owner 2026-09-19). The toggle is visible in BOTH states and never moves:
+   "Tampilkan" + chevron down while closed, "Sembunyikan" + chevron up while
+   open. The earlier salary panels hid their toggle once opened, leaving no
+   visible way to close the section — never hide the toggle.
+   ========================================================================= */
+.hris-collapsible { margin-bottom: 0; }
+.hris-collapsible > details > summary { list-style: none; cursor: pointer; }
+.hris-collapsible > details > summary::-webkit-details-marker { display: none; }
+.hris-collapsible__header {
+  display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+  padding: 0.85rem 1rem; border-bottom: 1px solid transparent;
+}
+.hris-collapsible > details[open] > .hris-collapsible__header { border-bottom-color: var(--default-border); }
+.hris-collapsible__header:hover { background-color: rgba(15, 23, 42, 0.03); }
+.hris-collapsible__header:focus-visible { outline: 2px solid var(--primary-color); outline-offset: -2px; }
+.hris-collapsible__title { margin: 0; flex: 1 1 auto; min-width: 12rem; font-size: 1rem; }
+.hris-collapsible__icon { flex: 0 0 auto; }
+.hris-collapsible--warning .hris-collapsible__icon { color: rgb(var(--warning-rgb)); }
+.hris-collapsible--danger  .hris-collapsible__icon { color: rgb(var(--danger-rgb)); }
+.hris-collapsible--primary .hris-collapsible__icon,
+.hris-collapsible--info    .hris-collapsible__icon { color: var(--primary-color); }
+.hris-collapsible--success .hris-collapsible__icon { color: rgb(var(--success-rgb)); }
+/* Soft tinted count badge, dark text on every tone (no white-on-yellow). */
+.hris-collapsible__count {
+  flex: 0 0 auto; font-weight: 600; color: #111111;
+  background-color: rgba(15, 23, 42, 0.07); border-radius: 0.375rem; padding: 0.35em 0.6em;
+}
+.hris-collapsible--warning .hris-collapsible__count { background-color: rgba(var(--warning-rgb), 0.18); }
+.hris-collapsible--danger  .hris-collapsible__count { background-color: rgba(var(--danger-rgb), 0.12); }
+/* The toggle carries its OWN neutral colours. The theme's btn-outline-secondary
+   and btn-light render orange/blue or borderless here, so no btn-* variant is
+   used — a neutral bordered control that reads as a button in both states. */
+.hris-collapsible__toggle {
+  flex: 0 0 auto; margin-left: auto; display: inline-flex; align-items: center; gap: 0.45rem;
+  pointer-events: none; /* the whole <summary> row is the control */
+  background-color: #ffffff; color: #1f2937; font-weight: 600;
+  border: 1px solid var(--default-border, #d8dde6); border-radius: 0.375rem; padding: 0.35rem 0.75rem;
+}
+.hris-collapsible__header:hover .hris-collapsible__toggle { border-color: var(--primary-color); color: var(--primary-color); }
+.hris-collapsible__chevron { transition: transform 0.15s ease; }
+.hris-collapsible > details[open] .hris-collapsible__chevron { transform: rotate(180deg); }
+.hris-collapsible__label-open { display: none; }
+.hris-collapsible > details[open] .hris-collapsible__label-open { display: inline; }
+.hris-collapsible > details[open] .hris-collapsible__label-closed { display: none; }
+.hris-collapsible__body { padding-top: 0.25rem; }
+
+/* ============================================================================
+   ABSENSI FORM (absensis/edit + new) — owner 2026-09-20, "form nya buat yang
+   rapi". Presentation only: the form is the same fields in the house form-card
+   shape (.hris-form-card + .hris-form-grid), one card per section, labels above
+   their controls so a plaintext value, a select2 box and a date input share one
+   baseline. The horizontal col-sm-2 labels this replaces left every row at a
+   different height and the page read as one long unbroken list.
+   ========================================================================= */
+.absensi-record-identity {
+  display: flex; align-items: center; gap: 0.75rem;
+  margin-bottom: 1rem; padding: 0.75rem 1rem;
+  background-color: var(--custom-white, #ffffff);
+  border: 1px solid var(--default-border); border-radius: 0.5rem;
+}
+.absensi-record-identity i { color: var(--primary-color); font-size: 1.1rem; }
+.absensi-record-identity__meta { margin-left: 0.75rem; color: var(--text-muted); }
+
+/* A read-only section still looks like a card, but its fields must not invite
+   typing: the muted surface says "result", the header sentence says why. */
+.absensi-form-card--readonly .hris-form-card__body { background-color: rgba(15, 23, 42, 0.02); }
+
+/* time_select emits hour and minute as two selects with a literal ":" between
+   them. Without this they stack and the colon lands on a line of its own. */
+.absensi-time-select { display: flex; align-items: center; gap: 0.4rem; }
+.absensi-time-select select { flex: 1 1 0; min-width: 0; }
+
+.absensi-form-check { display: flex; align-items: center; gap: 0.5rem; padding-left: 0; }
+.absensi-form-check .form-check-input { margin: 0; float: none; }
+.absensi-form-check .form-check-label { margin: 0; }
+
+/* The payroll-impact panel injected by get_js_leave_form.js.erb. Empty by
+   default, so it must add no space until it holds something. */
+.absensi-insentif-slot:not(:empty) { margin-top: 1rem; }
+
+/* DENSER THAN THE DEFAULT CARD, on purpose. This form is five short sections a
+   branch operator edits daily, not a long master-data entry: at the standard
+   1.1rem/1.25rem card padding the same five sections ran well past one screen
+   and the operator scrolled to reach Simpan. Padding only — the card shape,
+   border, radius and header order are the house ones. */
+.absensi-form-card .hris-form-card__header { padding: 0.75rem 1rem; gap: 0.7rem; }
+.absensi-form-card .hris-form-card__icon { flex-basis: 2rem; width: 2rem; height: 2rem; font-size: 0.85rem; }
+.absensi-form-card .hris-form-card__header h3 { font-size: 0.95rem; }
+.absensi-form-card .hris-form-card__body { padding: 0.9rem 1rem; }
+.absensi-form-card .form-control-plaintext { padding-top: 0.35rem; }
+.absensi-form-card .hris-field-hint { font-size: 0.72rem; }
+
+/* Staff login (layouts/auth): the same navy as the candidate pages' hero (candidate.css --hero),
+   so both public doors of GlassBox share one brand colour. */
+.authentication-background { background-color: #082147; }
+/* The vendor lays a 20% photo over it, which greys the navy; the hero has none. */
+.authentication-background::before { display: none; }

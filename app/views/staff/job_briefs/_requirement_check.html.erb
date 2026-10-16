@@ -1,0 +1,63 @@
+<%# Appendix D structure: the discrimination test on every requirement, its verdicts, and the person's
+    decision per flagged line. One form per button, never a form inside a form; no disabled control.
+    The stored result goes stale when a requirement changes; the card says so and offers the re-run. %>
+<% check = Briefs::RequirementCheck %>
+<% lines = check.lines(job) %>
+<% stale = check.stale?(job) %>
+<% open_lines = stale ? [] : check.open_lines(job) %>
+<% editor = current_user.role.in?(Staff::JobBriefsController::EDITORS.map(&:to_s)) && !job.brief_locked? %>
+<% tone, icon, heading = if !check.ran?(job) then ["info", "fa-balance-scale", "Discrimination test not run yet"]
+                         elsif stale then ["warning", "fa-refresh", "Requirements changed since the last test"]
+                         elsif open_lines.any? then ["warning", "fa-exclamation-triangle", "#{open_lines.size} #{'requirement'.pluralize(open_lines.size)} flagged, waiting for a decision"]
+                         else ["success", "fa-check", "Discrimination test passed on the saved requirements"] end %>
+<%= render layout: "staff/job_briefs/card", locals: { id: "requirement-check", icon:, tone:, title: heading,
+           text: "Every requirement is tested against the structure of the screening standard's Appendix D: is it about the work, can it be tested, does it name or stand in for a protected attribute. A rule hit is final; the AI advice adds what the rules cannot see. A person decides each flagged line; the brief completes only when none is open.",
+           aside: (editor ? button_to((check.ran?(job) ? "Run the test again" : "Run the test"), staff_job_requirement_check_path(job), method: :post, class: "btn btn-outline-primary btn-sm", name: "commit", value: "run", form: { data: { turbo: false, submit_guard: true } }) : nil) } do %>
+  <% if lines.empty? %>
+    <p class="text-muted mb-0">No result stored yet. The test also runs by itself when the brief is completed.</p>
+  <% else %>
+    <% if check.stored(job)["checked_at"].present? %>
+      <%# The prompt version stays in the record for audit; users never see model or prompt names (house rule). %>
+      <p class="text-muted fs-12 mb-2">Last run <%= wib(Time.zone.parse(check.stored(job)["checked_at"])) %><%= " · stale: run again before completing the brief" if stale %></p>
+    <% end %>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle requirement-check-table">
+        <thead><tr><th>Requirement</th><th>Verdict</th><th>Source</th><th>Reason</th><th>Decision</th></tr></thead>
+        <tbody>
+          <% lines.each do |l| %>
+            <% flagged = l["verdict"] != "keep" %>
+            <tr>
+              <td><%= l["text"] %><% if l["replacement"].present? %><br><small class="text-muted">Neutral wording: <em><%= l["replacement"] %></em></small><% end %></td>
+              <td><span class="portal-state portal-state--<%= { "keep" => "success", "replace" => "warning", "delete" => "danger" }.fetch(l["verdict"], "muted") %>"><%= { "keep" => "Keep", "replace" => "Replace", "delete" => "Delete" }.fetch(l["verdict"], l["verdict"]) %></span></td>
+              <td><span class="portal-state portal-state--<%= l["source"] == "ai" ? "info" : "muted" %>"><%= l["source"] == "ai" ? "AI advice" : "Rule" %></span></td>
+              <td class="fs-13"><%= l["reason"] %></td>
+              <td>
+                <% if l["decision"].present? %>
+                  <strong><%= { "keep" => "Kept with a reason", "replace" => "Neutral wording used", "delete" => "Deleted" }.fetch(l["decision"], l["decision"]) %></strong>
+                  <br><small class="text-muted"><%= l["decided_by_name"] %> · <%= wib(Time.zone.parse(l["decided_at"])) %><%= " · #{l['note']}" if l["note"].present? %></small>
+                <% elsif flagged && editor && !stale %>
+                  <div class="d-flex flex-column gap-1">
+                    <% if l["replacement"].present? %>
+                      <%= button_to "Use neutral wording", staff_job_requirement_check_decision_path(job, l["id"]), params: { decision: "replace" }, method: :post, class: "btn btn-sm btn-primary", name: "commit", value: "replace", form: { data: { turbo: false, submit_guard: true } } %>
+                    <% end %>
+                    <%= button_to "Delete requirement", staff_job_requirement_check_decision_path(job, l["id"]), params: { decision: "delete" }, method: :post, class: "btn btn-sm btn-outline-danger", name: "commit", value: "delete", form: { data: { turbo: false, submit_guard: true } } %>
+                    <%= form_with url: staff_job_requirement_check_decision_path(job, l["id"]), method: :post, data: { turbo: false, submit_guard: true }, class: "d-flex gap-1 align-items-start" do |f| %>
+                      <%= f.hidden_field :decision, value: "keep" %>
+                      <%= f.text_field :note, required: true, maxlength: 300, class: "form-control form-control-sm", placeholder: "Reason to keep it as worded (required)", "aria-label": "Reason to keep this requirement" %>
+                      <%= f.button "Keep", type: :submit, name: "commit", value: "keep", class: "btn btn-sm btn-outline-secondary text-nowrap" %>
+                    <% end %>
+                  </div>
+                <% elsif flagged %>
+                  <span class="text-muted">Waiting for the HR owner or the consultant.</span>
+                <% else %>
+                  <span class="text-muted">—</span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <p class="hris-field-hint mb-0">A person decides every step. Wording of the standard: structure only; the team pastes the exact text later.</p>
+  <% end %>
+<% end %>

@@ -1,0 +1,84 @@
+<%# The Applicant portal box (BP §3.6 A). Each action is its own form: no form inside another. %>
+<% window = board.window %>
+<div class="hris-form-card">
+  <div class="hris-form-card__header">
+    <div class="hris-form-card__icon"><i class="fa fa-globe"></i></div>
+    <div><h3>Applicant portal <%= window_badge(window) %></h3>
+      <p>Open it when the vacancy is ready, close it when there are enough applications. Every change is recorded with a name and time.
+        <br><span class="ai-tier"><%= ai_models_locked_line(job) %></span></p></div>
+  </div>
+  <div class="hris-form-card__body">
+    <% if job.ad_approved_at.nil? && !job.brief_complete? %>
+      <%# Feature 03: an ad is approved only for a complete brief; say why and where to finish it. %>
+      <p class="mb-2">The job ad cannot be approved yet because the vacancy brief is incomplete. The portal can be opened once the brief is complete and HR has approved the job ad.</p>
+      <div class="d-flex flex-wrap gap-2">
+        <%= link_to staff_job_brief_path(job), class: "btn btn-sm btn-primary-light", title: "View vacancy brief details" do %>
+          <i class="fa fa-plus" aria-hidden="true"></i> View brief
+        <% end %>
+        <%# The ad can be written (or drafted by the AI) before the brief is complete; approval waits. %>
+        <%= link_to staff_job_ad_path(job), class: "btn btn-sm btn-light" do %>
+          <%# A view action uses fa-plus (house rule); writing a new ad keeps the bullhorn. %>
+          <i class="fa <%= job.ad_text.present? ? "fa-plus" : "fa-bullhorn" %>" aria-hidden="true"></i> <%= job.ad_text.present? ? "View & edit job ad" : "Write job ad" %>
+        <% end %>
+      </div>
+    <% elsif job.ad_approved_at.nil? && job.ad_text.blank? %>
+      <p>The job ad has not been written yet. Write it (the AI can help), then HR approves it before the Applicant portal opens.</p>
+      <%= label_link "Write job ad", "fa-bullhorn", staff_job_ad_path(job), purpose: :neutral %>
+    <% elsif job.ad_approved_at.nil? %>
+      <p>The job ad is written and awaits HR approval. The portal can be opened once the job ad is approved.
+        <% if Array(job.ad_flags).any? %><span class="text-warning"><%= job.ad_flags.size %> <%= "sentence".pluralize(job.ad_flags.size) %> in the job ad need checking.</span><% end %></p>
+      <div class="d-flex flex-wrap gap-2">
+        <%= label_link "View & edit job ad", "fa-plus", staff_job_ad_path(job), purpose: :neutral %>
+        <% if current_user.role == "hr_pic" && Array(job.ad_flags).empty? %>
+          <%= form_with url: approve_ad_staff_job_path(job), method: :patch, data: { turbo: false, submit_guard: true } do %>
+            <%= label_button "Approve job ad", "fa-check", purpose: :approve %>
+          <% end %>
+        <% end %>
+      </div>
+    <% else %>
+      <%= render "staff/shared/consent_blockers", blockers: Portal::ConsentReadiness.blockers(company: job.client_company) %>
+      <div class="mb-3"><%= label_link "View job ad", "fa-plus", staff_job_ad_path(job), purpose: :neutral %>
+        <% if job.ad_text.blank? %><span class="text-muted small ms-2">This job ad was approved before it had a text, so applicants do not see a description yet.</span><% end %></div>
+      <p class="mb-2">Application link: <span class="portal-link-copy"><%= lamar_url(job.public_code) %></span></p>
+      <p class="text-muted mb-3">Add <code>?ch=code</code> to the link per channel (for example <code>?ch=ig</code>) so the source of each application is recorded.</p>
+      <% if %w[hr_pic consultant].include?(current_user.role) %>
+        <%# Only offer an action that can succeed: while S1 is closed (D40) or the consent is not
+            complete (D38) the server refuses opening, so the box explains instead of offering a form. %>
+        <% if window.first_stage_closed? %>
+          <p class="text-muted mb-0">CV screening is closed, so the Applicant portal cannot be opened again for this vacancy.</p>
+        <% elsif !window.open? && !Portal::ConsentReadiness.ready?(company: job.client_company) %>
+          <p class="text-muted mb-0">The portal can be opened once the items above are settled in System settings.</p>
+        <% elsif window.state == :never_opened %>
+          <%= render "staff/jobs/window_form", url: staff_job_portal_open_path(job), label: "Open portal", icon: "fa-unlock", reason: false %>
+        <% elsif window.open? %>
+          <%= form_with url: staff_job_portal_close_path(job), method: :post, data: { turbo: false, submit_guard: true } do %>
+            <div class="row g-3 align-items-end">
+              <div class="col-md-8">
+                <label class="form-label" for="close_reason">Note (optional)</label>
+                <input type="text" class="form-control" id="close_reason" name="reason">
+              </div>
+              <div class="col-md-4"><%= label_button "Close portal", "fa-lock", purpose: :neutral %></div>
+            </div>
+          <% end %>
+        <% else %>
+          <%= render "staff/jobs/window_form", url: staff_job_portal_reopen_path(job), label: "Reopen", icon: "fa-unlock", reason: true %>
+        <% end %>
+        <% if current_user.role == "consultant" %>
+          <p class="text-muted mt-2 mb-0">You act on behalf of HR; the action is recorded with your role.</p>
+        <% end %>
+      <% end %>
+    <% end %>
+    <% if board.per_channel.any? %>
+      <h4 class="fs-14 mt-3">Applications per channel <span class="text-muted fw-normal">· <%= board.applications.size %> applications, largest first</span></h4>
+      <div class="portal-funnel">
+        <% board.per_channel.each do |channel, count, share| %>
+          <div class="portal-funnel__row">
+            <span><%= channel %></span>
+            <span class="portal-funnel__track"><span class="portal-funnel__fill" style="width: <%= share %>%"></span></span>
+            <span class="portal-funnel__num"><%= count %> <small class="text-muted">(<%= share %>%)</small></span>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>

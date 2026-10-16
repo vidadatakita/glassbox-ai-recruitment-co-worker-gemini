@@ -1,0 +1,16 @@
+Hello <%= @application.candidate.name %>,
+
+We have received your application for <%= @job.title %>.
+
+Your private link to see the status of your application:
+<%= @url %>
+
+The next step is the technical test (<%= @minutes %> minutes). Start the test no later than <%= l(@start_by.in_time_zone, format: :long_wib) %>. The clock runs from the moment you press "Start test" and cannot be paused. We recommend a laptop or desktop computer.
+
+Open the technical test:
+<%= @test_url %>
+
+If the test is not started by that deadline, this stage is recorded as not taken.
+
+Save this e-mail and do not share the links above with anyone.
+GlassBox never asks for any payment.

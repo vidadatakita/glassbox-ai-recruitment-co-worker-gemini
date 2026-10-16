@@ -1,0 +1,318 @@
+/* GlassBox staff screens: feature-scoped additions on top of the house override layer.
+   Theme variables only; no gradients; radius <= 0.5rem (layout-decoration §2). */
+.portal-page .hris-form-card { margin-bottom: 1.25rem; }
+.portal-funnel { display: grid; gap: .5rem; }
+.portal-funnel__row { display: grid; grid-template-columns: 9rem 1fr 3rem; gap: .75rem; align-items: center; font-size: .8125rem; }
+.portal-funnel__track { height: .5rem; background: rgba(var(--light-rgb, 243, 245, 249), 1); border: 1px solid var(--default-border); border-radius: .25rem; overflow: hidden; }
+/* A span: display block, or its width and height are ignored and the bar renders empty. */
+.portal-funnel__fill { display: block; height: 100%; background: var(--primary-color); }
+.portal-funnel__num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.portal-link-copy { word-break: break-all; font-size: .8125rem; }
+.portal-queue-section h3 { font-size: .9375rem; }
+@media (max-width: 575.98px) { .portal-funnel__row { grid-template-columns: 6.5rem 1fr 2.5rem; } }
+/* The fixed menu bar ends at y=119 at 1280px while the content started at y=112, so the page
+   header card sat 7px under it (measured 2026-10-10; the same defect zynix-css §3 step 6 records
+   for the HRKita Master demo). Clearance on the content, not on each page. */
+.main-content.app-content > .container-fluid { padding-top: .75rem; }
+/* Information-display review 2026-10-10: the state of each applicant and the funnel insight. Tones
+   reuse the house status colours (tinted background, readable text; never colour alone). */
+.portal-state{display:inline-block;border-radius:.25rem;padding:.15rem .5rem;font-size:.8125rem;white-space:nowrap}
+/* Danger text darkened to the smallest same-hue value that passes on its own tint (antislop audit
+   001, measured 2026-10-10): rgb(255,56,60) on the .08 tint was 3.20:1; #e00005 is 4.52:1. */
+.portal-state--danger{background:rgba(var(--danger-rgb),.08);color:#e00005}
+.portal-state--info{background:rgba(var(--info-rgb),.08);color:#0b5a8f}
+.portal-state--success{background:rgba(var(--success-rgb),.1);color:#146c43}
+.portal-state--muted{background:rgba(var(--light-rgb),1);color:#4b5563}
+.portal-insight{color:#7a4800;font-weight:600}
+.portal-metric-link:hover .loan-index-metric{border-color:var(--primary-color)}
+
+/* antislop audit 001 #2 (2026-10-10, approved under delegation): the house theme's two muted greys
+   failed WCAG AA on GlassBox's pages. Each is darkened by the SMALLEST amount of HSL lightness, same
+   hue and saturation, that reaches 4.5:1 on white and on the #f7f8fa tint, so the look stays padma's:
+     #98a5c3 -> #5d71a0  (L 0.680 -> 0.496): 2.47 -> 4.84 on white, 2.32 -> 4.56 on #f7f8fa
+     #7b8794 -> #687380  (L 0.531 -> 0.453): 3.66 -> 4.82 on white, 3.45 -> 4.54 on #f7f8fa
+   Scoped to GlassBox's staff screens; the vendor files are untouched. padma uses the same greys and
+   probably fails too (listed for GlassBox Team, not changed). */
+.app-header .text-muted, .main-content .text-muted, .footer .text-muted,
+.layout-decoration-header p, .hris-form-card__header p, .hris-field-hint { color: #5d71a0 !important; }
+.loan-index-metric span:not(.loan-index-metric__icon), .loan-index-metric small,
+.loan-index-guide-card__header p, .loan-index-header p { color: #687380 !important; }
+
+/* Feature 03, job-brief wizard and brief page. Theme variables and the house status tints only;
+   radius <= 0.5rem on chrome, cards inherit hris-form-card (layout contract §2, §5.0). */
+.job-brief-page .hris-form-card { margin-bottom: 1.25rem; }
+.job-brief-page .salary-schema-form .hris-form-card { margin-bottom: 0; }
+.job-brief-notice { display: flex; gap: .75rem; align-items: flex-start; }
+.job-brief-notice > i { margin-top: .2rem; }
+.job-brief-stepper { margin-bottom: 1.25rem; }
+.job-brief-stepper ol { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; margin: 0; padding: 0; list-style: none; }
+.job-brief-stepper__item > a, .job-brief-stepper__item > div { display: flex; gap: .65rem; align-items: center; height: 100%; padding: .75rem .9rem; border: 1px solid var(--default-border); border-radius: .5rem; background: var(--custom-white); color: inherit; text-decoration: none; }
+.job-brief-stepper__item > a:hover { border-color: var(--primary-color); }
+.job-brief-stepper__num { display: inline-flex; flex: 0 0 2rem; width: 2rem; height: 2rem; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--default-border); font-weight: 700; font-size: .8125rem; }
+.job-brief-stepper__text { display: flex; flex-direction: column; min-width: 0; }
+.job-brief-stepper__text strong { font-size: .8125rem; }
+.job-brief-stepper__text small { font-size: .75rem; color: #5d71a0; }
+.job-brief-stepper__item--current > div { border-color: var(--primary-color); box-shadow: inset 0 -2px 0 var(--primary-color); }
+.job-brief-stepper__item--current .job-brief-stepper__num { background: var(--primary-color); border-color: var(--primary-color); color: #fff; }
+.job-brief-stepper__item--done .job-brief-stepper__num { background: rgba(var(--success-rgb), .1); border-color: transparent; color: #146c43; }
+.job-brief-rows { display: grid; gap: .75rem; }
+.job-brief-row { margin: 0; padding: .75rem .9rem .9rem; border: 1px solid var(--default-border); border-radius: .5rem; background: rgba(var(--light-rgb), .35); }
+.job-brief-row__num { float: none; width: auto; margin: 0 0 .35rem; padding: 0; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: #5d71a0; }
+.job-brief-row .form-label { font-size: .75rem; margin-bottom: .2rem; }
+.job-brief-total { display: inline-block; padding: .3rem .6rem; border-radius: .25rem; font-size: .8125rem; white-space: nowrap; }
+.job-brief-total--ok { background: rgba(var(--success-rgb), .1); color: #146c43; }
+.job-brief-total--off { background: rgba(var(--warning-rgb), .14); color: #7a4800; }
+.job-brief-packages { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .65rem; }
+.job-brief-package { display: flex; gap: .5rem; align-items: flex-start; padding: .75rem; border: 1px solid var(--default-border); border-radius: .5rem; cursor: pointer; }
+.job-brief-package:has(input:checked) { border-color: var(--primary-color); box-shadow: inset 0 0 0 1px var(--primary-color); }
+.job-brief-package input { margin-top: .2rem; }
+.job-brief-package__body { display: flex; flex-direction: column; gap: .3rem; }
+.job-brief-package__body strong { font-size: .875rem; }
+.job-brief-package__body small { font-size: .75rem; color: #5d71a0; }
+.job-brief-package__body .portal-state { align-self: flex-start; font-size: .6875rem; }
+.job-brief-num-col { width: 9rem; }
+.job-brief-stage-table td, .job-brief-stage-table th { vertical-align: middle; }
+.job-brief-coverage { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; margin: 0; padding: 0; list-style: none; }
+.job-brief-coverage__item { display: flex; gap: .55rem; align-items: flex-start; padding: .6rem .7rem; border: 1px solid var(--default-border); border-radius: .5rem; }
+.job-brief-coverage__item span { display: flex; flex-direction: column; }
+.job-brief-coverage__item small { font-size: .75rem; }
+.job-brief-coverage__item--ok i { color: #146c43; }
+.job-brief-coverage__item--missing { background: rgba(var(--warning-rgb), .1); }
+.job-brief-coverage__item--missing i, .job-brief-coverage__item--missing small { color: #7a4800; }
+.job-brief-coverage__item--optional { color: #5d71a0; }
+.job-brief-insight { color: #7a4800; font-weight: 600; }
+.job-brief-problems__step { font-size: .875rem; font-weight: 700; margin: .5rem 0 .35rem; }
+.job-brief-problems { margin: 0 0 .5rem; padding-left: 1.1rem; font-size: .8125rem; }
+.job-brief-facts { display: grid; grid-template-columns: 11rem 1fr; gap: .45rem 1rem; margin: 0 0 1rem; font-size: .8125rem; }
+.job-brief-facts dt { font-weight: 600; color: #5d71a0; }
+.job-brief-facts dd { margin: 0; }
+.job-brief-facts--inline { grid-template-columns: repeat(4, auto 1fr); margin: 0; }
+.job-brief-group-title { font-size: .8125rem; font-weight: 700; margin: 0 0 .5rem; }
+.job-brief-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0; padding: 0; list-style: none; }
+.job-brief-chips li { padding: .25rem .6rem; border: 1px solid var(--default-border); border-radius: .25rem; font-size: .8125rem; background: rgba(var(--light-rgb), .5); }
+.job-brief-list { display: grid; gap: .5rem; margin: 0 0 .75rem; padding: 0; list-style: none; font-size: .8125rem; }
+.job-brief-list li { padding: .55rem .7rem; border: 1px solid var(--default-border); border-radius: .5rem; }
+.job-brief-list small { display: block; color: #5d71a0; margin-top: .15rem; }
+.job-brief-list .job-brief-knockout { color: #0b5a8f; }
+.job-brief-layer + .job-brief-layer { margin-top: .75rem; }
+.job-brief-activities { display: grid; gap: .55rem; }
+.job-brief-activity { display: grid; grid-template-columns: minmax(0, 1fr) 10rem 3rem; gap: .75rem; align-items: center; font-size: .8125rem; }
+.job-brief-activity__text { display: flex; flex-direction: column; }
+.job-brief-activity__text small { color: #5d71a0; }
+.job-brief-box .hris-form-card__header h3 .portal-state { margin-left: .4rem; vertical-align: middle; }
+.job-brief-columns > div > .hris-form-card { height: calc(100% - 1.25rem); }
+@media (max-width: 991.98px) {
+  .job-brief-stepper ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .job-brief-packages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .job-brief-coverage { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .job-brief-facts--inline { grid-template-columns: auto 1fr; }
+}
+@media (max-width: 575.98px) {
+  /* A header aside (running total, "Lihat detail") drops below the title on a phone, so the
+     heading text keeps the card's full width (screenshot 390, 2026-10-10). */
+  .job-brief-page .hris-form-card__header { flex-wrap: wrap; }
+  .job-brief-page .hris-form-card__header > div:nth-child(2) { flex: 1 1 calc(100% - 3.5rem); }
+  .job-brief-page .hris-form-card__action { margin-left: 3.35rem; }
+  .job-brief-packages, .job-brief-coverage { grid-template-columns: 1fr; }
+  .job-brief-facts { grid-template-columns: 1fr; gap: .1rem; }
+  .job-brief-facts dd { margin-bottom: .45rem; }
+  .job-brief-activity { grid-template-columns: minmax(0, 1fr) 2.5rem; }
+  .job-brief-activity .portal-funnel__track { grid-column: 1 / -1; grid-row: 2; }
+  .job-brief-total { white-space: normal; }
+}
+
+/* AI Builder Cup: the "Sarankan dengan AI" button (staff/job_briefs/_ai_suggest). While the AI
+   answers, submit_guard.js has marked the form data-submitted="true": the button then looks busy
+   and takes no click, and a border in the GlassBox blues runs round it. No `disabled` attribute (house
+   rule): CSS only. */
+@property --ai-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+.ai-btn { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: .5rem; }
+.ai-btn .ai-btn__busy { display: none; }
+/* !important: Zynix's .btn-primary pins the blue, and .waves-effect clips (overflow hidden) the ring. */
+form[data-submitted="true"][data-submitter="ai"] .ai-btn {
+  pointer-events: none; cursor: progress; overflow: visible !important;
+  background: #fff !important; color: #3c4a63 !important; border-color: transparent !important;
+  box-shadow: 0 0 18px rgba(37, 99, 235, .3) !important;
+}
+form[data-submitted="true"][data-submitter="ai"] .ai-btn .ai-btn__idle { display: none; }
+form[data-submitted="true"][data-submitter="ai"] .ai-btn .ai-btn__busy { display: inline; }
+form[data-submitted="true"][data-submitter="ai"] .ai-btn .ai-sparkle { color: #2563eb; animation: ai-pulse 1.2s ease-in-out infinite; }
+form[data-submitted="true"][data-submitter="ai"] .ai-btn::before {
+  content: ""; position: absolute; inset: -2px; z-index: -1; border-radius: inherit; padding: 2px;
+  background: conic-gradient(from var(--ai-angle), #082147, #2563eb, #38bdf8, #6366f1, #082147);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: ai-spin 1.6s linear infinite !important;
+}
+@keyframes ai-spin { to { --ai-angle: 360deg; } }
+@keyframes ai-pulse { 50% { transform: scale(.85); opacity: .6; } }
+/* Reduce motion: the ring still turns, slower (colour moving round a thin border, nothing moves
+   across the screen), so "the AI is working" stays visible; the sparkle stops pulsing. */
+@media (prefers-reduced-motion: reduce) {
+  form[data-submitted="true"][data-submitter="ai"] .ai-btn::before { animation-duration: 3s !important; }
+  form[data-submitted="true"][data-submitter="ai"] .ai-btn .ai-sparkle { animation: none; }
+}
+/* The AI mark in a card header takes the brand blue, like the other card icons' tones. */
+.hris-form-card__icon .ai-sparkle, .job-brief-notice .ai-sparkle { color: #2563eb; flex: none; }
+
+/* Brief wizard: "*" on the fields Briefs::BriefCheck needs before completion (JobBriefHelper#required_mark). */
+.brief-required { color: #dc2626; font-weight: 700; margin-left: .15rem; }
+.brief-required-legend { font-size: .82rem; color: #5a6780; margin: 0 0 .75rem; }
+/* A required field left empty while checking (JobBriefHelper#missing): a clear red border. */
+.job-brief-form .is-invalid { border-color: #dc2626 !important; box-shadow: 0 0 0 .2rem rgba(220, 38, 38, .15) !important; }
+
+/* "Nilai dengan AI": the exact text the reviewer releases, and the AI's reason per criterion. */
+.test-ai-preview { max-height: 28rem; overflow: auto; white-space: pre-wrap; background: #f6f8fb; border: 1px solid #dde3ee; border-radius: .5rem; padding: .75rem 1rem; font-size: .8rem; }
+.test-ai-reason { margin-top: .4rem; font-size: .8rem; color: #3c4a63; background: #eef4ff; border-radius: .4rem; padding: .35rem .5rem; }
+.test-ai-reason .ai-sparkle { color: #2563eb; vertical-align: -2px; }
+/* A second action bar that must not stick (step 5 "Selesaikan brief" under the test form's bar). */
+.hris-form-actions.hris-form-actions--static { position: static; margin-top: 1.5rem; }
+
+/* Applicant page: where this CV is on its way to the AI, and who acts next. */
+.ai-flow { margin: .25rem 0 .75rem; }
+.ai-flow__steps { display: flex; flex-wrap: wrap; gap: .4rem .5rem; list-style: none; padding: 0; margin: 0 0 .6rem; }
+.ai-flow__step { display: inline-flex; align-items: center; gap: .35rem; font-size: .8rem; padding: .25rem .65rem .25rem .3rem; border-radius: 999px; background: #f1f4f9; color: #5a6780; }
+.ai-flow__num { display: inline-grid; place-items: center; width: 1.3rem; height: 1.3rem; border-radius: 50%; background: #dde3ee; font-size: .7rem; font-weight: 700; }
+.ai-flow__step--done { background: #e3f4ea; color: #1f7a4d; } .ai-flow__step--done .ai-flow__num { background: #1f7a4d; color: #fff; }
+.ai-flow__step--current { background: #e5efff; color: #1d4ed8; font-weight: 600; } .ai-flow__step--current .ai-flow__num { background: #2563eb; color: #fff; }
+.ai-flow__step--failed { background: #fde8e8; color: #b42318; } .ai-flow__step--failed .ai-flow__num { background: #dc2626; color: #fff; }
+.ai-flow__now { background: #f8fafc; border: 1px solid #e3e8f0; border-radius: .5rem; padding: .6rem .8rem; font-size: .88rem; }
+
+/* Job ad (AI Builder Cup step 02): the flagged sentences and the text as candidates read it. */
+.ad-flags { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
+.ad-flags q { font-style: italic; }
+.ad-text { font-size: .92rem; line-height: 1.6; }
+.ad-preview { font-size: .92rem; line-height: 1.6; }
+.ad-preview h3 { font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin: 16px 0 6px; }
+.ad-preview ul { padding-left: 1.2rem; margin: 0 0 8px; }
+.ad-ai { background: #f8fafc; border: 1px solid #e3e8f0; border-radius: .5rem; padding: .75rem 1rem; }
+/* AI Builder Cup step 06: recommendation and choice on the applicant page. */
+.progression-panel, .progression-form { margin-top: .75rem; display: grid; gap: .75rem; }
+.progression-scores { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; font-size: .88rem; }
+.progression-ai { background: #f8fafc; border: 1px solid #e3e8f0; border-radius: .5rem; padding: .75rem 1rem; }
+.progression-reasons { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .5rem 1rem; margin-bottom: .5rem; }
+.progression-reasons h6 { font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; margin: 0 0 .25rem; color: #4b5563; }
+.progression-reasons ul { margin: 0; padding-left: 1.1rem; font-size: .88rem; }
+.progression-rating__pick { position: relative; }
+.progression-rating__pick input { position: absolute; opacity: 0; }
+.progression-rating__pick span { display: inline-flex; width: 2.25rem; height: 2.25rem; align-items: center; justify-content: center;
+  border: 1px solid #cfd6e2; border-radius: .4rem; cursor: pointer; font-weight: 600; }
+.progression-rating__pick input:checked + span { background: var(--primary-color, #2f5bea); border-color: transparent; color: #fff; }
+.progression-rating__pick input:focus-visible + span { outline: 2px solid #2f5bea; outline-offset: 2px; }
+/* A required field left empty on submit (browser validation, note_required.js) shows red at once. */
+.form-control:user-invalid, .form-control:user-invalid:focus, .form-select:user-invalid, .form-select:user-invalid:focus { border-color: #dc3545 !important; box-shadow: 0 0 0 .2rem rgba(220, 53, 69, .2) !important; }
+/* A stage opened by its #stage-N link is not hidden under the sticky header. */
+[id^="stage-"] { scroll-margin-top: 180px; }
+.progression-interviewers { margin-top: .75rem; border-top: 1px dashed #e3e8f0; padding-top: .75rem; }
+.debrief-table th, .debrief-table td { font-size: .85rem; vertical-align: top; }
+/* AI Builder Cup step 08: salary facts and the band position. */
+.salary-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .75rem; }
+.salary-facts span { display: block; font-size: .78rem; color: #4b5563; }
+.salary-facts small { display: block; color: #6b7280; }
+.salary-band { position: relative; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #dbe4f5, #2f5bea); margin: .5rem 0 .25rem; }
+.salary-band__mark { position: absolute; top: -5px; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; background: #fff; border: 3px solid #0b2a55; }
+/* AI Builder Cup: Ringkasan Dampak. */
+.impact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+.impact-card { background: #fff; border: 1px solid #e3e8f0; border-radius: .75rem; padding: 1.25rem; display: grid; gap: .75rem; }
+.impact-card h3 { font-size: 1rem; margin: 0; }
+.impact-card p { font-size: .85rem; color: #4b5563; margin: 0; }
+.impact-pair { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+.impact-pair span { display: block; font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; }
+.impact-pair strong { font-size: 1.5rem; color: #0b2a55; }
+.impact-pair div + div strong { color: #146c43; }
+/* "Tanya Data": the chat button at the bottom right and its window, on every staff page. */
+.data-chat__fab { position: fixed; right: 24px; bottom: 24px; z-index: 1060; height: 52px; padding: 0 22px 0 18px; border: 0; border-radius: 999px;
+  color: #fff; font-weight: 600; font-size: .95rem; display: inline-flex; align-items: center; isolation: isolate;
+  background: #2563eb; box-shadow: 0 8px 24px rgba(37, 99, 235, .35); transition: transform .15s ease, box-shadow .15s ease, background .15s ease; }
+.data-chat__fab:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 12px 30px rgba(37, 99, 235, .45); }
+.data-chat__fab:focus-visible { outline: 3px solid #f5a10f; outline-offset: 3px; }
+.data-chat__fab-open { display: inline-flex; align-items: center; gap: .55rem; }
+.data-chat__fab-open .ai-sparkle { color: #fff; }
+.data-chat__fab-close { display: none; font-size: 1.15rem; }
+.data-chat__fab[aria-expanded="true"] { width: 52px; padding: 0; justify-content: center; }
+.data-chat__fab[aria-expanded="true"] .data-chat__fab-open { display: none; }
+.data-chat__fab[aria-expanded="true"] .data-chat__fab-close { display: inline; }
+.data-chat__panel { position: fixed; right: 24px; bottom: 92px; z-index: 1060; width: min(400px, calc(100vw - 32px)); height: min(560px, calc(100vh - 140px));
+  background: #fff; border: 1px solid #e3e8f0; border-radius: 16px; box-shadow: 0 16px 48px rgba(15, 37, 84, .25); display: flex; flex-direction: column; overflow: hidden; }
+.data-chat__panel[hidden] { display: none; }
+.data-chat__head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #0b2a55; color: #fff; }
+.data-chat__head span { display: block; font-size: .78rem; color: #c9d3e8; }
+.data-chat__close { background: transparent; border: 0; color: #fff; font-size: 1.1rem; }
+.data-chat__log { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; background: #f6f8fb; }
+.data-chat__msg { max-width: 88%; padding: 8px 12px; border-radius: 12px; font-size: .88rem; line-height: 1.45; }
+.data-chat__msg p { margin: 0; white-space: pre-wrap; }
+.data-chat__msg--me { align-self: flex-end; background: #2f5bea; color: #fff; border-bottom-right-radius: 4px; }
+.data-chat__msg--bot { align-self: flex-start; background: #fff; border: 1px solid #e3e8f0; border-bottom-left-radius: 4px; }
+.data-chat__msg--warn { align-self: flex-start; background: #fff7e6; border: 1px solid #f5d38f; border-bottom-left-radius: 4px; }
+.data-chat__msg--waiting p { color: #6b7280; font-style: italic; }
+.data-chat__msg details { margin-top: 6px; font-size: .75rem; }
+.data-chat__msg pre { max-height: 180px; overflow: auto; background: #f6f8fb; padding: 6px; border-radius: 6px; margin: 4px 0 0; }
+.data-chat__links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.data-chat__links a { font-size: .78rem; padding: 2px 8px; border-radius: 999px; background: #eef2fa; text-decoration: none; }
+.data-chat__chips { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.data-chat__chip { text-align: left; font-size: .8rem; border: 1px solid #cfd6e2; background: #fff; border-radius: 10px; padding: 6px 10px; }
+.data-chat__chip:hover { border-color: #2f5bea; }
+.data-chat__form { position: relative; display: flex; gap: 8px; padding: 10px; border-top: 1px solid #e3e8f0; }
+/* The log's scrollbar stays visible (macOS hides overlay bars until you scroll). */
+.data-chat__log { scrollbar-width: thin; scrollbar-color: #b8c2d3 transparent; }
+.data-chat__log::-webkit-scrollbar { width: 8px; }
+.data-chat__log::-webkit-scrollbar-thumb { background: #b8c2d3; border-radius: 4px; }
+/* "Ke pesan terbaru": floats over the end of the log while the reader is scrolled up. */
+.data-chat__to-end { position: absolute; top: -48px; right: 22px; width: 36px; height: 36px; border: 1px solid #cfd6e2; border-radius: 50%; background: #fff; color: #2f5bea; box-shadow: 0 2px 8px rgba(15, 23, 42, .15); }
+.data-chat__to-end[hidden] { display: none; }
+/* Grows with the question up to six lines, then scrolls (field-sizing; data_chat.js sizes it where
+   the browser lacks it). */
+.data-chat__form textarea { flex: 1; resize: none; border: 1px solid #cfd6e2; border-radius: 10px; padding: 8px 10px; font-size: .88rem; field-sizing: content; max-height: 150px; overflow-y: auto; }
+.data-chat__send { width: 40px; border: 0; border-radius: 10px; background: #2f5bea; color: #fff; }
+@media (max-width: 575px) { .data-chat__panel { right: 16px; bottom: 84px; } .data-chat__fab { right: 16px; bottom: 16px; } }
+@media (prefers-reduced-motion: reduce) { .data-chat__fab { transition: none; } .data-chat__fab:hover { transform: none; } }
+.data-chat__table { width: 100%; margin-top: 8px; font-size: .78rem; border-collapse: collapse; }
+.data-chat__table th { text-align: left; color: #6b7280; font-weight: 600; padding: 2px 4px; border-bottom: 1px solid #e3e8f0; }
+.data-chat__table td { padding: 3px 4px; border-bottom: 1px solid #f1f4f9; vertical-align: top; }
+.data-chat__msg:has(.data-chat__table) { max-width: 100%; }
+.data-chat__msg p + p, .data-chat__msg ul + p { margin-top: 6px; }
+.data-chat__msg ul { margin: 6px 0 0; padding-left: 18px; }
+.data-chat__msg li { margin: 2px 0; }
+.data-chat__typing { display: inline-flex; gap: 4px; align-items: center; padding: 12px 14px; }
+.data-chat__typing span { width: 7px; height: 7px; border-radius: 50%; background: #9aa6bb; animation: data-chat-dot 1.2s infinite ease-in-out; }
+.data-chat__typing span:nth-child(2) { animation-delay: .15s; }
+.data-chat__typing span:nth-child(3) { animation-delay: .3s; }
+@keyframes data-chat-dot { 0%, 80%, 100% { transform: translateY(0); opacity: .4; } 40% { transform: translateY(-4px); opacity: 1; } }
+.data-chat__appear { animation: data-chat-appear .3s ease-out; }
+@keyframes data-chat-appear { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.data-chat__msg--me { animation: data-chat-appear .2s ease-out; }
+/* Reduced motion: no bouncing, but the dots still pulse, so loading is always visible. */
+@keyframes data-chat-pulse { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .data-chat__typing span { animation: data-chat-pulse 1.2s infinite ease-in-out; }
+  .data-chat__appear, .data-chat__msg--me { animation: none; }
+}
+/* While the AI writes the ad (the AI button of the ad form was pressed): a skeleton over the text,
+   never the "required" red border of a field the AI is about to fill. */
+form[data-submitted="true"] .form-control:user-invalid { border-color: #cfd6e2 !important; box-shadow: none !important; }
+.ad-text-wrap { position: relative; }
+.ad-text-skeleton { display: none; position: absolute; inset: 0; isolation: isolate; border-radius: .6rem; background: #fff;
+  padding: 1.25rem; gap: .75rem; flex-direction: column; box-shadow: 0 0 24px rgba(37, 99, 235, .25); }
+.ad-text-skeleton::before { content: ""; position: absolute; inset: -2px; z-index: -1; border-radius: inherit; padding: 2px;
+  background: conic-gradient(from var(--ai-angle), #082147, #2563eb, #38bdf8, #6366f1, #082147);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: ai-spin 1.6s linear infinite; }
+.ad-text-skeleton strong { display: flex; align-items: center; gap: .5rem; font-size: .9rem; color: #1e3a8a; font-weight: 600; margin-bottom: .25rem; }
+.ad-text-skeleton strong .ai-sparkle { color: #2563eb; animation: ai-pulse 1.2s ease-in-out infinite; }
+.ad-text-skeleton span { height: .8rem; border-radius: .4rem; background: linear-gradient(90deg, #eef2ff 20%, #c7d7fe 40%, #e0e7ff 60%, #eef2ff 80%);
+  background-size: 300% 100%; animation: ad-skeleton 1.6s ease-in-out infinite; }
+.ad-text-skeleton span:nth-of-type(3n) { width: 58%; } .ad-text-skeleton span:nth-of-type(3n+1) { width: 94%; } .ad-text-skeleton span:nth-of-type(3n+2) { width: 80%; }
+.ad-text-skeleton span:nth-of-type(4) { margin-top: .6rem; width: 35%; }
+form[data-submitted="true"][data-submitter="ai"] .ad-text-skeleton,
+.hris-form-card:has(form[data-submitted="true"][data-submitter="ai"]) .ad-text-skeleton { display: flex; } /* the letter: AI button in its own form */
+@keyframes ad-skeleton { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+@keyframes ad-skeleton-pulse { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .ad-text-skeleton::before { animation-duration: 3s; }
+  .ad-text-skeleton span { animation: ad-skeleton-pulse 1.6s ease-in-out infinite; }
+  .ad-text-skeleton strong .ai-sparkle { animation: none; }
+}
+
+
+/* Where a page lands after the AI answered (#hasil-ai), clear of the sticky header. */
+.scroll-anchor { display: block; scroll-margin-top: 180px; }

@@ -1,0 +1,56 @@
+<%# Screen 11 Application status. Prints only what CandidateStatus returns: this candidate's stages,
+    dates and outcomes. No score, rank, threshold, CV or other candidate (BP §3.6 B2, D36). %>
+<% content_for :title, "Application status" %>
+<% job = @status.job %>
+<%= render "candidate_shared/job_top", job: job %>
+<h1>Application status</h1>
+<p class="small"><%= job.title %> · <%= @status.candidate_name %></p>
+
+<% if (upcoming = @status.upcoming_consent) %>
+  <p class="flash alert">The terms for the use of your data change from <%= l(upcoming.effective_from.in_time_zone, format: :long_wib) %>.</p>
+<% end %>
+
+<div class="next">
+  <span class="small">Next</span>
+  <b><%= @status.next_line %></b>
+</div>
+
+<%= render "candidate_status/test", test: @status.technical_test, token: params[:token] %>
+
+<ol class="tl" aria-label="Application stages">
+  <% @status.steps.each_with_index do |step, index| %>
+    <li class="<%= step.state %>">
+      <span class="dot" aria-hidden="true"><%= step.state == :done ? "✓" : index + 1 %></span>
+      <div>
+        <b><%= step.label %></b>
+        <% if step.appointment %>
+          <span>Scheduled <%= l(step.appointment.starts_at.in_time_zone, format: :long_wib) %></span>
+        <% elsif step.date_text %>
+          <span><%= step.date_text %></span>
+        <% elsif step.state == :skipped %>
+          <span>Not continued</span>
+        <% elsif step.state == :waiting %>
+          <span>Waiting for the previous stage</span>
+        <% end %>
+      </div>
+    </li>
+  <% end %>
+</ol>
+
+<% @status.steps.select(&:appointment).each do |step| %>
+  <%= render "candidate_status/appointment", step: step %>
+<% end %>
+
+<% @status.steps.select { |s| s.state == :not_passed }.each do |step| %>
+  <%= render "candidate_status/result", step: step %>
+<% end %>
+
+<% if @status.offer_visible? %>
+  <%= render "candidate_status/offer", status: @status, unlocked: @offer_unlocked %>
+<% end %>
+
+<details class="card">
+  <summary>Withdraw consent to the use of your data</summary>
+  <p class="small">If you withdraw your consent, your application is stopped and this link stops working.</p>
+  <%= link_to "Next", candidate_status_confirm_withdraw_path(params[:token]), class: "btn ghost" %>
+</details>

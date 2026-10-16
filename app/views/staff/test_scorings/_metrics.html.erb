@@ -1,0 +1,12 @@
+<% counts = board.not_answered_counts %>
+<div class="row loan-index-summary">
+  <%= render "staff/shared/metric", variant: "primary", icon: "fa-pencil-square-o", label: "Awaiting scoring",
+             value: board.to_score.size, caption: "answers for the reviewer to score" %>
+  <%= render "staff/shared/metric", variant: "success", icon: "fa-check-circle", label: "Scored",
+             value: board.scored.size, caption: "score and decision recorded" %>
+  <%= render "staff/shared/metric", variant: "info", icon: "fa-clock-o", label: "No answer sent yet",
+             value: counts.fetch(:not_started, 0) + counts.fetch(:running, 0),
+             caption: "#{counts.fetch(:running, 0)} in progress, #{counts.fetch(:not_started, 0)} not started" %>
+  <%= render "staff/shared/metric", variant: "danger", icon: "fa-times-circle", label: "Not taken",
+             value: counts.fetch(:expired, 0), caption: "past the deadline, eliminated by the no-show rule" %>
+</div>

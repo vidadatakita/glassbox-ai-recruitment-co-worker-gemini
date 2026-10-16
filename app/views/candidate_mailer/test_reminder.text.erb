@@ -1,0 +1,8 @@
+Hello <%= @application.candidate.name %>,
+
+The technical test for your application for <%= @job.title %> has not been started. The deadline to start it is <%= l(@start_by.in_time_zone, format: :long_wib) %>.
+
+Open the application status link from our confirmation e-mail, then choose "Take the technical test". If you have lost that link, request a new one at:
+<%= @link_request_url %>
+
+GlassBox never asks for any payment.

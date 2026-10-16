@@ -1,0 +1,121 @@
+<%# AI Builder Cup step 06 for one step (a stage, or the S1+S2 gate on its S1 row): the interview
+    scorecard (scorecard stages), the AI's advice with reasons, and the HR PIC's choice
+    Continue / Follow AI advice / Do not continue, which is what moves the candidate. Everyone who may
+    see the applicant reads it; only the HR PIC acts (Progression::*). One form per action, no nesting. %>
+<% stage = participation.stage %>
+<% hr = current_user.role == Progression::CHOOSER %>
+<% interview = stage.score_source == "scorecard" %>
+<% scored = participation.score_entries.current.exists? || participation.current_decision.present? %>
+<% choice = participation.progression_choice %>
+<% open_stage = stage.status != "closed" %>
+<% invited_pending = participation.interviewer_invites.where(submitted_at: nil).exists? %>
+<%= render "staff/applications/interviewers", participation: participation if interview %>
+<%# A stage tested outside the app (the psychological test) gets its score typed in by the HR PIC. %>
+<%= render "staff/applications/manual_score", participation: participation if hr && !demo_mode? && open_stage && !scored && Progression::ScoreManual.applies_to?(stage) %>
+
+<% if interview && !scored %>
+  <% competencies = stage.job.competencies.where(stage_code: stage.code) %>
+  <% if invited_pending %>
+    <p class="text-muted mb-0">Waiting for the assessor to score through the link.</p>
+  <% elsif hr && open_stage %>
+    <%= form_with url: staff_participation_interview_path(participation), method: :post, class: "progression-form", data: { turbo: false, submit_guard: true } do %>
+      <h5 class="fs-14 mb-2"><%= participation.interviewer_invites.any? ? "Or score it yourself" : "Interview scoring" %></h5>
+      <div class="d-flex gap-3 mb-3">
+        <label class="form-check-label"><input type="radio" class="form-check-input me-1" name="attendance" value="attended" checked> Attended</label>
+        <label class="form-check-label"><input type="radio" class="form-check-input me-1" name="attendance" value="no_show"> Did not attend</label>
+      </div>
+      <% competencies.each do |c| %>
+        <fieldset class="progression-rating mb-3">
+          <legend class="fs-14 fw-semibold mb-1"><%= c.name %> <span class="text-muted fw-normal">· <%= c.layer_label %></span></legend>
+          <p class="hris-field-hint mb-1">1: <%= c.anchor_1 %> · 3: <%= c.anchor_3 %> · 5: <%= c.anchor_5 %></p>
+          <div class="d-flex gap-2">
+            <% (1..5).each do |n| %>
+              <label class="progression-rating__pick"><input type="radio" name="ratings[<%= c.id %>]" value="<%= n %>"><span><%= n %></span></label>
+            <% end %>
+          </div>
+        </fieldset>
+      <% end %>
+      <% if competencies.empty? %><p class="text-danger">This vacancy has no competencies for this stage yet. Complete brief step 4.</p><% end %>
+      <label class="form-label" for="note-<%= participation.id %>">Interview note</label>
+      <textarea class="form-control mb-2" id="note-<%= participation.id %>" name="note" rows="3" placeholder="What the candidate showed; avoid personal data."></textarea>
+      <%= label_button "Save scoring", "fa-save" %>
+      <% if ai_on? %><span class="hris-field-hint d-block mt-1">Once saved, the AI prepares its advice: Continue or Do not continue.</span><% end %>
+    <% end %>
+  <% else %>
+    <p class="text-muted mb-0">The interview has not been scored yet.</p>
+  <% end %>
+<% else %>
+  <% rec = StageRecommendation.latest_for(participation) %>
+  <% cumulative = Progression.cumulative(participation.job_application, upto: stage) %>
+  <div class="progression-panel">
+    <%# D13: the S1 figure, the cumulative score and the AI's own score stay hidden while this is an
+        unjudged calibration CV (ai_result_blinded?). %>
+    <% blinded = Progression.step_members(participation).any? { |m| ai_result_blinded?(m) } %>
+    <p class="progression-scores mb-2">
+      <% Progression.step_members(participation).each do |m| %>
+        <span><%= CandidateStatus::STAGE_LABELS.fetch(m.stage.code) %>: <strong><%= ai_result_blinded?(m) ? "hidden" : (m.current_score&.to_f || "-") %></strong> <span class="text-muted">/ pass score <%= m.stage.threshold.to_f %></span></span>
+      <% end %>
+      <span>Cumulative score: <strong><%= blinded ? "hidden" : (cumulative&.to_f || "-") %></strong></span>
+      <% if rec&.ready? && !blinded %><span>Score in the AI advice: <strong><%= rec.ai_score.to_f %></strong></span><% end %>
+    </p>
+
+    <div class="progression-ai">
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <%= render "staff/shared/ai_sparkle", size: 18 %><strong>AI advice</strong> <%= ai_tier_badge(:stage_advice, job: participation.job) %>
+        <% if rec&.ready? %>
+          <span class="portal-state portal-state--<%= rec.advice == "lanjut" ? "success" : "danger" %>"><%= rec.advice_label %></span>
+        <% end %>
+      </div>
+      <% if rec.nil? %>
+        <p class="text-muted mb-2"><%= ai_on? ? "No AI advice for this stage yet." : "The AI feature is off. Choose Continue or Do not continue yourself; a note is required for Do not continue." %></p>
+      <% elsif !rec.ready? %>
+        <p class="text-warning-emphasis mb-2"><%= rec.problem %></p>
+      <% else %>
+        <p class="mb-2"><%= rec.summary %></p>
+        <div class="progression-reasons">
+          <% { "strengths" => "Strengths", "gaps" => "Gaps", "risks" => "Risks" }.each do |key, title| %>
+            <% next if rec.list(key).empty? %>
+            <div><h6><%= title %></h6><ul><% rec.list(key).each do |point| %><li><%= point %></li><% end %></ul></div>
+          <% end %>
+        </div>
+        <% if rec.reasons["change_view"].present? %><p class="hris-field-hint mb-2">What could change this advice: <%= rec.reasons["change_view"] %></p><% end %>
+      <% end %>
+      <% if hr && !choice && open_stage && ai_on? %>
+        <%= form_with url: staff_participation_recommendation_path(participation), method: :post, data: { turbo: false, submit_guard: true, ai_swap: true } do %>
+          <button type="submit" class="btn btn-outline-primary btn-sm ai-btn">
+            <%= render "staff/shared/ai_sparkle" %>
+            <span class="ai-btn__idle"><%= rec ? "Refresh AI advice" : "Ask for AI advice" %></span><span class="ai-btn__busy" role="status">AI is weighing the evidence…</span>
+          </button>
+        <% end %>
+      <% end %>
+    </div>
+
+    <% if choice %>
+      <p class="progression-choice mb-0">
+        <span class="portal-state portal-state--<%= choice.direction == "lanjut" ? "success" : "danger" %>"><%= choice.label %></span>
+        by <strong><%= choice.actor.name %></strong>, <%= wib(choice.created_at) %><%= " · #{choice.note}" if choice.note.present? %>
+      </p>
+    <% elsif hr && open_stage %>
+      <% note_error = flash[:progression_field] == "note" %>
+      <%= form_with url: staff_participation_choice_path(participation), method: :post, class: "progression-choose", data: { turbo: false, submit_guard: true } do %>
+        <input type="hidden" name="recommendation_id" value="<%= rec&.id %>">
+        <label class="form-label" for="choice-note-<%= participation.id %>">Decision note</label>
+        <textarea class="form-control <%= "is-invalid" if note_error %>" id="choice-note-<%= participation.id %>" name="note" rows="2"
+                  placeholder="A reason is required for Do not continue, and whenever your choice departs from the AI advice."><%= flash[:progression_note] %></textarea>
+        <% if note_error %><div class="invalid-feedback d-block"><%= flash[:alert] %></div><% end %>
+        <div class="d-flex flex-wrap gap-2 mt-2">
+          <%= label_button "Continue", "fa-arrow-right", purpose: :approve, name: "choice", value: "lanjut",
+                           data: { requires_note: (rec&.ready? && rec.advice != "lanjut").to_s } %>
+          <% if rec&.ready? %>
+            <%= label_button "Follow AI advice (#{rec.advice_label})", "fa-magic", purpose: :submit, name: "choice", value: "ikut_ai",
+                             data: { requires_note: (rec.advice == "tidak_lanjut").to_s } %>
+          <% end %>
+          <%= label_button "Do not continue", "fa-times", purpose: :destroy, name: "choice", value: "tidak_lanjut", data: { requires_note: "true" } %>
+        </div>
+        <span class="hris-field-hint d-block mt-1">A person decides every step. Your choice is what moves the candidate; Continue enters them into the next stage. Recorded under your name.</span>
+      <% end %>
+    <% elsif !choice %>
+      <p class="text-muted mb-0">Waiting for the HR owner's choice.</p>
+    <% end %>
+  </div>
+<% end %>

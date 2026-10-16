@@ -1,0 +1,13 @@
+<% content_for :title, "Screening report · #{@board.job.title}" %>
+<div class="portal-page loan-index-page layout-decoration-page screening-report">
+  <%= render "staff/shared/page_header", eyebrow: "Screening report", title: @board.job.title,
+             subtitle: "#{@board.job.golongan_label} · #{@board.gated? ? Stage::GATES.fetch(@board.s1.gate) : "CV screening"} · #{@board.rows.size} applicants",
+             actions: safe_join([label_link("Download Excel", "fa-download", staff_job_screening_report_export_path(@board.job), purpose: :neutral),
+                                 label_link("Back", "fa-arrow-left", staff_job_path(@board.job), purpose: :neutral, icon_end: true)], " ") %>
+  <section class="content">
+    <%= render "staff/screening_reports/visibility_notice", board: @board %>
+    <%= render "staff/screening_reports/summary", board: @board %>
+    <%= render "staff/screening_reports/table", board: @board %>
+    <%= render "staff/screening_reports/confidential_footer", board: @board %>
+  </section>
+</div>

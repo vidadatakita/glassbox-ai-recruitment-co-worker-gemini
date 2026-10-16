@@ -1,0 +1,18 @@
+<% content_for :title, "Withdraw consent" %>
+<%= render "candidate_shared/job_top", job: @status.job %>
+<h1>Withdraw your consent and your application?</h1>
+<div class="card">
+  <p>If you continue:</p>
+  <ul>
+    <li>your application for the position <%= @status.job.title %> is stopped;</li>
+    <li>this status link stops working;</li>
+    <li>your data is deleted under the terms you agreed to when you applied.</li>
+  </ul>
+  <p class="small">This step cannot be undone from this page.</p>
+</div>
+<%# The confirming button is never disabled (house hard rule); the double-submit guard only
+    blocks a second submit event. Its value is its label: no controller reads params[:commit]. %>
+<%= form_with url: candidate_status_withdraw_path(params[:token]), method: :post, data: { turbo: false, submit_guard: true } do %>
+  <button type="submit" class="btn primary" name="commit" value="Yes, withdraw my application">Yes, withdraw my application</button>
+<% end %>
+<%= link_to "Back to application status", candidate_status_path(params[:token]), class: "btn ghost" %>

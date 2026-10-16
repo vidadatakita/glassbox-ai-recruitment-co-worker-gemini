@@ -1,0 +1,21 @@
+<% cal = board.calibration %>
+<div class="row loan-index-summary">
+  <%= render "staff/shared/metric", variant: "primary", icon: "fa-user", label: "Judged by the consultant",
+             value: "#{cal.judged_count} / #{Screening::Calibration::SIZE}", caption: "first CVs of this vacancy" %>
+  <%= render "staff/shared/metric", variant: "info", icon: "fa-magic", label: "Judged by both",
+             value: "#{cal.pairs.size} / #{Screening::Calibration::SIZE}", caption: "consultant and AI" %>
+  <%= render "staff/shared/metric", variant: (cal.status == :failed ? "danger" : "warning"), icon: "fa-exchange", label: "Different",
+             value: cal.disagreements, caption: "limit #{Screening::Calibration::MAX_DISAGREEMENT_PERCENT}%: at most 3 of 20" %>
+  <%= render "staff/shared/metric", variant: (cal.passed? ? "success" : "warning"), icon: "fa-balance-scale", label: "Status",
+             value: calibration_badge(cal), caption: (cal.passed? ? "AI advice can become a decision" : "AI advice does not become a decision yet") %>
+</div>
+<% if cal.status == :failed %>
+  <div class="alert alert-danger" role="alert">
+    <p class="mb-1"><strong>The rubric needs work before the AI runs on its own.</strong> Check the requirements and the CV evidence in the vacancy brief, especially for the CVs marked Different below.</p>
+    <% if job.brief_locked? %>
+      <p class="mb-0">The vacancy's stages are open, so the brief's requirements are locked. CV screening for this vacancy is decided manually until further notice.</p>
+    <% else %>
+      <p class="mb-0">After the brief is fixed, run screening again and judge the calibration CVs again with the new rubric.</p>
+    <% end %>
+  </div>
+<% end %>

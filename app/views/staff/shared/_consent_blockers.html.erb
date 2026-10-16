@@ -1,0 +1,7 @@
+<%# D38: the portal accepts nothing while any of these holds; each line names what to fill. %>
+<% if blockers.any? %>
+  <div class="alert alert-warning" role="status">
+    <strong>The applicant portal cannot accept applications until these are complete:</strong>
+    <ul class="mb-0 mt-1"><% blockers.each do |line| %><li><%= line %></li><% end %></ul>
+  </div>
+<% end %>

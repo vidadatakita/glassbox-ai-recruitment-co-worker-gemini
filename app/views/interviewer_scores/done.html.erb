@@ -1,0 +1,5 @@
+<% content_for :title, "Scoring sent" %>
+<div class="cand-head">
+  <h1>Thank you, <%= @invite.interviewer_name %></h1>
+  <p>Your scoring for <%= @job.title %> was received <%= l(@invite.submitted_at.in_time_zone, format: :long_wib) %>. HR will look at it together with the other scorings and the AI advice, then decide.</p>
+</div>

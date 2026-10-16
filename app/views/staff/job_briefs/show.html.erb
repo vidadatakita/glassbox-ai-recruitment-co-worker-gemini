@@ -1,0 +1,30 @@
+<%# Vacancy brief, read-only (all staff roles). Edited through the wizard by HR PIC and consultant. %>
+<% content_for :title, "Vacancy brief · #{@job.title}" %>
+<% editor = current_user.role.in?(%w[hr_pic consultant]) %>
+<% actions = safe_join([label_link("Back", "fa-arrow-left", staff_job_path(@job), purpose: :neutral, icon_end: true),
+                        (label_link("Edit brief", "fa-pencil", staff_job_brief_step_path(@job, 1)) if editor)].compact, " ") %>
+<div class="portal-page loan-index-page layout-decoration-page job-brief-page">
+  <%= render "staff/shared/page_header", eyebrow: "Vacancy brief", title: @job.title,
+             subtitle: [@job.golongan_label, Job::EMPLOYMENT_TYPES[@job.employment_type], (@job.headcount && "#{@job.headcount} #{'person'.pluralize(@job.headcount)}")].compact.join(" · "), actions: actions %>
+  <section class="content">
+    <%= render "staff/job_briefs/metrics", job: @job, check: @check %>
+    <% if @locked %>
+      <%= render "staff/job_briefs/lock_notice", locked: true, knockout_locked: true, step: "4" %>
+    <% end %>
+    <% unless @job.brief_complete? %>
+      <%= render "staff/job_briefs/open_problems", job: @job, check: @check, links: editor %>
+    <% end %>
+    <div class="row g-3 job-brief-columns">
+      <div class="col-xl-6"><%= render "staff/job_briefs/summary_position", job: @job %></div>
+      <div class="col-xl-6"><%= render "staff/job_briefs/summary_compensation", job: @job %></div>
+    </div>
+    <%= render "staff/job_briefs/summary_activities", job: @job %>
+    <%= render "staff/job_briefs/summary_requirements", job: @job %>
+    <%= render "staff/job_briefs/requirement_check", job: @job %>
+    <%= render "staff/job_briefs/summary_package", job: @job %>
+    <%= render "staff/job_briefs/summary_competencies", job: @job %>
+    <%= render "staff/test_cases/brief_summary", job: @job if TestCases::Requirement.applies?(@job) %>
+    <%= render "staff/job_briefs/ai_diff", job: @job %>
+    <%= render "staff/job_briefs/history", job: @job %>
+  </section>
+</div>

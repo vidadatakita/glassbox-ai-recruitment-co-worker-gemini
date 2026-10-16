@@ -1,0 +1,23 @@
+<% result = item.result %>
+<div class="card custom-card screening-review-item" id="hasil-<%= result.id %>">
+  <div class="card-header justify-content-between flex-wrap gap-2">
+    <div class="card-title"><%= screening_person(item.participation, board) %></div>
+    <div>
+      <span class="portal-state portal-state--info"><%= ScreeningReview::REASONS.fetch(item.reason) %></span>
+      <% unless board.calibrated? %><span class="portal-state portal-state--warning">Not yet calibrated</span><% end %>
+    </div>
+  </div>
+  <div class="card-body">
+    <dl class="job-brief-facts job-brief-facts--inline">
+      <dt>AI score</dt><dd><%= score_text(result.score) %> (pass score <%= score_text(board.stage.threshold) %>)</dd>
+      <dt>Must-haves</dt><dd><%= result.wajib_met ? "All met" : "Some not met" %></dd>
+      <dt>AI advice</dt><dd><%= outcome_label(item.outcome) %></dd>
+      <dt>Nice-to-have</dt><dd><%= result.bonus_points %> of <%= result.bonus_possible %> points (information only, does not change the score)</dd>
+    </dl>
+    <%= render "staff/screenings/criteria_table", result: result %>
+    <p class="text-muted small mb-3">Assessed by the AI <%= wib(result.created_at) %></p>
+    <% if can_act %>
+      <%= render "staff/screenings/review_form", item: item %>
+    <% end %>
+  </div>
+</div>

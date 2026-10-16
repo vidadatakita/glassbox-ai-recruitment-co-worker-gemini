@@ -1,0 +1,46 @@
+<%# The rubric of the version this candidate worked on (pinned at start), with one 1-5 choice per
+    criterion. The anchors 1/3/5 sit beside the choice so the rating is read against them. Radio
+    inputs, so nothing depends on the pressed button's value; no button is ever disabled. %>
+<% content = capture do %>
+  <div class="table-responsive">
+    <table class="table align-middle test-scoring-rubric">
+      <thead><tr><th>Criterion</th><th class="job-brief-num-col">Weight</th><th>Score 1</th><th>Score 3</th><th>Score 5</th><% if can_score %><th>Rating</th><% end %></tr></thead>
+      <tbody>
+        <% version.criteria.each do |c| %>
+          <tr>
+            <% proposal = local_assigns[:ai]&.for_criterion(c.id) %>
+            <td><strong><%= c.name %></strong><br><span class="text-muted small"><%= c.activity_text %></span>
+              <% if proposal %><div class="test-ai-reason"><%= render "staff/shared/ai_sparkle", size: 14 %> <strong>AI advice: <%= proposal["rating"] %></strong> · <%= proposal["reason"] %>
+                <% if proposal["quote"].present? %><br><span class="text-muted">"<%= proposal["quote"].truncate(160) %>"</span><% end %></div><% end %></td>
+            <td class="job-brief-num-col" data-label="Weight"><%= c.weight %>%</td>
+            <td data-label="Score 1"><%= c.anchor_1 %></td><td data-label="Score 3"><%= c.anchor_3 %></td><td data-label="Score 5"><%= c.anchor_5 %></td>
+            <% if can_score %>
+              <td data-label="Rating">
+                <fieldset class="test-scoring-scale">
+                  <legend class="visually-hidden">Rating for <%= c.name %></legend>
+                  <% (1..5).each do |n| %>
+                    <label class="test-scoring-scale__option">
+                      <input type="radio" name="ratings[<%= c.id %>]" value="<%= n %>" required<%= " checked" if proposal && proposal["rating"] == n %>>
+                      <span><%= n %></span>
+                    </label>
+                  <% end %>
+                </fieldset>
+              </td>
+            <% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>
+<% if can_score %>
+  <%= form_with url: staff_test_attempt_score_path(attempt), method: :post, data: { turbo: false, submit_guard: true } do %>
+    <%= content %>
+    <label class="form-label" for="note_<%= attempt.id %>">Scoring note (required)</label>
+    <textarea class="form-control mb-2" id="note_<%= attempt.id %>" name="note" rows="2" required></textarea>
+    <p class="text-muted small">Stage score = weighted average rating, converted to 0-100: rating 1 = 0, rating 5 = 100. The decision uses the technical test pass score.</p>
+    <%= label_button "Save score", "fa-save" %>
+  <% end %>
+<% else %>
+  <%= content %>
+<% end %>

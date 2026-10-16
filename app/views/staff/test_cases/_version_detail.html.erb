@@ -1,0 +1,42 @@
+<%# Read-only view of the newest version for everyone who does not edit it; HR PIC approves a draft
+    here, in its own form (never inside another). %>
+<% if test_case.nil? %>
+  <%= render layout: "staff/job_briefs/card", locals: { icon: "fa-hourglass-half", tone: "warning", title: "No technical test yet",
+             text: "The assigned DataKita consultant uploads the case study and its rubric. HR then approves it on this page." } do %>
+    <p class="text-muted mb-0">No version to review yet.</p>
+  <% end %>
+<% else %>
+  <%= render layout: "staff/job_briefs/card", locals: { icon: "fa-file-text-o", title: "Version #{test_case.version}",
+             text: "Time limit #{test_case.time_limit_minutes} minutes. The instructions and rubric as the applicant and the reviewer will read them.",
+             aside: test_case_state_badge(test_case, current) } do %>
+    <dl class="job-brief-facts">
+      <dt>Instructions</dt><dd><%= simple_format(test_case.instructions.presence || "Not written yet.", {}, wrapper_tag: "span") %></dd>
+      <dt>Answer file types</dt><dd><%= answer_type_chips(test_case) %></dd>
+    </dl>
+    <h4 class="test-case-subhead">Scoring rubric <span class="text-muted fw-normal">· <%= test_case.criteria.size %> criteria, total weight <%= test_case.weight_total %>% of 100%</span></h4>
+    <% if test_case.criteria.empty? %>
+      <p class="text-muted">No criteria yet.</p>
+    <% else %>
+      <div class="table-responsive">
+        <table class="table align-middle test-case-criteria">
+          <thead><tr><th>Criterion</th><th>Activity tested</th><th class="job-brief-num-col">Weight</th><th>Score 1</th><th>Score 3</th><th>Score 5</th></tr></thead>
+          <tbody>
+            <% test_case.criteria.sort_by { |c| [-c.weight, c.position] }.each do |c| %>
+              <tr><td><strong><%= c.name %></strong></td><td><%= c.activity_text %></td><td class="job-brief-num-col"><%= c.weight %>%</td>
+                <td><%= c.anchor_1 %></td><td><%= c.anchor_3 %></td><td><%= c.anchor_5 %></td></tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
+    <% if test_case.draft? && TestCases::Authority.may_approve?(current_user) %>
+      <%= form_with url: staff_job_test_case_approve_path(job, test_case), method: :post, class: "test-case-approve",
+                    data: { turbo: false, submit_guard: true } do %>
+        <%# Maker-checker (engine 07 F-02): the fingerprint of exactly what this page shows. %>
+        <input type="hidden" name="content_digest" value="<%= test_case.content_digest %>">
+        <p class="mb-2"><i class="fa fa-info-circle" aria-hidden="true"></i> Check the case study file, the instructions and the rubric. Once approved, this version cannot be changed; any later change becomes a new version.</p>
+        <%= label_button "Approve version #{test_case.version}", "fa-check", purpose: :approve %>
+      <% end %>
+    <% end %>
+  <% end %>
+<% end %>

@@ -1,0 +1,259 @@
+/* Candidate pages (Lamar, Status Lamaran): phone first, one column, light enough for a slow
+   connection. Components follow the approved design artifact portal-pelamar.html; the face is
+   the house Quicksand, self-hosted (no external request, ONP-7). Targets are at least 44px
+   high (WCAG 2.2 SC 2.5.8 asks 24px; 44px suits thumbs). */
+@font-face{font-family:"Quicksand";font-style:normal;font-weight:300 700;font-display:swap;
+  src:url("/template/assets/fonts/quicksand-latin.woff2") format("woff2")}
+:root{
+  --bg:#f3f5f9; --surface:#ffffff; --ink:#0d1b33; --muted:#5a6780; --line:#dde3ee;
+  --navy:#082147; --accent:#f5a10f; --accent-ink:#3a2500; --ok:#1f7a4d; --ok-bg:#e3f4ea;
+  --warn:#7a4800; --warn-bg:#fff2d9; --bad:#a23131; --bad-bg:#fbe6e6;
+  --font:"Quicksand",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--font)}
+.cand{max-width:480px;margin:0 auto;min-height:100vh;background:var(--surface);display:flex;flex-direction:column}
+.cand-top{padding:16px;border-bottom:1px solid var(--line);display:grid;gap:2px}
+.cand-top .co{font-weight:700;font-size:1rem}
+.cand-top .role{color:var(--muted);font-size:.85rem}
+/* minmax(0,1fr): without it the one grid column grows to its widest child's min-content and
+   the page scrolls sideways on a phone (login page at 390px, measured 2026-10-10). */
+.cand-body{padding:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-content:start}
+.cand-foot{margin-top:auto;padding:16px;border-top:1px solid var(--line);font-size:.75rem;color:var(--muted);text-align:center}
+h1,h2,h3{margin:0;line-height:1.25} h1{font-size:1.2rem;color:var(--navy)} h2{font-size:1rem;color:var(--navy)}
+p{margin:0}
+.trust{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:4px;font-size:.82rem}
+.trust .v{color:var(--ok);font-weight:700}
+.trust .never{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:6px 8px;font-weight:600}
+.field{display:grid;gap:4px;font-size:.88rem}
+.field label,.field legend{font-weight:600}
+.field input[type=text],.field input[type=email],.field input[type=tel],.field input[type=password],.field input[type=datetime-local],.field textarea,.field input[type=file]{
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px;font:inherit;color:var(--ink);background:var(--bg);width:100%}
+fieldset{border:0;padding:0;margin:0}
+.ko{display:flex;gap:8px}
+.ko label{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);border-radius:10px;min-height:44px;font-weight:600;cursor:pointer}
+.ko input:checked + span{color:var(--navy)}
+/* Layout pass 2026-10-10: the consent text is one region (tinted panel), not an orange left
+   stripe; the orange stays reserved for the primary button (one warm accent). */
+.consent{font-size:.8rem;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:grid;gap:10px}
+.consent dt{font-weight:700;color:var(--ink)} .consent dd{margin:0}
+.btn{display:block;width:100%;min-height:46px;border:0;border-radius:10px;font:700 .95rem var(--font);cursor:pointer;text-align:center;text-decoration:none;padding:12px}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.small{font-size:.8rem;color:var(--muted)}
+.errors{background:var(--bad-bg);color:var(--bad);border-radius:10px;padding:10px 12px;font-size:.85rem}
+.errors ul{margin:0;padding-left:18px}
+.flash{border-radius:10px;padding:10px 12px;font-size:.88rem}
+.flash.notice{background:var(--ok-bg);color:var(--ok)} .flash.alert{background:var(--warn-bg);color:var(--warn)}
+.tl{list-style:none;margin:0;padding:0;display:grid}
+.tl li{display:grid;grid-template-columns:22px 1fr;gap:10px;padding-bottom:14px;position:relative}
+.tl li:before{content:"";position:absolute;left:10px;top:22px;bottom:0;width:2px;background:var(--line)}
+.tl li:last-child:before{display:none}
+.dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);background:var(--surface);display:grid;place-items:center;font-size:.65rem;font-weight:700;z-index:1}
+.tl .done .dot{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.tl .current .dot,.tl .scheduled .dot{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.tl .not_passed .dot{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+/* antislop audit 001 #1 (2026-10-10): greyed with the muted colour, not opacity. Opacity .5 halved
+   the contrast to 2.11:1; --muted is 5.70:1 light and 6.94:1 dark. */
+.tl .skipped b,.tl .skipped span{color:var(--muted)}
+.tl .skipped .dot{border-style:dashed}
+.tl b{font-size:.9rem;display:block} .tl span{font-size:.8rem;color:var(--muted)}
+.next{background:var(--bg);border-radius:10px;padding:10px 12px;font-size:.88rem;display:grid;gap:2px}
+.next b{color:var(--navy)}
+.card{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:8px;font-size:.88rem}
+.kv{display:grid;grid-template-columns:84px 1fr;gap:4px 8px;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:600}
+.pill{display:inline-block;border-radius:6px;padding:2px 8px;font-size:.75rem;font-weight:700}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--warn-bg);color:var(--warn)} .pill.bad{background:var(--bad-bg);color:var(--bad)}
+.closed{display:grid;gap:10px;text-align:center;padding:24px 4px}
+.closed .big{font-size:1.1rem;font-weight:700;color:var(--navy)}
+details summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+.linkbox{word-break:break-all;background:var(--bg);border:1px dashed var(--line);border-radius:10px;padding:10px;font-size:.85rem}
+/* Interaction review 2026-10-10. Between fields 22px, within a field 4px: proximity groups the
+   hint with its own field, not with the next label (Gestalt; app-layout-design L4 >= 2x rule). */
+.cand-form{display:grid;gap:22px}
+.field-label{font-weight:600}
+.field.has-error input,.field.has-error .file-pick{border-color:var(--bad)!important;outline:1px solid var(--bad)}
+.field-error{color:var(--bad);font-size:.82rem;font-weight:600}
+.file-pick{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:8px;min-height:48px;background:var(--bg);cursor:pointer;position:relative}
+.file-pick input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.file-pick:focus-within{outline:3px solid var(--navy);outline-offset:2px}
+.file-pick__button{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-weight:700;white-space:nowrap}
+.file-pick__name{font-size:.85rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+/* WCAG 2.2 SC 2.5.8: target at least 24x24 CSS px; the whole label is the target. */
+.consent-check{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start;font-size:.88rem;cursor:pointer}
+.consent-check input{width:24px;height:24px;margin:2px 0 0}
+.consent-check.has-error span{color:var(--bad)}
+/* D39 consent disclosure. Collapsed = visually clipped, still read by screen readers. */
+.consent-basis{display:block;color:var(--muted)}
+.consent-details--collapsed{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+.consent-toggle{justify-self:start;background:none;border:1px solid var(--line);border-radius:8px;padding:10px 14px;min-height:44px;font:600 .88rem var(--font);color:var(--navy);cursor:pointer}
+
+/* ---------------------------------------------------------------------------------------------
+   Visual refresh, 2026-10-10 (GlassBox Team 07:54: "buat lebih bagus dan attractive"). House identity kept:
+   Quicksand, navy primary, ONE warm accent (from the approved portal design), flat surfaces, no
+   gradients, radius <= .75rem, shadows barely there. Layout only: every field name, button value,
+   text and the consent block order (toggle directly above the checkbox, D39) are unchanged.
+   Design read: candidate entry pages for job seekers on their phones, formal HR product; dials
+   ENERGY 2 / RHYTHM 1 / MOTION 1 (hover/focus only).
+   --------------------------------------------------------------------------------------------- */
+:root{ --hero:#082147; --hero-ink:#ffffff; --hero-muted:#c9d3e8; --hero-line:rgba(255,255,255,.18); --tint:#eef2fa }
+.cand{max-width:none;background:transparent}
+.cand-hero{background:var(--hero);color:var(--hero-ink)}
+.cand-hero__inner{max-width:1040px;margin:0 auto;padding:20px 16px 64px;display:grid;gap:6px}
+.cand-brand{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:.8rem;color:var(--hero-muted);margin-bottom:14px}
+.cand-brand b{color:var(--hero-ink);font-size:.95rem;letter-spacing:.01em}
+.cand-hero .co{font-weight:600;color:var(--hero-muted);font-size:.9rem}
+.cand-hero__title{margin:0;font-size:clamp(1.35rem,4.6vw,2rem);font-weight:700;line-height:1.2;color:var(--hero-ink)}
+.cand-facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;padding:0;list-style:none}
+.cand-facts li{border:1px solid var(--hero-line);border-radius:999px;padding:4px 12px;font-size:.82rem;color:var(--hero-ink)}
+.cand-facts .verified{border-color:rgba(95,211,154,.6)}
+.cand-shell{max-width:640px;margin:-44px auto 0;padding:0 16px 32px;display:grid;gap:16px}
+.cand-shell--plain{margin-top:24px}
+.cand-shell--aside{max-width:1040px}
+@media (min-width:900px){
+  .cand-shell--aside{grid-template-columns:minmax(0,1fr) 320px;align-items:start}
+  /* Not sticky: a sticky trust card slid over "Yang perlu disiapkan" once the ad made the page long. */
+  .cand-shell--aside .cand-aside{grid-column:2;grid-row:1}
+  .cand-shell--aside .cand-body{grid-column:1;grid-row:1}
+}
+.cand-body{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px 18px;box-shadow:0 1px 2px rgba(8,33,71,.06)}
+@media (min-width:600px){.cand-body{padding:28px 32px}}
+.cand-aside{display:grid;gap:12px}
+.cand-aside .trust,.cand-aside .aside-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.aside-card h2{font-size:.9rem;margin-bottom:6px}
+.aside-card ul{margin:0;padding-left:18px;font-size:.85rem;color:var(--ink);display:grid;gap:4px}
+.cand-foot{border-top:0;background:transparent;padding:8px 16px 28px}
+/* Step indicator: where the candidate is in the two steps. */
+.stepper{display:flex;gap:8px;list-style:none;margin:0 0 4px;padding:0;font-size:.8rem;font-weight:600;color:var(--muted)}
+.stepper li{display:flex;align-items:center;gap:6px}
+.stepper li+li:before{content:"";width:24px;height:1px;background:var(--line);margin-right:2px}
+.stepper .num{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);font-size:.75rem}
+.stepper .is-current{color:var(--navy)} .stepper .is-current .num{background:var(--navy);border-color:var(--navy);color:var(--surface)}
+.stepper .is-done .num{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+/* Knockout answers as large choice cards; the chosen one is marked by border AND weight, not colour alone. */
+.ko label{min-height:52px;border-radius:10px;transition:border-color .15s,background-color .15s}
+.ko label:hover{border-color:var(--navy)}
+.ko label:has(input:checked){border:2px solid var(--navy);background:var(--tint);font-weight:700}
+.ko input{width:18px;height:18px;accent-color:var(--navy)}
+.field legend,.field label,.field .field-label{font-size:.9rem}
+.btn.primary{min-height:50px;font-size:1rem}
+.btn.primary:hover{filter:brightness(.96)}
+@media (prefers-reduced-motion:reduce){.ko label{transition:none}}
+
+/* Desktop: trust block and "Yang perlu disiapkan" stack in the side column; the card spans both rows. */
+@media (min-width:900px){
+  /* Row 1 sizes to the trust block, row 2 takes the rest, so no gap opens between the side cards. */
+  .cand-shell--aside{grid-template-rows:auto 1fr}
+  .cand-shell--aside .cand-body{grid-row:1 / span 2}
+  .cand-shell--aside .cand-aside--after{grid-column:2;grid-row:2;position:static;align-self:start}
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Layout pass 2, 2026-10-10 (GlassBox Team: "better layout" on Lamar). Presentation only. Each rule says
+   why. Lamar-only rules hang on .lamar-form, .cand-head, .ko-question or .cand-shell--aside (only
+   lamar/_aside sets content_for :aside), so Status Lamaran is not touched by
+   them; the hero and footer rules are shared on purpose.
+   --------------------------------------------------------------------------------------------- */
+/* Hero: compact, so the trust block and the first question reach the first phone screen. The job
+   title here is a paragraph; it is kept close to the card's h1 in size so the two do not compete. */
+.cand-hero__inner{padding:14px 16px 56px;gap:4px}
+@media (min-width:900px){.cand-hero__inner{padding:22px 16px 64px}}
+/* Below the two-column breakpoint every card is capped at 640px; the hero text lines up with it. */
+@media (max-width:899.98px){.cand-hero__inner{max-width:640px}}
+.cand-brand{margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--hero-line)}
+.cand-hero__title{font-size:clamp(1.3rem,3.4vw,1.75rem)}
+.cand-facts{margin-top:6px}
+.cand-facts li{padding:3px 10px;font-size:.8rem}
+/* Below the two-column breakpoint the Lamar shell is one column: cap it like the plain shell so
+   the card does not stretch to 736px on a tablet. */
+.cand-shell--aside{max-width:640px}
+@media (min-width:900px){.cand-shell--aside{max-width:1040px;gap:20px}}
+/* Card head: stepper, title, instruction as one group, closed by a rule. */
+.cand-head{display:grid;gap:8px;padding-bottom:18px;margin-bottom:6px;border-bottom:1px solid var(--line)}
+.cand-head h1{font-size:1.3rem;margin-top:8px}
+@media (min-width:600px){.cand-head h1{font-size:1.45rem}}
+.stepper{font-size:.85rem;gap:10px;margin:0}
+.stepper .num{width:26px;height:26px;font-size:.8rem;border-width:1.5px}
+.stepper li+li:before{width:32px;height:2px;margin-right:4px}
+.stepper .is-done + li:before{background:var(--ok)}
+/* Questions: the legend joins the flow (float trick) so it sits flush with the choices and keeps
+   a fixed 10px gap to them; 24px between questions (>= 2x rule). */
+.lamar-form{gap:24px}
+.ko-question{display:block}
+.ko-question legend{float:left;width:100%;padding:0;margin:0 0 10px;font-size:.95rem;line-height:1.4}
+.ko-question .ko{clear:both}
+/* Choice cards: radio and word left-aligned like a native option, two equal columns; capped on
+   wide screens so a two-letter answer is not a 300px slab. The chosen card: navy border thickened
+   with an inset ring (no layout shift), tint and bold, so the state never rests on colour alone. */
+.ko{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (min-width:600px){.ko{max-width:440px}}
+.ko label{justify-content:flex-start;padding:0 16px;gap:10px;min-height:52px;background:var(--surface)}
+.ko label:has(input:checked){border:1px solid var(--navy);box-shadow:inset 0 0 0 1px var(--navy)}
+/* The ring moves from the small radio to the whole card it belongs to (one ring, not two). */
+.ko label:has(input:focus-visible){outline:3px solid var(--navy);outline-offset:2px}
+.ko input:focus-visible{outline:none}
+/* Submit: full width under the thumb on a phone; from 600px auto width, left-aligned with the
+   fields (Wroblewski), so the orange stays one deliberate spot instead of a 600px bar. */
+@media (min-width:600px){.lamar-form .btn.primary{width:auto;min-width:220px;justify-self:start;padding:12px 36px}}
+.lamar-form + .small{margin-top:-4px}
+/* Consent panel internals: term above its text, 10px between terms, version set apart. */
+.consent dl{margin:0;display:grid;gap:2px}
+.consent dt:not(:first-child){margin-top:8px}
+.consent .consent-details dl{margin-top:8px}
+.consent > .small{border-top:1px solid var(--line);padding-top:8px}
+/* The agreement row is a bordered target, so the box and its sentence read as one control. */
+.lamar-form .consent-check{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface)}
+.lamar-form .consent-check:has(input:checked){border-color:var(--navy)}
+.lamar-form .consent-check input{accent-color:var(--navy)}
+/* Side column: trust block first and calmer; the hotline number is emphasised as the fact to act on. */
+.cand-aside .trust{padding:16px;gap:8px;font-size:.84rem;line-height:1.5}
+.trust .never{padding:8px 10px}
+.trust b{color:var(--navy);white-space:nowrap}
+.aside-card h2{font-size:.95rem;margin-bottom:8px}
+.aside-card ul{gap:6px}
+.aside-card li::marker{color:var(--muted)}
+/* Footer: break at the dot, never inside the slogan. */
+.cand-foot span{display:inline-block}
+
+/* D60 technical test (candidate_tests/*, lamar/_test_entry). The clock is the one figure the
+   candidate acts on, so it is the largest text on the running page; nothing else is enlarged. */
+.test-rules{margin:8px 0 12px;padding-left:18px;display:grid;gap:4px}
+.test-countdown{display:grid;gap:2px;margin:6px 0}
+.test-countdown b{font-size:1.6rem;color:var(--navy);font-variant-numeric:tabular-nums}
+.test-countdown.is-low b{color:var(--bad)}
+.test-instructions{font-size:.9rem}
+.test-instructions p{margin:0 0 6px}
+.test-entry{display:grid;gap:8px;border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0}
+.test-entry .btn{margin:0}
+/* A technical test not done in time: muted like a skipped step, the dot marked in the danger
+   colour's outline (the gate outcome itself is shown only once the gate closes). */
+.tl .missed .dot{border-color:var(--bad)}
+.tl .missed b{color:var(--muted)}
+
+/* The approved job ad on Lamar (AI Builder Cup step 02). */
+.job-ad{border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.job-ad summary{font-weight:700;color:var(--navy);cursor:pointer;padding:12px 16px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+.job-ad summary::-webkit-details-marker{display:none}
+.job-ad summary::after{content:"";width:8px;height:8px;border:solid var(--muted);border-width:0 2px 2px 0;transform:rotate(45deg);transition:transform .15s}
+.job-ad[open] summary::after{transform:rotate(-135deg)}
+.job-ad[open] summary{border-bottom:1px solid var(--line)}
+.job-ad__text{padding:4px 16px 16px;font-size:.92rem;line-height:1.6;color:var(--ink)}
+.job-ad__text h3{font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);margin:18px 0 6px}
+.job-ad__text p{margin:0 0 8px}
+.job-ad__text ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.job-ad__text li{position:relative;padding-left:18px}
+.job-ad__text li::before{content:"";position:absolute;left:3px;top:.62em;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+/* AI Builder Cup step 07: the invited interviewer's scorecard. */
+.score-card{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 12px;display:grid;gap:8px}
+.score-card legend{font-weight:700;color:var(--navy);padding:0 4px}
+.score-anchors{list-style:none;margin:0;padding:0;display:grid;gap:4px;color:var(--muted)}
+.score-anchors b{display:inline-block;width:1.2em;color:var(--navy)}
+.score-picks{display:flex;gap:8px}
+.score-picks label{position:relative;flex:1}
+.score-picks input{position:absolute;opacity:0}
+.score-picks span{display:flex;height:48px;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:10px;font-weight:700;background:var(--bg);cursor:pointer}
+.score-picks input:checked+span{background:var(--navy);color:#fff;border-color:var(--navy)}
+.score-picks input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}

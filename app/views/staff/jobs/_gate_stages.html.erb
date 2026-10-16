@@ -1,0 +1,16 @@
+<%# The two stages side by side, same four figures each, so they can be compared at a glance. %>
+<div class="gate-stages">
+  <% [[gate.s1, "CV screening", "AI score against the requirements in the brief"], [gate.s2, "Technical test", "Case study scored by the reviewer"]].each do |stage, label, note| %>
+    <% c = gate.counts_for(stage) %>
+    <section class="gate-stage" aria-label="<%= label %>">
+      <h4><%= label %> <small class="text-muted">· pass score <%= number_with_precision(stage.threshold, precision: 0) %></small></h4>
+      <p class="text-muted"><%= note %></p>
+      <dl class="gate-stage__figures">
+        <div><dt>Entered</dt><dd><%= c.entered %></dd></div>
+        <div><dt>Passed</dt><dd><%= c.passed %></dd></div>
+        <div><dt>Not passed</dt><dd><%= c.eliminated %></dd></div>
+        <div><dt>Waiting</dt><dd><%= c.waiting %></dd></div>
+      </dl>
+    </section>
+  <% end %>
+</div>

@@ -1,0 +1,39 @@
+<%# Step 2: Activities & 90-day target (P1). Typed by hand, or filled from an AI proposal the person then edits
+    (Briefs::Suggest, AI Builder Cup step 01; this replaced D49 (4) "no AI drafting" on 2026-10-10). %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-flag-checkered", tone: "success", title: "90-day target",
+           text: "What the right person has done well after 90 days on the job." } do %>
+  <label class="form-label" for="brief_success_90d">90-day target <%= required_mark %></label>
+  <textarea class="form-control<%= missing(form.value("success_90d")) %>" id="brief_success_90d" name="brief[success_90d]" rows="3"><%= form.value("success_90d") %></textarea>
+  <span class="hris-field-hint">Write an observable result, for example: "Runs two machine lines unsupervised with a reject rate below 2%."</span>
+<% end %>
+<% rows = form.activities %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-list-ol", title: "Main activities",
+           text: "5 to 8 activities, each with its output and time share. The time shares add up to exactly 100%.",
+           aside: render("staff/job_briefs/total", group: "activities", value: form.total(rows, "share_percent")) } do %>
+  <div class="job-brief-rows">
+    <% rows.each_with_index do |row, i| %>
+      <fieldset class="job-brief-row">
+        <legend class="job-brief-row__num">Activity <%= i + 1 %><%= " (optional)" if i >= 5 %></legend>
+        <input type="hidden" name="brief[activities][<%= i %>][id]" value="<%= row["id"] %>">
+        <div class="row g-2">
+          <div class="col-lg-5">
+            <label class="form-label" for="act_<%= i %>_description">Activity <%= required_mark if i < 5 %></label>
+            <input type="text" class="form-control<%= missing(row["description"]) if i < 5 %>" id="act_<%= i %>_description" name="brief[activities][<%= i %>][description]" value="<%= row["description"] %>">
+          </div>
+          <div class="col-lg-5 col-7">
+            <label class="form-label" for="act_<%= i %>_output">Output <%= required_mark if i < 5 %></label>
+            <input type="text" class="form-control<%= missing(row["output"]) if i < 5 %>" id="act_<%= i %>_output" name="brief[activities][<%= i %>][output]" value="<%= row["output"] %>">
+          </div>
+          <div class="col-lg-2 col-5">
+            <label class="form-label" for="act_<%= i %>_share">Time share <%= required_mark if i < 5 %></label>
+            <div class="input-group">
+              <input type="text" inputmode="numeric" class="form-control<%= missing(row["share_percent"]) if i < 5 %>" id="act_<%= i %>_share" name="brief[activities][<%= i %>][share_percent]" value="<%= row["share_percent"] %>" data-sum="activities">
+              <span class="input-group-text">%</span>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+    <% end %>
+  </div>
+  <span class="hris-field-hint">Rows left blank are not saved. Need more rows? Press Save, then open this step again; new blank rows appear.</span>
+<% end %>

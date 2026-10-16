@@ -1,0 +1,25 @@
+<%# D35: versioned consent text. A new version never edits the old one; when one is in force,
+    the new one must start in the future so it is announced first (Pasal 21(2)). %>
+<div class="hris-form-card">
+  <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-shield"></i></div>
+    <div><h3>Consent text for data use <% if consent.nil? || consent.draft? %><span class="badge bg-warning">Draft: check with your legal counsel</span><% end %></h3>
+      <p>Fill in every item of UU 27/2022 Article 21(1). The retention period is taken from the setting above.</p></div></div>
+  <div class="hris-form-card__body">
+    <%= form_with url: consent_staff_settings_path, method: :post, scope: :consent, data: { turbo: false, submit_guard: true } do |f| %>
+      <div class="row g-3">
+        <% ConsentTemplate::SECTIONS.each do |field, heading| %>
+          <div class="col-12">
+            <%= f.label field, heading, class: "form-label" %>
+            <%= f.text_area field, value: consent ? consent.public_send(field) : ConsentTemplate::DRAFT.fetch(field), rows: 2, class: "form-control", required: true %>
+          </div>
+        <% end %>
+        <div class="col-md-4">
+          <%= f.label :effective_from, "Effective from (WIB)", class: "form-label" %>
+          <%= f.datetime_local_field :effective_from, class: "form-control", required: true %>
+          <span class="hris-field-hint">Must be in the future when a version is already in force.</span>
+        </div>
+      </div>
+      <div class="mt-3"><%= label_button "Save as new version", "fa-save" %></div>
+    <% end %>
+  </div>
+</div>

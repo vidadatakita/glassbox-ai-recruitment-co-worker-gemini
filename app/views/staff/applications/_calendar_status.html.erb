@@ -1,0 +1,27 @@
+<%# D52 (4): the Google Calendar invite of one appointment. Nothing is shown while the calendar
+    integration has never run for it (calendar_status nil: not configured, or saved before it was).
+    The retry button is its own form (button_to) and is rendered BEFORE the schedule form, never
+    inside it (hard rule: no form inside a form). %>
+<% case appointment.calendar_status %>
+<% when "synced" %>
+  <p class="mb-2 text-success small"><i class="fa fa-calendar-check-o me-1" aria-hidden="true"></i>Calendar invitation sent · <%= wib(appointment.calendar_synced_at) %></p>
+<% when "cancelled" %>
+  <p class="mb-2 text-muted small"><i class="fa fa-calendar-times-o me-1" aria-hidden="true"></i>Calendar invitation cancelled · <%= wib(appointment.calendar_synced_at) %></p>
+<% when "failed" %>
+  <%# After a consent withdrawal the failure is a failed CANCELLATION and the button retries the
+      cancellation, never the invite (test engine F-10-02). %>
+  <% withdrawn = appointment.participation.job_application.consent_withdrawn_at.present? %>
+  <div class="alert alert-warning d-flex flex-wrap align-items-center gap-2 py-2 mb-2" role="status">
+    <% if withdrawn %>
+      <span><i class="fa fa-exclamation-triangle me-1" aria-hidden="true"></i><strong>Cancelling the calendar invitation failed</strong> · <%= wib(appointment.calendar_synced_at) %>.
+        The applicant withdrew consent; the calendar event must be removed from Google.</span>
+    <% else %>
+      <span><i class="fa fa-exclamation-triangle me-1" aria-hidden="true"></i><strong>The calendar invitation could not be sent</strong> · <%= wib(appointment.calendar_synced_at) %>.
+        The appointment is saved; the applicant still sees it on the status page.</span>
+    <% end %>
+    <% if current_user.role == "consultant" %>
+      <%= button_to withdrawn ? "Cancel invitation" : "Resend invitation", calendar_staff_appointment_path(appointment), method: :post,
+                    class: "btn btn-sm btn-warning ms-auto", form: { data: { turbo: false, submit_guard: true } } %>
+    <% end %>
+  </div>
+<% end %>

@@ -1,0 +1,14 @@
+<%# Vacancy brief (read-only): the technical test at a glance, for packages that run S2 (D60). %>
+<% current = TechnicalTestCase.current_for(job) %>
+<% latest = TechnicalTestCase.latest_for(job) %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-file-excel-o", tone: (current ? "success" : "warning"), title: "Technical test",
+           text: current ? "Version #{current.version} in force: #{current.time_limit_minutes} minutes, #{current.criteria.size} scoring criteria." : "No version approved by HR yet; the brief cannot be completed.",
+           aside: link_to(staff_job_test_case_step_path(job), class: "btn btn-sm btn-primary-light", title: "View technical test details") { safe_join([tag.i(class: "fa fa-plus", "aria-hidden": true), " View details"]) } } do %>
+  <% if latest && latest != current %>
+    <p class="mb-0 text-muted">Version <%= latest.version %> is awaiting HR approval.</p>
+  <% elsif current %>
+    <%= answer_type_chips(current) %>
+  <% else %>
+    <p class="mb-0 text-muted">The consultant uploads the case study in step 5.</p>
+  <% end %>
+<% end %>

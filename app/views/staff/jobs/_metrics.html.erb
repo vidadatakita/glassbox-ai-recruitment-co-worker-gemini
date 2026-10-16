@@ -1,0 +1,29 @@
+<%# Each figure with its comparison (information-display §1.1), and linked where it has a list (§1.8). %>
+<% window = board.window %>
+<% scheduled = board.appointments.size %>
+<% no_show = board.no_show_by_stage %>
+<% soon = board.unconfirmed_soon %>
+<div class="row loan-index-summary">
+  <%= render "staff/shared/metric", variant: "primary", icon: "fa-file-text-o", label: "Applications",
+             value: window.application_count,
+             caption: window.quota ? "of quota #{window.quota}, #{window.remaining_quota} left (#{(window.application_count * 100.0 / window.quota).round}% filled)" : "no quota" %>
+  <%# On the public demo the work queue is not routed, so this card is plain, not a link. %>
+  <%= link_to demo_mode? ? "#metrics" : staff_work_queue_path, class: "col-lg-3 col-sm-6 text-reset text-decoration-none portal-metric-link", title: demo_mode? ? "Upcoming appointments" : "Open the work queue" do %>
+    <div class="loan-index-metric loan-index-metric--<%= soon.positive? ? "warning" : "success" %>">
+      <span class="loan-index-metric__icon"><i class="fa fa-calendar-check-o"></i></span>
+      <div><span>Appointments confirmed</span><strong><%= board.confirmed_count %> / <%= scheduled %></strong>
+        <small><%= soon.positive? ? "#{soon} #{'appointment'.pluralize(soon)} within 24 hours not confirmed yet" : "appointments confirmed by applicants" %></small></div>
+    </div>
+  <% end %>
+  <% worst = no_show.max_by { |_s, n, _t| n } %>
+  <%= render "staff/shared/metric", variant: "warning", icon: "fa-user-times", label: "Did not attend",
+             value: "#{no_show.sum { |_s, n, _t| n }} / #{no_show.sum { |_s, _n, t| t }}",
+             caption: worst && worst[1].positive? ? "most at #{CandidateStatus::STAGE_LABELS.fetch(worst[0].code)}" : "of the attendance recorded so far" %>
+  <%= render "staff/shared/metric", variant: "info", icon: "fa-clock-o", label: "Closes automatically",
+             value: window.closes_at ? l(window.closes_at.in_time_zone.to_date, format: :short) : "-",
+             caption: if window.closes_at
+                        board.days_left.positive? ? "#{board.days_left} #{'day'.pluralize(board.days_left)} left, at #{window.closes_at.in_time_zone.strftime('%H.%M')} WIB" : "already passed"
+                      else
+                        "not set"
+                      end %>
+</div>

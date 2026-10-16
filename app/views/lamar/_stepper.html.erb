@@ -1,0 +1,4 @@
+<ol class="stepper" aria-label="Application steps">
+  <li class="<%= step == 1 ? "is-current" : "is-done" %>" <%= 'aria-current="step"'.html_safe if step == 1 %>><span class="num"><%= step == 1 ? "1" : "✓" %></span>Requirements</li>
+  <li class="<%= step == 2 ? "is-current" : "" %>" <%= 'aria-current="step"'.html_safe if step == 2 %>><span class="num">2</span>Your details</li>
+</ol>

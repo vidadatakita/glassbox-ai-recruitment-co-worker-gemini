@@ -1,0 +1,29 @@
+<%# AI Builder Cup "knowledge moment": what the AI proposed vs what the person saved (BriefSuggestionDiff). %>
+<% diff = BriefSuggestionDiff.new(job) %>
+<% if diff.present? %>
+  <% counts = diff.counts %>
+  <div class="card custom-card">
+    <div class="card-header"><div class="card-title">AI advice vs saved brief
+      <span class="text-muted fw-normal fs-13">· requested by <%= diff.requested_by.name %></span></div></div>
+    <div class="card-body">
+      <p class="mb-3">
+        <% BriefSuggestionDiff::STATUS.each do |status, (label, tone)| %>
+          <span class="badge bg-<%= tone %>-transparent me-1"><%= label %>: <%= counts.fetch(status, 0) %></span>
+        <% end %>
+      </p>
+      <p class="text-muted fs-13">Only the brief saved by a person is used for the job ad, the test and the scoring. AI advice is never used directly. A person decides every step.</p>
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead><tr><th>Section</th><th>AI proposed</th><th>HR saved</th><th>Status</th></tr></thead>
+          <tbody>
+            <% diff.rows.each do |row| %>
+              <% label, tone = BriefSuggestionDiff::STATUS.fetch(row.status) %>
+              <tr><td><%= row.section %></td><td><%= row.ai || "—" %></td><td><%= row.saved || "—" %></td>
+                <td><span class="badge bg-<%= tone %>-transparent"><%= label %></span></td></tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+<% end %>

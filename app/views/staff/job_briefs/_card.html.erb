@@ -1,0 +1,9 @@
+<%# One concept, one card (layout contract §5.0 point 4). Used as `render layout:`. %>
+<div class="hris-form-card<%= " #{local_assigns[:extra]}" if local_assigns[:extra] %>"<% if local_assigns[:id] %> id="<%= id %>"<% end %>>
+  <div class="hris-form-card__header">
+    <div class="hris-form-card__icon<%= " hris-form-card__icon--#{tone}" if local_assigns[:tone] %>"><% if local_assigns[:icon_html] %><%= icon_html %><% else %><i class="fa <%= icon %>" aria-hidden="true"></i><% end %></div>
+    <div><h3><%= title %></h3><p><%= text %></p></div>
+    <% if local_assigns[:aside] %><div class="hris-form-card__action"><%= aside %></div><% end %>
+  </div>
+  <div class="hris-form-card__body"><%= yield %></div>
+</div>

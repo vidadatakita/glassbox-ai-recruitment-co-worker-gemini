@@ -1,0 +1,11 @@
+<%# Why this screen may not accept a score right now, said before anything else. %>
+<% if consultant_blocked %>
+  <div class="alert alert-warning" role="status"><i class="fa fa-lock me-2" aria-hidden="true"></i>You are the consultant of this vacancy. The technical test is scored by another reviewer.</div>
+<% elsif current_user.role != "reviewer" %>
+  <div class="alert alert-info" role="status"><i class="fa fa-info-circle me-2" aria-hidden="true"></i>This page is read-only. Scores are recorded by the reviewer.</div>
+<% end %>
+<% if board.stage.status == "draft" %>
+  <div class="alert alert-warning" role="status"><i class="fa fa-hourglass-half me-2" aria-hidden="true"></i>The CV screening and technical test stage is not open yet. Scores can be recorded once the stage is open.</div>
+<% elsif board.stage.status == "closed" %>
+  <div class="alert alert-secondary" role="status"><i class="fa fa-check me-2" aria-hidden="true"></i>The CV screening and technical test stage is closed.</div>
+<% end %>

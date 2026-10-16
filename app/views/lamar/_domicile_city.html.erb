@@ -1,0 +1,14 @@
+<%# D54: the optional "City of residence", city or regency (kabupaten) only (ScreeningReport::DomicileCity
+    checks it on the server). Shown to the recruiter under the contact rule; never sent to the AI,
+    never scored. The datalist only suggests; any city may be typed. %>
+<% fe = local_assigns[:field_errors] || {} %>
+<% values = local_assigns[:values] || {} %>
+<div class="field <%= "has-error" if fe[:domicile_city] %>">
+  <label for="lamaran_domicile_city">City of residence (optional)</label>
+  <input type="text" id="lamaran_domicile_city" name="lamaran[domicile_city]" value="<%= values[:domicile_city] %>" maxlength="60"
+         list="lamaran_domicile_city-list" autocomplete="address-level2"
+         aria-describedby="lamaran_domicile_city-hint<%= " lamaran_domicile_city-error" if fe[:domicile_city] %>" <%= 'aria-invalid="true"'.html_safe if fe[:domicile_city] %>>
+  <datalist id="lamaran_domicile_city-list"><% ScreeningReport::DomicileCity::SUGGESTIONS.each do |city| %><option value="<%= city %>"><% end %></datalist>
+  <span class="small" id="lamaran_domicile_city-hint">City or regency only, no street address.</span>
+  <%= render "lamar/field_error", id: "lamaran_domicile_city", message: fe[:domicile_city] %>
+</div>

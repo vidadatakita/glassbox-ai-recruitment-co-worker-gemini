@@ -1,0 +1,10 @@
+// Configure your import map in config/importmap.rb. Read more: https://github.com/rails/importmap-rails
+import "@hotwired/turbo-rails"
+import "controllers"
+import "submit_guard"
+import "note_required"
+import "data_chat"
+import "ai_fill"
+import "file_pick"
+import "consent_disclosure"
+import "brief_totals"

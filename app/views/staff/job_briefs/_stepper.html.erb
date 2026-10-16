@@ -1,0 +1,22 @@
+<%# Where-am-I (process card rule, blueprint §3.5): the steps (step 5 Technical test only when the package runs S2, D60), which one is open, and which
+    still have problems (Briefs::BriefCheck). A step is a link once the job exists. %>
+<nav class="job-brief-stepper" aria-label="Vacancy brief steps">
+  <ol>
+    <% brief_steps(job).each do |number, title| %>
+      <% open_problems = check ? check.for_step(number.to_i).size : nil %>
+      <% state = number == step ? "current" : (open_problems&.zero? ? "done" : "todo") %>
+      <li class="job-brief-stepper__item job-brief-stepper__item--<%= state %>">
+        <% body = capture do %>
+          <span class="job-brief-stepper__num"><% if state == "done" %><i class="fa fa-check" aria-hidden="true"></i><% else %><%= number %><% end %></span>
+          <span class="job-brief-stepper__text"><strong><%= title %></strong>
+            <small><%= if state == "current" then "In progress" elsif open_problems.nil? then "Not started" elsif open_problems.zero? then "Complete" else "#{open_problems} items incomplete" end %></small></span>
+        <% end %>
+        <% if job.persisted? && number != step %>
+          <%= link_to body, brief_step_link(job, number) %>
+        <% else %>
+          <div aria-current="<%= number == step ? "step" : "false" %>"><%= body %></div>
+        <% end %>
+      </li>
+    <% end %>
+  </ol>
+</nav>

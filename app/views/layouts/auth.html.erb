@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-theme-mode="light">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title><%= content_for(:title) || "Sign in · GlassBox" %></title>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= favicon_link_tag "glassbox-favicon.png", type: "image/png" %>
+    <%# Staff login: the Zynix "basic" sign-in (card on the brand background), same vendor CSS and
+        house layers as the staff shell (layouts/staff), without the shell scripts. All local (ONP-7). %>
+    <link href="/template/assets/libs/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/template/assets/css/styles.css" rel="stylesheet">
+    <link href="/template/assets/css/glassbox-tokens.css" rel="stylesheet">
+    <link href="/plugins/stylesheets/font-awesome.css" rel="stylesheet">
+    <link href="/template/assets/css/hris-zynix.css" rel="stylesheet">
+    <%= stylesheet_link_tag "brand" %>
+    <%= javascript_include_tag "submit_guard", type: "module" %>
+  </head>
+  <body class="authentication-background">
+    <div class="container">
+      <div class="row justify-content-center align-items-center authentication authentication-basic h-100">
+        <div class="col-xxl-4 col-xl-5 col-lg-6 col-md-7 col-sm-9 col-12">
+          <div class="card custom-card my-4">
+            <div class="card-body p-4 p-sm-5">
+              <%= render "layouts/brand", variant: :auth %>
+              <%= yield %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

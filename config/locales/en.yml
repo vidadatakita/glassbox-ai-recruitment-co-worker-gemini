@@ -1,0 +1,90 @@
+# English screen text formats. Times are shown in WIB (Asia/Jakarta), the app's time zone; formats
+# that print a time say "WIB" so nobody guesses the zone. Demo-path screen text itself is written in
+# the views (A3 decision, docs/BUILD-LOG.md); this file carries only the framework-level text.
+en:
+  date:
+    abbr_day_names: [Sun, Mon, Tue, Wed, Thu, Fri, Sat]
+    day_names: [Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday]
+    abbr_month_names: [~, Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec]
+    month_names: [~, January, February, March, April, May, June, July, August, September, October, November, December]
+    order: [day, month, year]
+    formats:
+      default: "%d-%m-%Y"
+      long: "%-d %B %Y"
+      short: "%-d %b %Y"
+      weekday_long: "%A, %-d %B %Y"
+  time:
+    am: am
+    pm: pm
+    formats:
+      default: "%-d %B %Y %H:%M WIB"
+      long_wib: "%A, %-d %B %Y, %H:%M WIB"
+      short_wib: "%-d %b %Y %H:%M WIB"
+  number:
+    # Indonesian number punctuation is kept on purpose: the money shown is rupiah and the demo
+    # company is Indonesian (Rp 5.399.405,69), so the figures match the decree they come from.
+    format: { delimiter: ".", separator: ",", precision: 1 }
+  errors:
+    messages:
+      blank: "is required"
+      invalid: "is not valid"
+      inclusion: "is not one of the choices"
+      taken: "is already taken"
+      not_a_number: "must be a number"
+      greater_than: "must be greater than %{count}"
+      not_an_integer: "must be a whole number"
+  # Field names in the brief change history (JobBriefChange#changes_made keys).
+  brief_fields:
+    title: Position
+    golongan: Grade
+    headcount: Headcount
+    employment_type: Employment type
+    confidential: Confidentiality
+    success_90d: 90-day target
+    activities: Activities
+    salary_min: Minimum salary
+    salary_max: Maximum salary
+    show_salary: Show salary
+    placements: Placement
+    relocation: Willing to relocate
+    work_arrangement: Work arrangement
+    requirements: Requirements and knockout questions
+    package: Package
+    package_override_reason: Package reason
+    stage_plan: Weights and pass scores
+    competencies: Competencies
+    brief_status: Brief status
+  # Backstop for Briefs::SaveStep's RecordInvalid rescue: if a model message ever reaches the
+  # screen, its field name reads in English.
+  activerecord:
+    attributes:
+      job:
+        title: Position
+        golongan: Grade
+        headcount: Headcount
+        employment_type: Employment type
+        work_arrangement: Work arrangement
+        relocation: Willing to relocate
+        salary_min: Minimum salary
+        salary_max: Maximum salary
+        package: Package
+        brief_status: Brief status
+      activity:
+        description: Activity
+        output: Output
+        share_percent: Time share
+        position: Order
+      requirement:
+        tier: Requirement tier
+        text: Requirement
+        cv_evidence: CV evidence
+        weight: Weight
+        position: Order
+      competency:
+        name: Competency
+        layer: Layer
+        stage_code: Scoring stage
+        position: Order
+      knockout_question:
+        text: Knockout question
+        position: Order

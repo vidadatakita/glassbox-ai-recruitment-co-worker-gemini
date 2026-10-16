@@ -1,0 +1,15 @@
+<%# SPEC §2.1 / D54: contact data and the city for the HR owner (after confirmation) and the consultant only. Taken from
+    the application record, never from anything the AI returned (plan Part 2 §i). %>
+<% candidate = row.candidate %>
+<div class="hris-form-card">
+  <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-address-card-o" aria-hidden="true"></i></div>
+    <div><h3>Applicant contact</h3><p>From the application record, not from the AI result.</p></div></div>
+  <div class="hris-form-card__body">
+    <dl class="report-facts">
+      <div><dt>Email</dt><dd><%= candidate&.email || "—" %></dd></div>
+      <div><dt>WhatsApp number</dt><dd><%= candidate&.phone || "—" %></dd></div>
+      <div><dt>City of residence</dt><dd><%= row.application.domicile_city.presence || "Not given" %></dd></div>
+      <div><dt>Applied</dt><dd><%= wib(row.application.created_at) %></dd></div>
+    </dl>
+  </div>
+</div>

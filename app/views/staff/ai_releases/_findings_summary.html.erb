@@ -1,0 +1,17 @@
+<%# Categories and line numbers only; a value is never repeated outside the text block. %>
+<% summary = release_findings_summary(spans) %>
+<div class="ai-release-findings mb-3" id="temuan">
+  <% if release.residual? %>
+    <div class="alert alert-danger" role="alert"><strong>Personal data is still detected.</strong> This text cannot be sent until the lines marked red are deleted. Categories: <%= release.residual_categories.map { |c| Screening::ResidualCheck::CATEGORIES.fetch(c, c) }.join(", ") %>.</div>
+  <% end %>
+  <% if summary.empty? %>
+    <p class="text-muted small mb-0">No automatic marks. Still read the whole text: a sentence such as "as a mother of two" can pass every automatic check.</p>
+  <% else %>
+    <ul class="list-unstyled small mb-0">
+      <% summary.each do |(label, blocking, lines)| %>
+        <li><span class="release-mark release-mark--<%= blocking ? "blocking" : "hint" %>"><%= label %></span>
+          <%= blocking ? "must be deleted" : "check" %>, line <%= lines.join(", ") %></li>
+      <% end %>
+    </ul>
+  <% end %>
+</div>

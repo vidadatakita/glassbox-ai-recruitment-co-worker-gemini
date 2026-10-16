@@ -1,0 +1,104 @@
+<% content_for :title, "Settings" %>
+<div class="portal-page loan-index-page layout-decoration-page">
+  <%= render "staff/shared/page_header", eyebrow: "System", title: "Settings",
+             subtitle: "Settings changed on screen. Every change is recorded with a name and time." %>
+  <section class="content">
+    <div class="row loan-index-summary">
+      <%= render "staff/shared/metric", variant: (@retention_days ? "primary" : "danger"), icon: "fa-hourglass-half", label: "Data retention",
+                 value: @retention_days ? "#{@retention_days} days" : "Not set",
+                 caption: @retention_days ? "after the vacancy closes" : "The applicant portal cannot open", col: "col-lg-4 col-sm-6" %>
+      <%= render "staff/shared/metric", variant: "info", icon: "fa-shield", label: "Consent text",
+                 value: @consent&.version || "None yet", caption: @consent&.draft? ? "DRAFT: check with your legal counsel" : "version in force", col: "col-lg-4 col-sm-6" %>
+      <%= render "staff/shared/metric", variant: "warning", icon: "fa-calendar", label: "Next version",
+                 value: @upcoming ? wib(@upcoming.effective_from) : "-", caption: @upcoming ? "announced on the status page" : "no scheduled change", col: "col-lg-4 col-sm-6" %>
+    </div>
+
+    <%= render "staff/shared/consent_blockers", blockers: @blockers %>
+
+    <div class="hris-form-card">
+      <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-hourglass-half"></i></div>
+        <div><h3>Applicant data retention period</h3><p>Required before the applicant portal opens. This number appears in the consent text. Set it together with your legal counsel.</p></div></div>
+      <div class="hris-form-card__body">
+        <%= form_with url: staff_settings_path, method: :patch, data: { turbo: false, submit_guard: true } do %>
+          <input type="hidden" name="key" value="retention_days">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label" for="retention_days">Days after the vacancy closes</label>
+              <input type="number" min="1" step="1" class="form-control" id="retention_days" name="value" value="<%= @retention_days %>" required>
+            </div>
+            <div class="col-md-4"><%= label_button "Save", "fa-save" %></div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="hris-form-card">
+      <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-check-square-o"></i></div>
+        <div><h3>"Verified by GlassBox" line</h3><p>Off by default on installs on a client's server until decided.</p></div></div>
+      <div class="hris-form-card__body">
+        <%= form_with url: staff_settings_path, method: :patch, data: { turbo: false, submit_guard: true } do %>
+          <input type="hidden" name="key" value="verified_line">
+          <input type="hidden" name="value" value="0">
+          <label class="form-check-label"><input type="checkbox" class="form-check-input me-2" name="value" value="1" <%= "checked" if @verified_line %>> Show on the Apply page</label>
+          <div class="mt-3"><%= label_button "Save", "fa-save" %></div>
+        <% end %>
+      </div>
+    </div>
+
+    <%# Which CV parts the AI may read (Screening::CvSections). Personal data is never a choice. %>
+    <div class="hris-form-card">
+      <div class="hris-form-card__header"><div class="hris-form-card__icon"><%= render "staff/shared/ai_sparkle", size: 18 %></div>
+        <div><h3>CV sections sent to the AI</h3><p>Only the ticked sections are read by the AI during screening. Personal data (name, date of birth, address, ID number, phone number, email, religion, marital status) is always redacted and never sent.</p></div></div>
+      <div class="hris-form-card__body">
+        <%= form_with url: staff_settings_path, method: :patch, data: { turbo: false, submit_guard: true } do %>
+          <input type="hidden" name="key" value="ai_cv_sections">
+          <div class="row g-2">
+            <% Screening::CvSections::GROUPS.each do |key, (label, _)| %>
+              <div class="col-md-4 col-sm-6">
+                <label class="form-check-label"><input type="checkbox" class="form-check-input me-2" name="value[]" value="<%= key %>" <%= "checked" if @cv_sections.include?(key) %>> <%= label %></label>
+              </div>
+            <% end %>
+          </div>
+          <p class="hris-field-hint mt-2">Sections are recognised by their heading in the CV (for example "Pengalaman Kerja", "Education", "Portofolio"). Applies to CVs screened after saving. At least one section.</p>
+          <div class="mt-2"><%= label_button "Save", "fa-save" %></div>
+        <% end %>
+      </div>
+    </div>
+
+    <%# AI Builder Cup "before / after": the client's own figures without GlassBox (Impact summary). %>
+    <div class="hris-form-card">
+      <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-line-chart"></i></div>
+        <div><h3>Figures before GlassBox</h3><p>From a client interview or survey. Used as the comparison in the Impact summary; empty means "not entered" is shown.</p></div></div>
+      <div class="hris-form-card__body">
+        <% %w[baseline_hours_to_answer baseline_minutes_per_cv baseline_reasoned_pct].each do |key| %>
+          <% spec = Glassbox::Settings::SCREEN_KEYS.fetch(key) %>
+          <%= form_with url: staff_settings_path, method: :patch, class: "d-flex flex-wrap gap-2 align-items-end mb-2", data: { turbo: false, submit_guard: true } do %>
+            <input type="hidden" name="key" value="<%= key %>">
+            <div class="flex-grow-1"><label class="form-label" for="<%= key %>"><%= spec[:label] %></label>
+              <input type="number" class="form-control" id="<%= key %>" name="value" min="<%= spec[:min] %>" <%= "max=#{spec[:max]}" if spec[:max] %> step="1" value="<%= @baselines[key] %>" required></div>
+            <%= label_button "Save", "fa-save" %>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+
+    <%= render "staff/settings/consent", consent: @consent %>
+
+    <%= render "staff/settings/google_integrations", rows: @google %>
+
+    <div class="card custom-card">
+      <div class="card-header"><div class="card-title">Settings change history</div></div>
+      <div class="card-body table-responsive">
+        <table class="table mb-0">
+          <thead><tr><th>Time (WIB)</th><th>Setting</th><th>Before</th><th>After</th><th>By</th></tr></thead>
+          <tbody>
+            <% if @changes.empty? %><tr><td colspan="5" class="text-muted">No changes yet.</td></tr><% end %>
+            <% @changes.each do |change| %>
+              <tr><td><%= wib(change.created_at) %></td><td><%= change.key %></td><td><%= change.old_value || "-" %></td><td><%= change.new_value %></td><td><%= User.find_by(id: change.actor_id)&.name || "-" %></td></tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>

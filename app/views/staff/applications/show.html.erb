@@ -1,0 +1,34 @@
+<% content_for :title, "Applicant · #{candidate_label(@application)}" %>
+<% candidate = @application.candidate %>
+<% visible = candidate_visible?(@application) %>
+<div class="portal-page loan-index-page layout-decoration-page">
+  <%= render "staff/shared/page_header", eyebrow: @job.title, title: candidate_label(@application),
+             subtitle: visible ? "#{candidate.email} · #{candidate.phone}" : "Name and contact details are shown once the screening decision is confirmed (screening stage closed).",
+             actions: label_link("Back", "fa-arrow-left", staff_job_path(@job), purpose: :neutral, icon_end: true) %>
+  <section class="content">
+    <div class="row loan-index-summary">
+      <%= render "staff/shared/metric", variant: "primary", icon: "fa-flag-o", label: "Status",
+                 value: JobApplication::STATUS_LABELS.fetch(@application.status, @application.status), caption: "current application status", col: "col-lg-4 col-sm-6" %>
+      <%= render "staff/shared/metric", variant: "info", icon: "fa-shield", label: "Data consent",
+                 value: @application.consent_template&.version || "-", caption: "text version, consented #{wib(@application.consent_at)}", col: "col-lg-4 col-sm-6" %>
+      <%= render "staff/shared/metric", variant: "warning", icon: "fa-hourglass-half", label: "Retention",
+                 value: "#{@application.consent_retention_days} days", caption: "after the vacancy closes, as consented", col: "col-lg-4 col-sm-6" %>
+    </div>
+    <% duplicates = Portal::DuplicateCheck.for(@application) %>
+    <% if duplicates.any? %>
+      <%# AI Builder Cup step 04: the same person applied more than once (by rule, never merged). %>
+      <div class="alert alert-warning" role="status"><strong>Possible duplicate application.</strong>
+        <% duplicates.each do |d| %>
+          <br><%= link_to candidate_label(d.application), staff_application_path(d.application) %> · <%= d.application.job == @job ? "this vacancy" : d.application.job.title %>
+          (<%= d.reasons.join(", ") %>, applied <%= wib(d.application.created_at) %>)
+        <% end %>
+        <br><span class="small">A flag only: both applications continue to be processed. Decide which one goes on.</span></div>
+    <% end %>
+    <%= render "staff/applications/contact", application: @application %>
+    <%= render "staff/applications/stages", application: @application %>
+    <%= render "staff/applications/salary", application: @application if current_user.role.in?(%w[hr_pic owner]) && Progression::Salary.ready?(@application) %>
+    <%# Letters (AI draft + send) are roadmap on the public demo (FLOW v2.1 cut #7); their routes are not drawn there. %>
+    <%= render "staff/applications/letters", application: @application if current_user.role == "hr_pic" && !demo_mode? && Progression::Letters.kind_for(@application) %>
+    <%= render "staff/applications/offers", application: @application, offers: @offers %>
+  </section>
+</div>

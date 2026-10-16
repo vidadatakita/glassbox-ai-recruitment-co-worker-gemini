@@ -1,0 +1,10 @@
+<% content_for :title, "Screening calibration · #{@job.title}" %>
+<div class="portal-page loan-index-page layout-decoration-page">
+  <%= render "staff/shared/page_header", eyebrow: "Screening calibration", title: @job.title,
+             subtitle: "The consultant judges the first 20 CVs alone, then the judgements are compared with the AI advice. The AI runs on its own only if the disagreement is at most #{Screening::Calibration::MAX_DISAGREEMENT_PERCENT}%.",
+             actions: label_link("Back", "fa-arrow-left", staff_job_path(@job, anchor: "screening"), purpose: :neutral, icon_end: true) %>
+  <section class="content">
+    <%= render "staff/screenings/calibration_summary", board: @board, job: @job %>
+    <%= render "staff/screenings/calibration_rows", board: @board %>
+  </section>
+</div>

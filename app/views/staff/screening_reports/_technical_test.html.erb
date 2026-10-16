@@ -1,0 +1,43 @@
+<%# SPEC §2.4 (D60): the technical test. Feature 07 data, read defensively (ScreeningReport::TestBlock). %>
+<% block = ScreeningReport::TestBlock.new(row.s2, row.s2 && TestAttempt.where(participation_id: row.s2.id).order(:id).last) %>
+<div class="hris-form-card" id="tes-teknis">
+  <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-file-excel-o" aria-hidden="true"></i></div>
+    <div><h3>Technical test</h3><p>Scored by the reviewer with the rubric of the test version the candidate took. Score 0–100.</p></div>
+    <div class="hris-form-card__action"><%= report_test_score(row.test) %></div></div>
+  <div class="hris-form-card__body">
+    <% if !block.applicable? %>
+      <p class="text-muted mb-0">This vacancy's package has no technical test.</p>
+    <% elsif !block.started? %>
+      <p class="text-muted mb-0">The technical test has not been started<%= row.test.state == :expired ? "; the 48-hour window to start has passed" : "" %>.</p>
+    <% else %>
+      <dl class="report-facts">
+        <div><dt>Test version</dt><dd>Version <%= block.test_case&.version %></dd></div>
+        <div><dt>Time</dt><dd><%= block.minutes_used ? "#{block.minutes_used} of #{block.test_case&.time_limit_minutes} minutes" : "limit #{block.test_case&.time_limit_minutes} minutes" %></dd></div>
+        <div><dt>Started</dt><dd><%= wib(block.attempt.started_at) %></dd></div>
+        <div><dt>Answer</dt><dd><%= block.answered_at ? wib(block.answered_at) : "not submitted yet" %></dd></div>
+      </dl>
+      <% if block.scored? %>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle report-rubric">
+            <thead><tr><th>Criterion</th><th>Weight</th><th>Rating (1–5)</th></tr></thead>
+            <tbody>
+              <% block.lines.each do |line| %>
+                <tr><td><%= line.name %></td><td><%= line.weight %>%</td><td><%= line.rating || "—" %></td></tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+        <p class="mb-1"><strong>Reviewer's note:</strong> <%= block.review.note %></p>
+        <p class="text-muted small mb-0">Scored by <%= block.reviewer_name %> · <%= wib(block.review.created_at) %></p>
+      <% else %>
+        <p class="text-muted mb-0">The technical test has not been scored yet.</p>
+      <% end %>
+      <%# Who may download the answer is feature 07's ONE rule (TechnicalTests.answer_downloadable_by?:
+          reviewer and consultant always, HR owner once the gate is closed); the signed per-user link
+          is feature 07's helper answer_link, so this view never rebuilds its key format. %>
+      <% if block.answered_at && !block.attempt.repo_link? && TechnicalTests.answer_downloadable_by?(current_user, board.job) && respond_to?(:answer_link) %>
+        <div class="btn-list mt-2"><%= label_link "Download answer", "fa-download", answer_link(block.attempt), purpose: :neutral %></div>
+      <% end %>
+    <% end %>
+  </div>
+</div>

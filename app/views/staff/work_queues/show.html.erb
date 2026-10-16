@@ -1,0 +1,27 @@
+<% content_for :title, "Work queue" %>
+<div class="portal-page loan-index-page layout-decoration-page">
+  <%= render "staff/shared/page_header", eyebrow: "Recruitment", title: "Work queue",
+             subtitle: "What needs a person today, oldest first." %>
+  <section class="content">
+    <div class="row loan-index-summary">
+      <%= render "staff/shared/metric", variant: "primary", icon: "fa-tasks", label: "Needs action",
+                 value: @queue.total, caption: "open items in this queue" %>
+      <%= render "staff/shared/metric", variant: "warning", icon: "fa-calendar-times-o", label: "Reschedule requests",
+                 value: @queue.reschedule_requests.count, caption: "awaiting the consultant's decision" %>
+      <%= render "staff/shared/metric", variant: "warning", icon: "fa-clock-o", label: "Unconfirmed",
+                 value: @queue.unconfirmed_soon.count, caption: "appointments in the next 24 hours" %>
+      <%= render "staff/shared/metric", variant: "danger", icon: "fa-exclamation-circle", label: "Failed emails",
+                 value: @queue.mail_failures.count, caption: "need resending or a phone call" %>
+    </div>
+    <%= render "staff/work_queues/appointments", title: "Reschedule requests", items: @queue.reschedule_requests, show_reason: true,
+               empty: "No requests. Applicants who press \"Request another time\" on their status page appear here." %>
+    <%= render "staff/work_queues/appointments", title: "Appointments in the next 24 hours not yet confirmed", items: @queue.unconfirmed_soon, show_reason: false,
+               empty: "Every appointment in the next 24 hours is confirmed, or there is none. Appointments are made on the applicant's detail page." %>
+    <%= render "staff/work_queues/screening" %>
+    <%= render "staff/work_queues/objections", objections: @queue.objections %>
+    <%= render "staff/work_queues/follow_ups", offers: @queue.follow_ups %>
+    <%= render "staff/work_queues/offer_responses", offers: @queue.offer_responses %>
+    <%= render "staff/work_queues/link_requests", requests: @queue.link_requests %>
+    <%= render "staff/work_queues/mail_failures", failures: @queue.mail_failures %>
+  </section>
+</div>

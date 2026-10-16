@@ -1,0 +1,33 @@
+<%# Feature 09 (D51 B): one text version. The text block shows EXACTLY what the API call sends
+    (AiRelease#payload_text), marks inside it, nothing re-rendered. Three actions, three separate
+    forms, none nested (house hard rule); no submit button is ever disabled. %>
+<% content_for :title, "Check text · #{@job.title}" %>
+<% names = [@release.participation.job_application.candidate&.name] %>
+<% spans = Screening::ReleaseHighlights.spans(@release.lines, @release.cv_range, names:) %>
+<% can_act = @release.pending? && @release.latest? && !@release.erased? && !@consultant_blocked %>
+<div class="portal-page loan-index-page layout-decoration-page ai-release">
+  <%= render "staff/shared/page_header", eyebrow: "Review before AI", title: screening_person(@release.participation),
+             subtitle: "#{@job.title}. This CV has not been sent to the AI yet. Check its content, delete any personal data still visible, then send it, or assess it manually.",
+             actions: label_link("Back", "fa-arrow-left", staff_job_ai_releases_path(@job), purpose: :neutral, icon_end: true) %>
+  <section class="content">
+    <%= render "staff/ai_releases/key_notice" %>
+    <%= render "staff/ai_releases/version_notice", release: @release, latest: @latest, consultant_blocked: @consultant_blocked %>
+    <% if can_act %>
+      <%# Plain steps first: what this screen is for and the three things to do. %>
+      <ol class="ai-release-steps">
+        <li><strong>Check</strong> the CV content below. Parts marked <span class="release-mark release-mark--blocking">red</span> are personal data that must be deleted; <span class="release-mark release-mark--hint">yellow</span> needs a look.</li>
+        <li><strong>Delete</strong> the ticked lines (red lines are ticked automatically).</li>
+        <li><strong>Send to Gemini</strong>, or choose <em>Not sent</em> if the CV is assessed manually.</li>
+      </ol>
+    <% end %>
+    <%= render "staff/ai_releases/findings_summary", release: @release, spans: spans %>
+    <%= render "staff/ai_releases/rubric", release: @release %>
+    <%= render "staff/ai_releases/payload", release: @release, spans: spans, can_act: can_act %>
+    <% if can_act %>
+      <div class="row">
+        <div class="col-lg-6"><%= render "staff/ai_releases/release_form", release: @release %></div>
+        <div class="col-lg-6"><%= render "staff/ai_releases/decline_form", release: @release %></div>
+      </div>
+    <% end %>
+  </section>
+</div>

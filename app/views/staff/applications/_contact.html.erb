@@ -1,0 +1,17 @@
+<div class="hris-form-card">
+  <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-address-card-o"></i></div>
+    <div><h3>Contact and files</h3><p>The status link cannot be re-created from here; the applicant requests one through "Request a new link".</p></div></div>
+  <div class="hris-form-card__body">
+    <% if candidate_visible?(application) %>
+    <div class="btn-list">
+      <% if application.cv.attached? %>
+        <%= label_link "Open CV", "fa-file-pdf-o", cv_staff_application_path(application), purpose: :neutral, target: "_blank" %>
+      <% end %>
+      <%= label_link "WhatsApp the applicant", "fa-whatsapp", whatsapp_url(application.candidate.phone, "Hello #{application.candidate.name}, we are the recruitment team for #{application.job.title}."), purpose: :neutral, target: "_blank", rel: "noopener" %>
+    </div>
+    <% else %>
+    <p class="mb-0">The applicant's CV and contact details are shown to HR once the screening decision is confirmed (screening stage closed). The DataKita consultant contacts the applicant until then.</p>
+    <% end %>
+    <p class="text-muted mt-2 mb-0">Channel: <%= application.channel_code.presence || "direct" %>. Consent withdrawn: <%= wib(application.consent_withdrawn_at) || "no" %>.</p>
+  </div>
+</div>

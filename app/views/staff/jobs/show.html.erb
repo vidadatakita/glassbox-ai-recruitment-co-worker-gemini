@@ -1,0 +1,19 @@
+<% content_for :title, "Vacancy home · #{@job.title}" %>
+<% window = @board.window %>
+<div class="portal-page loan-index-page layout-decoration-page">
+  <%= render "staff/shared/page_header", eyebrow: "Vacancy home", title: @job.title,
+             subtitle: [(placement_summary(@job) unless placement_summary(@job) == "-"), (@job.confidential? ? "Confidential vacancy" : nil)].compact_blank.join(" · ").presence || "Vacancy",
+             actions: label_link("Back", "fa-arrow-left", staff_jobs_path, purpose: :neutral, icon_end: true) %>
+  <section class="content">
+    <%= render "staff/jobs/metrics", board: @board %>
+    <%= render "staff/jobs/brief_box", job: @job %>
+    <%= render "staff/jobs/portal_box", job: @job, board: @board %>
+    <%= render "staff/jobs/screening_box", job: @job %>
+    <%= render "staff/jobs/gate_box", job: @job %>
+    <%= render "staff/jobs/report_link", job: @job %>
+    <%= render "staff/jobs/fairness_link", job: @job %>
+    <%= render "staff/jobs/funnel", board: @board %>
+    <%= render "staff/jobs/applicants", board: @board %>
+    <%= render "staff/jobs/window_log", board: @board %>
+  </section>
+</div>

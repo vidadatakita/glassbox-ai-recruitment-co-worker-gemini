@@ -1,0 +1,69 @@
+<%# Step 3: Requirements & compensation (P3, P8). Requirements in three tiers, each checkable from a CV;
+    a knockout question only on a "wajib" line (rule 16). No price anywhere (D49 (3), E20). %>
+<% if locked %>
+  <%= render "staff/job_briefs/summary_requirements", job: job %>
+<% else %>
+  <%= render "staff/job_briefs/requirement_tier", form: form, tier: "wajib", knockout_locked: knockout_locked, icon: "fa-check-square-o", tone: nil,
+             title: "Must-have requirements", text: "What the person must have. Mark 2 to 3 requirements with a yes/no knockout question asked on the application page." %>
+  <% legacy = form.legacy_knockouts %>
+  <% if legacy.any? %>
+    <div class="alert alert-light job-brief-notice" role="status">
+      <i class="fa fa-info-circle" aria-hidden="true"></i>
+      <div><strong>Knockout questions that existed before this form</strong> (not linked to a requirement, still asked on the application page):
+        <ul class="mb-0"><% legacy.each do |q| %><li><%= q.text %></li><% end %></ul></div>
+    </div>
+  <% end %>
+  <%= render "staff/job_briefs/requirement_tier", form: form, tier: "sebaiknya", knockout_locked: knockout_locked, icon: "fa-balance-scale", tone: "info",
+             title: "Should-have requirements", text: "What is preferred. Give each requirement a weight; the weights add up to exactly 100% and are the basis of the CV screening score." %>
+  <%= render "staff/job_briefs/requirement_tier", form: form, tier: "nilai_tambah", knockout_locked: knockout_locked, icon: "fa-plus-circle", tone: "success",
+             title: "Nice-to-have requirements", text: "Adds value, never eliminates an applicant." %>
+<% end %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-money", tone: "success", title: "Compensation",
+           text: "Gross monthly salary band in whole rupiah." } do %>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label" for="brief_salary_min">Minimum salary (Rp/month) <%= required_mark %></label>
+      <input type="text" inputmode="numeric" class="form-control<%= missing(form.submitted? ? form.value("salary_min") : job.salary_min) %>" id="brief_salary_min" name="brief[salary_min]" value="<%= form.submitted? ? form.value("salary_min") : (job.salary_min && number_with_delimiter(job.salary_min, delimiter: ".")) %>">
+      <span class="hris-field-hint">For example: 5.200.000</span>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label" for="brief_salary_max">Maximum salary (Rp/month) <%= required_mark %></label>
+      <input type="text" inputmode="numeric" class="form-control<%= missing(form.submitted? ? form.value("salary_max") : job.salary_max) %>" id="brief_salary_max" name="brief[salary_max]" value="<%= form.submitted? ? form.value("salary_max") : (job.salary_max && number_with_delimiter(job.salary_max, delimiter: ".")) %>">
+    </div>
+    <div class="col-12">
+      <input type="hidden" name="brief[show_salary]" value="0">
+      <label class="salary-switch-row" for="brief_show_salary">
+        <input type="checkbox" class="salary-switch-input" id="brief_show_salary" name="brief[show_salary]" value="1" <%= "checked" if form.checked?("show_salary") %>>
+        <span class="salary-switch-control" aria-hidden="true"></span>
+        <span><strong>Show the salary in the job ad</strong><small>When off, the salary band is visible to the recruitment team only.</small></span>
+      </label>
+    </div>
+  </div>
+<% end %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-map-marker", tone: "info", title: "Placement & work arrangement",
+           text: "One city per field. Blank fields are not saved." } do %>
+  <div class="row g-3">
+    <% form.placements.each_with_index do |city, i| %>
+      <div class="col-md-4 col-sm-6">
+        <label class="form-label" for="placement_<%= i %>">Placement <%= i + 1 %> <%= required_mark if i.zero? %></label>
+        <input type="text" class="form-control<%= missing(city) if i.zero? %>" id="placement_<%= i %>" name="brief[placements][]" value="<%= city %>" list="placement-cities">
+      </div>
+    <% end %>
+    <datalist id="placement-cities"><% form.city_suggestions.each do |city| %><option value="<%= city %>"><% end %></datalist>
+    <div class="col-md-6">
+      <label class="form-label" for="brief_work_arrangement">Work arrangement</label>
+      <select class="form-control form-select" id="brief_work_arrangement" name="brief[work_arrangement]">
+        <option value="">Not decided yet</option>
+        <% Job::WORK_ARRANGEMENTS.each do |key, label| %><option value="<%= key %>" <%= "selected" if form.value("work_arrangement") == key %>><%= label %></option><% end %>
+      </select>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label" for="brief_relocation">Willing to relocate</label>
+      <select class="form-control form-select" id="brief_relocation" name="brief[relocation]">
+        <option value="">Not stated</option>
+        <% Job::RELOCATIONS.each do |key, label| %><option value="<%= key %>" <%= "selected" if form.value("relocation") == key %>><%= label %></option><% end %>
+      </select>
+      <span class="hris-field-hint">Optional.</span>
+    </div>
+  </div>
+<% end %>

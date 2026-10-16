@@ -1,0 +1,18 @@
+<%# What still blocks completion, grouped by step with a link to the step (Briefs::BriefCheck). %>
+<% problems = check.problems %>
+<div class="hris-form-card" id="brief-problems">
+  <div class="hris-form-card__header">
+    <div class="hris-form-card__icon hris-form-card__icon--<%= problems.empty? ? "success" : "warning" %>"><i class="fa <%= problems.empty? ? "fa-check" : "fa-list-ul" %>" aria-hidden="true"></i></div>
+    <div><h3><%= if problems.any? then "#{problems.size} items incomplete" elsif job.brief_complete? then "Brief complete" else "Brief ready to complete" end %></h3>
+      <p><%= problems.empty? ? "Every brief rule is met on the saved data." : "Computed from the saved data. The job ad can be approved only after the brief is complete." %></p></div>
+  </div>
+  <% if problems.any? %>
+    <div class="hris-form-card__body">
+      <% problems.group_by(&:step).sort.each do |step, list| %>
+        <h4 class="job-brief-problems__step">Step <%= step %>: <%= JobBriefChange::STEP_LABELS[step.to_s] %>
+          <% if local_assigns.fetch(:links, true) && current_user.role.in?(%w[hr_pic consultant]) %><%= link_to "Open step #{step}", brief_step_link(job, step), class: "ms-2 fs-12" %><% end %></h4>
+        <ul class="job-brief-problems"><% list.each do |p| %><li><%= p.message %></li><% end %></ul>
+      <% end %>
+    </div>
+  <% end %>
+</div>

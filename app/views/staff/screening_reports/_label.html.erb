@@ -1,0 +1,52 @@
+<%# D61/E21: the AI proposes the label, a reviewer confirms it. Advisory (D62 h4): the gate
+    decides. Over-qualified only by the Grade rule (h3), shown here so the reviewer applies it. %>
+<% result = row.result %>
+<% job = board.job %>
+<div class="hris-form-card" id="label-analisa">
+  <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-tag" aria-hidden="true"></i></div>
+    <div><h3>Screening label <%= report_label_badge(row) %></h3>
+      <p>The label is advice for the client. What decides whether an applicant continues is the CV screening result; a "Not passed" applicant continues only through a manual decision with a note.</p></div></div>
+  <div class="hris-form-card__body">
+    <% if result&.label_proposal %>
+      <p class="mb-2"><strong>AI advice:</strong> <%= ScreeningReport::Labels.word(result.label_proposal) %><%= " · #{report_ai(result.label_reason, row)}" if result.label_reason %></p>
+    <% end %>
+    <% if row.confirmation %>
+      <p class="text-muted small">Confirmed by <%= row.confirmation.reviewer.name %> · <%= wib(row.confirmation.created_at) %><%= " · #{row.confirmation.note}" if row.confirmation.note.present? %><%= " · last position G#{row.confirmation.last_role_golongan}" if row.confirmation.last_role_golongan %></p>
+    <% end %>
+    <% if result && current_user.role == "reviewer" && job.consultant_id != current_user.id %>
+      <%= form_with url: staff_job_screening_report_label_path(job, row.application.id), method: :post, class: "report-label-form", data: { turbo: false, submit_guard: true } do %>
+        <fieldset class="mb-2">
+          <legend class="form-label fs-14">Label</legend>
+          <% ScreeningReport::Labels::ORDER.each do |key| %>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="label" value="<%= key %>" id="label_<%= key %>" required <%= "checked" if key == (flash[:label_value].presence || row.label_key || result.label_proposal) %>>
+              <label class="form-check-label" for="label_<%= key %>"><%= ScreeningReport::Labels.word(key) %></label>
+            </div>
+          <% end %>
+        </fieldset>
+        <p class="report-rule"><i class="fa fa-info-circle" aria-hidden="true"></i> Over-qualified only when the last position is at least 2 Grades above the vacancy (<%= job.golongan_label %>, <%= job.golongan + 2 <= 8 ? "so at least G#{job.golongan + 2}" : "not possible for a G7–G8 vacancy" %>), supported by a last-position quote found in the CV, and accompanied by a note. Never from age or length of experience.</p>
+        <div class="report-label-form__fields">
+          <div>
+            <label class="form-label" for="last_role_golongan">Grade of the last position (required for Over-qualified)</label>
+            <select class="form-select" id="last_role_golongan" name="last_role_golongan">
+              <option value="">Not given</option>
+              <% Job::GOLONGAN_NAMES.each do |g, name| %><option value="<%= g %>">G<%= g %> <%= name %></option><% end %>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="label_note">Note (required when different from the AI advice)</label>
+            <% note_error = flash[:label_field] == "note" %>
+            <textarea class="form-control <%= "is-invalid" if note_error %>" id="label_note" name="note" rows="2" maxlength="1000"
+                      data-note-required-unless="<%= result.label_proposal %>"><%= flash[:label_note] %></textarea>
+            <% if note_error %><div class="invalid-feedback d-block"><%= flash[:alert] %></div><% end %>
+          </div>
+        </div>
+        <%= label_button "Save label", "fa-save" %>
+      <% end %>
+    <% elsif result.nil? %>
+      <p class="text-muted mb-0">The label is available once the AI has assessed the CV.</p>
+    <% elsif !row.label_confirmed %>
+      <p class="text-muted mb-0">Awaiting the reviewer's confirmation.</p>
+    <% end %>
+  </div>
+</div>

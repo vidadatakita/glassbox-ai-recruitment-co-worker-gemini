@@ -1,0 +1,7 @@
+<%# The person's own wish for the AI, optional (Briefs::Suggest instruction:). It never overrides the
+    rules in the system prompt (no age, gender, appearance...). Sent as "instruksi". %>
+<div class="mb-2">
+  <label class="form-label" for="<%= id %>">Instructions for the AI <span class="text-muted fw-normal">(optional)</span></label>
+  <textarea class="form-control" id="<%= id %>" name="instruksi" rows="2" maxlength="1000"
+            placeholder="<%= local_assigns.fetch(:placeholder, "Example: shorter, plain language, stress teamwork") %>"><%= value %></textarea>
+</div>

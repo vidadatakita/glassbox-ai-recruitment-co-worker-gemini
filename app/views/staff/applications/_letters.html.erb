@@ -1,0 +1,42 @@
+<%# AI Builder Cup step 09: the rejection notice (after a Do not continue) or the offer letter (after
+    the owner agreed the salary). The AI drafts with "[Candidate name]", filled only in the email;
+    the HR PIC edits and sends. Letters already sent are listed with their exact text. %>
+<% kind = Progression::Letters.kind_for(application) %>
+<% draft = CandidateLetter.latest(application, kind, "draft") %>
+<% sent = CandidateLetter.where(job_application: application, status: "sent").order(:id).to_a %>
+<div class="hris-form-card" id="letter" data-ai-scope>
+  <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-envelope-o"></i></div>
+    <div><h3><%= CandidateLetter::KINDS.fetch(kind) %></h3>
+      <p><%= kind == "offer" ? "The offer email to the candidate. The formal offer document (PDF) is still uploaded under Job offer." : "A courteous notice to a candidate who will not continue." %></p></div></div>
+  <div class="hris-form-card__body">
+    <% sent.each do |letter| %>
+      <div class="alert alert-success" role="status"><strong><%= CandidateLetter::KINDS.fetch(letter.kind) %> sent</strong>
+        <%= wib(letter.created_at) %> by <%= letter.actor.name %> · <%= letter.subject %></div>
+    <% end %>
+
+    <% unless ai_on? %><p class="text-muted">The AI feature is off. Write the letter yourself below.</p><% end %>
+    <% if ai_on? %>
+    <%= form_with url: staff_application_letter_draft_path(application), method: :post, class: "progression-ai mb-3", data: { turbo: false, submit_guard: true, ai_fill: true } do %>
+      <%= render "staff/shared/ai_instruction", id: "instruksi_surat", value: nil, placeholder: "For example: shorter, warmer tone" %>
+      <button type="submit" class="btn btn-outline-primary btn-sm ai-btn">
+        <%= render "staff/shared/ai_sparkle" %>
+        <span class="ai-btn__idle"><%= draft ? "Rewrite with AI" : "Draft with AI" %></span><span class="ai-btn__busy" role="status">AI is writing…</span>
+      </button>
+      <span class="hris-field-hint d-block mt-1">The AI does not see the name, contacts, scores or interview notes; the app fills in the candidate's name<%= " when the email is sent" unless candidate_visible?(application) %>.</span>
+    <% end %>
+    <% end %>
+
+    <%= form_with url: staff_application_letter_path(application), method: :post, data: { turbo: false, submit_guard: true } do %>
+      <label class="form-label" for="letter-subject">Subject</label>
+      <input class="form-control mb-2" id="letter-subject" name="subject" required value="<%= flash[:letter_subject] || draft&.subject %>">
+      <label class="form-label" for="letter-body">Letter body</label>
+      <div class="ad-text-wrap">
+        <textarea class="form-control" id="letter-body" name="body" rows="12" required><%= flash[:letter_body] || draft&.body %></textarea>
+        <%# Shown while the AI drafts (the draft form above was sent with its AI button; staff.css). %>
+        <div class="ad-text-skeleton" role="status" aria-live="polite"><strong><%= render "staff/shared/ai_sparkle", size: 18 %> AI is composing the letter…</strong><% 8.times do %><span></span><% end %></div>
+      </div>
+      <span class="hris-field-hint d-block mt-1">Replace the placeholders in square brackets, such as [Start date], before sending.</span>
+      <div class="mt-2"><%= label_button "Send to candidate", "fa-paper-plane", purpose: :approve %></div>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,27 @@
+<%# E22: accepted offers awaiting the offer-to-start follow-up, nearest start date first. %>
+<div class="card custom-card portal-queue-section">
+  <div class="card-header"><div class="card-title">Follow-up before the first day (<%= offers.size %>)</div></div>
+  <div class="card-body table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>Applicant</th><th>Vacancy</th><th>Start date</th><th></th></tr></thead>
+      <tbody>
+        <% if offers.empty? %><tr><td colspan="4" class="text-muted">None. Offers accepted by applicants appear here until the applicant is contacted before the first day.</td></tr><% end %>
+        <% offers.each do |offer| %>
+          <tr>
+            <td><%= candidate_label(offer.job_application) %></td>
+            <td><%= offer.job_application.job.title %></td>
+            <td><%= wib(offer.start_at) %></td>
+            <td>
+              <% if current_user.role == "consultant" %>
+                <%= form_with url: staff_offer_followed_up_path(offer), method: :post, data: { turbo: false, submit_guard: true } do %>
+                  <%# The value only mirrors the label: no controller reads params[:commit]. %>
+                  <button type="submit" class="btn btn-sm btn-success" name="commit" value="Contacted"><i class="fa fa-check"></i> Contacted</button>
+                <% end %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

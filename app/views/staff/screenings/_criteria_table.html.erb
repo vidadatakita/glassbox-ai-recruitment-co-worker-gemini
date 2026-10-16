@@ -1,0 +1,20 @@
+<%# Per criterion: the AI's judgement and its verbatim quote, and whether the quote was found in
+    the CV text (§4.1 step 6). An unfound quote is shown, marked, never hidden. %>
+<div class="table-responsive">
+  <table class="table table-sm align-middle screening-criteria">
+    <thead><tr><th>Requirement</th><th>Tier</th><th>AI advice</th><th>CV quote</th></tr></thead>
+    <tbody>
+      <% result.criteria.each do |c| %>
+        <tr>
+          <td><%= c["text"] %></td>
+          <td><%= tier_label(c["tier"]) %><%= " · weight #{c["weight"]}" if c["tier"] == "sebaiknya" %></td>
+          <td><%= judgement_label(c["tier"], c["judgement"]) %></td>
+          <td>
+            <% if c["quote"].present? %><q><%= c["quote"] %></q><% else %><span class="text-muted">No quote</span><% end %>
+            <% unless c["verified"] %><br><span class="portal-state portal-state--danger">unverified</span><% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

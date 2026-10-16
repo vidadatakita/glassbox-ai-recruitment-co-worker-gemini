@@ -1,0 +1,44 @@
+<%# Section 2: the per-requirement judgements side by side. A swap column that differs from the base
+    is marked in red (never colour alone: the cell also says "differs"). The control column is
+    expected to differ. %>
+<% rubric = Screening::Rubric.for(job) %>
+<% base = result.base %>
+<div class="card custom-card fairness-check__scores">
+  <div class="card-header"><div class="card-title">Judgement per requirement</div></div>
+  <div class="card-body p-0">
+    <table class="table table-sm mb-0 fairness-check__table">
+      <thead>
+        <tr>
+          <th>Requirement</th>
+          <% result.variants.each_value do |v| %><th><%= v.label %></th><% end %>
+        </tr>
+      </thead>
+      <tbody>
+        <% rubric.criteria.each do |c| %>
+          <tr>
+            <td><span class="portal-state portal-state--muted"><%= tier_label(c.tier) %></span> <%= c.text %></td>
+            <% result.variants.each_value do |v| %>
+              <% j = v.judgements&.dig(c.key) %>
+              <% differs = v.swap? && v.error.nil? && base.error.nil? && j != base.judgements[c.key] %>
+              <td class="<%= 'fairness-check__cell--differs' if differs %>">
+                <% if v.error || j.nil? %>
+                  <span class="text-muted">no answer</span>
+                <% else %>
+                  <%= judgement_label(c.tier, j["judgement"]) %>
+                  <% unless j["verified"] %><span class="portal-state portal-state--danger">unverified</span><% end %>
+                  <% if differs %><span class="portal-state portal-state--danger">differs</span><% end %>
+                <% end %>
+              </td>
+            <% end %>
+          </tr>
+        <% end %>
+        <tr class="fairness-check__total">
+          <td><strong>Score</strong></td>
+          <% result.variants.each_value do |v| %>
+            <td><strong><%= v.score.nil? ? "no answer" : v.score %></strong></td>
+          <% end %>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,32 @@
+<%# Screen 2 "New vacancy" (blueprint §3.1), built like the Skema Gaji edit form (layout contract
+    §5.0): header, stepper, notices, ONE form with one card per concept, sticky action bar. %>
+<% new_job = @job.new_record? %>
+<% content_for :title, new_job ? "New vacancy" : "Vacancy brief · #{@job.title}" %>
+<div class="portal-page loan-index-page layout-decoration-page job-brief-page">
+  <%= render "staff/shared/page_header", eyebrow: new_job ? "New vacancy" : "Vacancy brief",
+             title: new_job ? "New vacancy" : @job.title,
+             subtitle: "Step #{@step} of #{brief_steps(@job).size}: #{Staff::JobBriefsController::STEP_TITLES[@step]}. Every step is saved as a draft.",
+             actions: label_link("Back", "fa-arrow-left", new_job ? staff_jobs_path : staff_job_brief_path(@job), purpose: :neutral, icon_end: true) %>
+  <section class="content salary-schema-page">
+    <%= render "staff/job_briefs/stepper", job: @job, step: @step, check: @check %>
+    <%= render "staff/job_briefs/lock_notice", locked: @locked, knockout_locked: @knockout_locked, step: @step %>
+    <%= render "staff/job_briefs/errors", errors: @errors %>
+    <%# A refused "Save & complete brief": what is missing goes right under the message, not at
+        the foot of the long step-4 form where nobody sees it. %>
+    <%= render "staff/job_briefs/open_problems", job: @job, check: @check if @finish_refused %>
+    <%= render "staff/job_briefs/ai_suggest", job: @job, step: @step, suggestion: @suggestion unless new_job || @locked %>
+    <% if @step == "4" && @locked %>
+      <%= render "staff/job_briefs/summary_package", job: @job %>
+      <%= render "staff/job_briefs/summary_competencies", job: @job %>
+    <% else %>
+      <p class="brief-required-legend"><%= required_mark %> required before the brief can be completed. A draft can still be saved while incomplete.</p>
+      <%= form_with url: (new_job ? staff_create_job_path : staff_job_brief_step_path(@job, @step)), method: (new_job ? :post : :patch),
+                    scope: :brief, class: "salary-schema-form job-brief-form", data: { turbo: false, submit_guard: true } do %>
+        <%= hidden_field_tag :saran, @suggestion.id if @suggestion %>
+        <%= render "staff/job_briefs/step_#{@step}", form: @form, job: @job, locked: @locked, knockout_locked: @knockout_locked, check: @check %>
+        <%# Step 4 is the last step unless the chosen package runs the technical test (step 5). %>
+        <%= render "staff/job_briefs/actions", job: @job, step: @step, test_next: @step == "4" && @form.package && Briefs::StagePlan.codes(@form.package).include?("S2") %>
+      <% end %>
+    <% end %>
+  </section>
+</div>

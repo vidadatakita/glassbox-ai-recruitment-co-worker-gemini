@@ -1,0 +1,6 @@
+<% content_for :title, "This link is not valid" %>
+<div class="closed">
+  <p class="big">This link is not valid.</p>
+  <p>The link is wrong, has been replaced by a new one, or the consent to use your data has been withdrawn.</p>
+  <%= link_to "Request a new link", new_link_request_path, class: "btn ghost" %>
+</div>

@@ -1,0 +1,35 @@
+<%# "Ask for AI advice", step 1 (AI Builder Cup step 05): what would be sent, exactly, before anything is
+    sent. Sending is the reviewer's release of the candidate's answer (same rule as CVs, D51 B). %>
+<% content_for :title, "Ask for AI advice · #{@job.title}" %>
+<div class="portal-page loan-index-page layout-decoration-page">
+  <%= render "staff/shared/page_header", eyebrow: "Technical test scoring", title: "Ask for AI advice",
+             subtitle: "#{candidate_label(@attempt.participation.job_application)} · #{@job.title}",
+             actions: label_link("Back", "fa-arrow-left", staff_job_test_scorings_path(@job, anchor: "jawaban-#{@attempt.id}"), purpose: :neutral, icon_end: true) %>
+  <section class="content">
+    <% if @answer.ok? %>
+      <%= render layout: "staff/job_briefs/card", locals: { icon_html: render("staff/shared/ai_sparkle", size: 20), tone: "info", title: "Text to be sent to the AI",
+                 text: "Check before sending. The AI only gives ADVICE on the rating per criterion; you check and save the score. A person decides every step." } do %>
+        <ul class="mb-3">
+          <li>Answer source: <%= @answer.source %>.<% if @attempt.repo_link? %> The repository is read <strong>as it is now</strong>, which may include commits made after the test time ran out.<% end %></li>
+          <li>The applicant's name, email and phone number in the document are redacted<%= " (repository code is sent as is)" if @attempt.repo_link? %>.</li>
+          <li>What is sent to the AI is recorded; the answer content is not stored again.</li>
+        </ul>
+        <% if Screening::InjectionCheck.suspicious?(@answer.text) %>
+          <div class="alert alert-warning" role="alert"><strong>This answer contains sentences that try to steer the AI</strong>
+            (for example "ignore the instructions" or "give a rating of 5"). The AI is told to treat them as data, but check its advice more carefully, or score it yourself.</div>
+        <% end %>
+        <pre class="test-ai-preview"><%= @content %></pre>
+        <%= form_with url: staff_test_attempt_ai_path(@attempt), method: :post, data: { turbo: false, submit_guard: true, ai_swap: true } do %>
+          <input type="hidden" name="sha256" value="<%= TechnicalTests::AiScore.digest(@answer.text) %>">
+          <button type="submit" class="btn btn-primary ai-btn">
+            <%= render "staff/shared/ai_sparkle" %><span class="ai-btn__idle">Send to Gemini</span><span class="ai-btn__busy" role="status">AI is scoring…</span>
+          </button>
+          <%= label_link "Score it myself", "fa-times", staff_job_test_scorings_path(@job, anchor: "jawaban-#{@attempt.id}"), purpose: :neutral, icon_end: true %>
+        <% end %>
+      <% end %>
+    <% else %>
+      <div class="alert alert-warning" role="alert"><%= @answer.problem %></div>
+      <%= label_link "Back to scoring", "fa-arrow-left", staff_job_test_scorings_path(@job, anchor: "jawaban-#{@attempt.id}"), purpose: :neutral, icon_end: true %>
+    <% end %>
+  </section>
+</div>

@@ -1,0 +1,42 @@
+<% rows = form.requirements(tier) %>
+<% aside = tier == "sebaiknya" ? render("staff/job_briefs/total", group: "sebaiknya", value: form.sebaiknya_total) : nil %>
+<%# The row legend is the tier label ("Must-have 1"), not the card title. %>
+<% noun = Requirement::TIERS.fetch(tier) %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: icon, tone: tone, title: title, text: text, aside: aside } do %>
+  <div class="job-brief-rows">
+    <% rows.each_with_index do |(slot, row), i| %>
+      <% needed = (tier == "wajib" && i.zero?) || row["text"].present? || row["cv_evidence"].present? %>
+      <fieldset class="job-brief-row">
+        <legend class="job-brief-row__num"><%= noun %> <%= i + 1 %></legend>
+        <input type="hidden" name="brief[requirements][<%= slot %>][id]" value="<%= row["id"] %>">
+        <input type="hidden" name="brief[requirements][<%= slot %>][tier]" value="<%= tier %>">
+        <div class="row g-2">
+          <div class="<%= tier == "sebaiknya" ? "col-lg-5" : "col-lg-6" %>">
+            <label class="form-label" for="req_<%= slot %>_text">Requirement <%= required_mark if tier == "wajib" && i.zero? %></label>
+            <input type="text" class="form-control<%= missing(row["text"]) if needed %>" id="req_<%= slot %>_text" name="brief[requirements][<%= slot %>][text]" value="<%= row["text"] %>">
+          </div>
+          <div class="<%= tier == "sebaiknya" ? "col-lg-5 col-7" : "col-lg-6" %>">
+            <label class="form-label" for="req_<%= slot %>_cv">CV evidence <%= required_mark if tier == "wajib" && i.zero? %></label>
+            <input type="text" class="form-control<%= missing(row["cv_evidence"]) if needed %>" id="req_<%= slot %>_cv" name="brief[requirements][<%= slot %>][cv_evidence]" value="<%= row["cv_evidence"] %>">
+          </div>
+          <% if tier == "sebaiknya" %>
+            <div class="col-lg-2 col-5">
+              <label class="form-label" for="req_<%= slot %>_weight">Weight <%= required_mark if i.zero? %></label>
+              <div class="input-group">
+                <input type="text" inputmode="numeric" class="form-control<%= missing(row["weight"]) if needed %>" id="req_<%= slot %>_weight" name="brief[requirements][<%= slot %>][weight]" value="<%= row["weight"] %>" data-sum="sebaiknya">
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+          <% end %>
+          <% if tier == "wajib" %>
+            <div class="col-12">
+              <label class="form-label" for="req_<%= slot %>_knockout">Knockout question (optional, yes/no answer)</label>
+              <input type="text" class="form-control" id="req_<%= slot %>_knockout" name="brief[requirements][<%= slot %>][knockout]" value="<%= row["knockout"] %>"<%= " readonly" if knockout_locked %>>
+            </div>
+          <% end %>
+        </div>
+      </fieldset>
+    <% end %>
+  </div>
+  <span class="hris-field-hint">Every requirement must be checkable from a CV. Rows left blank are not saved. Need more rows? Press Save, then open this step again; new blank rows appear.</span>
+<% end %>

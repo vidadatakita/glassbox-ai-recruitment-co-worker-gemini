@@ -1,0 +1,37 @@
+<%# AI Builder Cup step 07: the invited interviewer's scorecard, phone first. Blind (no other score,
+    no AI advice) so each interviewer judges for themselves; HR sees all of them after. %>
+<% content_for :title, "Interview scoring · #{@job.title}" %>
+<div class="cand-head">
+  <p class="small"><%= @job.client_company&.name %> · <%= CandidateStatus::STAGE_LABELS.fetch(@participation.stage.code) %></p>
+  <h1><%= @job.title %> · <%= CandidateIdentity.label(@participation.job_application) %></h1>
+  <p class="small">Hello <%= @invite.interviewer_name %>. Give a score from 1 to 5 for each competency from your interview, then your pick. Your scores are not visible to other assessors.</p>
+</div>
+<% if @error %><p class="flash alert" role="alert"><%= @error %></p><% end %>
+<%= form_with url: interviewer_score_path(params[:token]), method: :post, class: "cand-form", data: { turbo: false, submit_guard: true } do %>
+  <% @competencies.each do |c| %>
+    <fieldset class="score-card">
+      <legend><%= c.name %></legend>
+      <% if c.questions.present? %><p class="small">Questions: <%= c.questions %></p><% end %>
+      <ul class="score-anchors small">
+        <li><b>1</b> <%= c.anchor_1 %></li><li><b>3</b> <%= c.anchor_3 %></li><li><b>5</b> <%= c.anchor_5 %></li>
+      </ul>
+      <div class="score-picks">
+        <% (1..5).each do |n| %>
+          <label><input type="radio" name="ratings[<%= c.id %>]" value="<%= n %>" required <%= "checked" if params.dig(:ratings, c.id.to_s) == n.to_s %>><span><%= n %></span></label>
+        <% end %>
+      </div>
+    </fieldset>
+  <% end %>
+  <fieldset class="score-card">
+    <legend>Your pick</legend>
+    <div class="ko">
+      <label><input type="radio" name="pick" value="lanjut" required <%= "checked" if params[:pick] == "lanjut" %>> Continue</label>
+      <label><input type="radio" name="pick" value="tidak_lanjut" <%= "checked" if params[:pick] == "tidak_lanjut" %>> Do not continue</label>
+    </div>
+  </fieldset>
+  <div class="field">
+    <label for="note">Note <span class="small">(required for Do not continue)</span></label>
+    <textarea id="note" name="note" rows="4" maxlength="2000" placeholder="What the candidate showed. Avoid personal data."><%= params[:note] %></textarea>
+  </div>
+  <button type="submit" class="btn primary">Send scoring</button>
+<% end %>

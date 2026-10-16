@@ -1,0 +1,18 @@
+<%# Parts of a whole: each activity's share with a bar, largest first (information-display §1). %>
+<% acts = job.activities.sort_by { |a| [-a.share_percent, a.position] } %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-list-ol", title: "Main activities",
+           text: "#{acts.size} activities, largest time share first. Total share #{acts.sum(&:share_percent)}% of 100%." } do %>
+  <% if acts.empty? %>
+    <p class="text-muted mb-0">No activities yet. Activities are entered in step 2.</p>
+  <% else %>
+    <div class="job-brief-activities">
+      <% acts.each do |a| %>
+        <div class="job-brief-activity">
+          <div class="job-brief-activity__text"><strong><%= a.description %></strong><small>Output: <%= a.output %></small></div>
+          <span class="portal-funnel__track"><span class="portal-funnel__fill" style="width: <%= a.share_percent %>%"></span></span>
+          <span class="portal-funnel__num"><%= a.share_percent %>%</span>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>

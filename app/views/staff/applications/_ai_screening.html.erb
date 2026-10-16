@@ -1,0 +1,65 @@
+<%# The CV's way to the AI, for this one applicant (feature 06 + 09): which step it is at, who acts
+    next, and the button to get there. The AI is called only after a reviewer releases the redacted
+    text (D51 B), so "waiting" is usually waiting for a person, and this card says which one. %>
+<% state = participation.screening_state %>
+<% release = AiRelease.latest_for(participation) %>
+<% result = ScreeningResult.where(participation:).order(:id).last %>
+<% decision = participation.current_decision %>
+<% failed_before_ai = state == "cv_unreadable" || (state == "screening_failed" && participation.screening_failure.in?(%w[no_evidence_section too_little_text personal_data])) %>
+<% auto = !Screening::Config.review_before_ai? %>
+<%# Automatic mode: the AI comes first and the person decides after; a CV held for a residual finding
+    shows the reviewer's check where it happens. Release-first mode: the reviewer's check before the AI. %>
+<% review_step = ["Checked by reviewer", if state == "not_sent" then :failed elsif state == "awaiting_release" then :current elsif state.in?(%w[queued done]) || release&.released? then :done else :todo end] %>
+<% steps = [
+     ["CV received", :done],
+     ["Prepared & redacted", failed_before_ai ? :failed : (state ? :done : :todo)],
+     (review_step if !auto || state.in?(%w[awaiting_release not_sent]) || release),
+     ["Scored by AI", if state == "queued" then :current elsif state == "done" then :done elsif state == "screening_failed" && (auto || release&.released?) && !failed_before_ai then :failed else :todo end],
+     [auto ? "Reviewed & decided" : "Decision", decision ? :done : (state == "done" ? :current : :todo)]
+   ].compact %>
+<div class="ai-flow">
+  <ol class="ai-flow__steps">
+    <% steps.each_with_index do |(label, status), i| %>
+      <li class="ai-flow__step ai-flow__step--<%= status %>"><span class="ai-flow__num"><%= status == :done ? "✓" : (status == :failed ? "!" : i + 1) %></span><%= label %></li>
+    <% end %>
+  </ol>
+  <div class="ai-flow__now">
+    <% case state %>
+    <% when nil %>
+      <p class="mb-1"><strong>Not in the screening queue yet.</strong>
+        <%= { stage_closed: "The CV screening stage is closed; the decision was made manually.", decided: "This stage already has a decision.",
+              withdrawn: "The application or the data consent was withdrawn.", knocked_out: "The applicant answered \"no\" to a knockout question.",
+              no_cv: "No CV." }.fetch(Screening::Enqueue.blocked_reason(participation), "The consultant can press \"Start screening\" on the vacancy page.") %></p>
+      <%= link_to "Open CV screening on the vacancy page", staff_job_path(job, anchor: "screening") %>
+    <% when "awaiting_release" %>
+      <p class="mb-1"><strong>Waiting for the reviewer.</strong> The CV text has been extracted and its personal data redacted. The AI has received nothing yet:
+        <%= Screening::Config.review_before_ai? ? "for every CV," : "this CV is held because personal data was still detected after redaction, so" %>
+        a <strong>reviewer</strong> (not this vacancy's consultant) checks the text and then presses "Send to Gemini".</p>
+      <% if current_user.role == "reviewer" && job.consultant_id != current_user.id && release&.pending? %>
+        <%= label_link "Check the text & send to Gemini", "fa-shield", staff_ai_release_path(release) %>
+      <% else %>
+        <span class="text-muted small">Sign in as a reviewer to check it, on the vacancy page → "Review before AI".</span>
+      <% end %>
+    <% when "queued" %>
+      <p class="mb-0"><strong>Being scored by the AI.</strong> The text was approved by the reviewer and sent; the result appears in a moment (reload the page).</p>
+    <% when "done" %>
+      <% if result && ai_result_blinded?(participation) %>
+        <p class="mb-1"><strong>AI advice hidden</strong> until the consultant has given their own scoring (calibration, D13).</p>
+      <% elsif result %>
+        <p class="mb-1"><strong>AI advice:</strong> <%= ai_tier_badge(:screening, job: participation.job) %> score <%= number_with_precision(result.score, precision: 1, strip_insignificant_zeros: true) %> of 100 ·
+          must-haves <%= result.wajib_met ? "met" : "not met" %>
+          <% if result.label_proposal %> · proposed label: <strong><%= ScreeningReport::Labels.word(result.label_proposal) %></strong><% end %>
+          <% if result.unverified_count.to_i.positive? %> · <span class="text-warning"><%= result.unverified_count %> quote(s) not found in the CV, checked by the reviewer</span><% end %></p>
+        <% if result.label_reason.present? %><p class="text-muted mb-1"><%= result.label_reason %></p><% end %>
+      <% end %>
+      <%= link_to "View the full screening report", staff_job_screening_report_candidate_path(job, application_id: participation.job_application_id) if current_user.role.in?(%w[hr_pic consultant reviewer owner]) %>
+    <% when "not_sent" %>
+      <p class="mb-0"><strong>Not sent to the AI.</strong> The reviewer decided this CV is scored manually.</p>
+    <% else %>
+      <p class="mb-1 text-danger"><strong><%= state == "cv_unreadable" ? "CV unreadable (no text; for example a scan or a photo)" : ScreeningBoard.failure_label(participation) %>.</strong></p>
+      <p class="mb-1 text-muted">No score was produced. Next: paste the CV text (consultant), or ask for a new CV.</p>
+      <%= link_to "Open CV screening on the vacancy page", staff_job_path(job, anchor: "screening") %>
+    <% end %>
+    <% unless Screening::Config.enabled? %><p class="text-warning small mb-0 mt-1"><%= ScreeningBoard::OFF_MESSAGE %></p><% end %>
+  </div>
+</div>

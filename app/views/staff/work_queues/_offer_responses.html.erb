@@ -1,0 +1,20 @@
+<div class="card custom-card portal-queue-section">
+  <div class="card-header"><div class="card-title">Latest offer responses</div></div>
+  <div class="card-body table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>Applicant</th><th>Version</th><th>Response</th><th>Reason</th><th>Time (WIB)</th></tr></thead>
+      <tbody>
+        <% if offers.empty? %><tr><td colspan="5" class="text-muted">No responses yet.</td></tr><% end %>
+        <% offers.each do |offer| %>
+          <tr>
+            <td><%= candidate_label(offer.job_application) %></td>
+            <td><%= offer.version %></td>
+            <td><%= offer.accepted? ? "Accepted" : "Declined" %></td>
+            <td><%= offer.response_reason.presence || "-" %></td>
+            <td><%= wib(offer.responded_at) %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

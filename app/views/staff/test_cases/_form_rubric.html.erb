@@ -1,0 +1,51 @@
+<%# The rubric beside the job's activities: each criterion names the activity it tests, a weight
+    (the weights sum to exactly 100%), and what a 1, 3 and 5 answer looks like. %>
+<% activities = job.activities.to_a %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-check-square-o", tone: "info", title: "Scoring rubric",
+           text: "The reviewer rates each criterion 1 to 5. The criterion weights add up to exactly 100%.",
+           aside: render("staff/job_briefs/total", group: "criteria", value: form.total_weight) } do %>
+  <div class="test-case-rubric">
+    <aside class="test-case-rubric__activities" aria-label="Vacancy activities">
+      <h4>Vacancy activities <span class="text-muted fw-normal">· <%= activities.size %> activities</span></h4>
+      <% if activities.empty? %>
+        <p class="text-muted mb-0">No activities yet. Fill in the activities in step 2 first.</p>
+      <% else %>
+        <ol><% activities.each do |a| %><li><strong><%= a.description %></strong> <small class="text-muted"><%= a.share_percent %>% of time</small></li><% end %></ol>
+      <% end %>
+    </aside>
+    <div class="job-brief-rows">
+      <% form.criteria.each_with_index do |row, i| %>
+        <fieldset class="job-brief-row">
+          <legend class="job-brief-row__num">Criterion <%= i + 1 %><%= " (optional)" if i >= 2 %></legend>
+          <div class="row g-2">
+            <div class="col-lg-5">
+              <label class="form-label" for="crit_<%= i %>_activity">Activity tested</label>
+              <select class="form-select" id="crit_<%= i %>_activity" name="test_case[criteria][<%= i %>][activity_id]">
+                <option value="">Choose an activity</option>
+                <% activities.each do |a| %><option value="<%= a.id %>" <%= "selected" if row["activity_id"].to_s == a.id.to_s %>><%= a.description %></option><% end %>
+              </select>
+            </div>
+            <div class="col-lg-5 col-8">
+              <label class="form-label" for="crit_<%= i %>_name">Criterion name</label>
+              <input type="text" class="form-control" id="crit_<%= i %>_name" name="test_case[criteria][<%= i %>][name]" value="<%= row["name"] %>">
+            </div>
+            <div class="col-lg-2 col-4">
+              <label class="form-label" for="crit_<%= i %>_weight">Weight</label>
+              <div class="input-group">
+                <input type="text" inputmode="numeric" class="form-control" id="crit_<%= i %>_weight" name="test_case[criteria][<%= i %>][weight]" value="<%= row["weight"] %>" data-sum="criteria">
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+            <% [["1", "Score 1"], ["3", "Score 3"], ["5", "Score 5"]].each do |n, label| %>
+              <div class="col-lg-4">
+                <label class="form-label" for="crit_<%= i %>_anchor_<%= n %>"><%= label %> when the answer</label>
+                <input type="text" class="form-control" id="crit_<%= i %>_anchor_<%= n %>" name="test_case[criteria][<%= i %>][anchor_<%= n %>]" value="<%= row["anchor_#{n}"] %>">
+              </div>
+            <% end %>
+          </div>
+        </fieldset>
+      <% end %>
+    </div>
+  </div>
+  <span class="hris-field-hint">Rows left empty are not saved. At most <%= TestCaseForm::SLOTS %> criteria.</span>
+<% end %>

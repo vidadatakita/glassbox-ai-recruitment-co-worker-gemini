@@ -1,0 +1,7 @@
+<% if errors.any? %>
+  <div class="alert alert-danger salary-schema-errors job-brief-notice" role="alert">
+    <i class="fa fa-exclamation-circle" aria-hidden="true"></i>
+    <div><strong><%= errors.size %> items need fixing. Your entries are not saved yet.</strong>
+      <ul class="mb-0"><% errors.each do |message| %><li><%= message %></li><% end %></ul></div>
+  </div>
+<% end %>

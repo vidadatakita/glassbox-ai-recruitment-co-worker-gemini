@@ -1,0 +1,36 @@
+<%# Who needs a person first, then furthest stage (information-display review I7). The state comes
+    from CandidateStatus#summary, the same source as the candidate's own page (review D1). %>
+<% rows = board.rows %>
+<% duplicates = Portal::DuplicateCheck.flags(board.job.client_company_id) %>
+<div class="card custom-card">
+  <div class="card-header"><div class="card-title">Applicants (<%= rows.size %>)</div></div>
+  <div class="card-body table-responsive">
+    <p class="text-muted">Those needing action first, then those furthest along.</p>
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Name</th><th>Current stage</th><th>Action needed</th><th>Channel</th><th></th></tr></thead>
+      <tbody>
+        <% if rows.empty? %><tr><td colspan="5" class="text-muted">No applications yet.</td></tr><% end %>
+        <% rows.each do |row| %>
+          <tr>
+            <%# The first cell holds only the candidate's label, the same text as the gate box (engine 07
+                F-01: one number per person on every screen); the duplicate flag sits with the status. %>
+            <td><%= candidate_label(row.application) %></td>
+            <td><span class="portal-state portal-state--<%= row.summary.tone %>"><%= row.summary.text %></span>
+              <% if (reasons = duplicates[row.application.id]).present? %>
+                <span class="portal-state portal-state--warning" title="<%= reasons.join(", ") %>">Possible duplicate</span>
+              <% end %></td>
+            <td><%= row.needs_action || "-" %></td>
+            <td><%= row.application.channel_code.presence || "direct" %></td>
+            <td class="hris-table-actions">
+              <% if can_open_applications? %>
+                <%= link_to staff_application_path(row.application), class: "btn btn-sm btn-primary-light", title: "View applicant details" do %>
+                  <i class="fa fa-plus"></i><span class="visually-hidden">View details <%= candidate_label(row.application) %></span>
+                <% end %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

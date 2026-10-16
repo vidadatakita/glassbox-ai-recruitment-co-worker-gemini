@@ -1,0 +1,30 @@
+<%# The GlassBox brand, one partial for every surface (senior-uiux: a feature is a partial, the
+    layout only renders it). variant:
+      :header    staff header: cube tile + wordmark + the client company's name
+      :auth      sign-in card hero: the full logo on its own navy ground, rounded
+      :candidate applicant pages: small cube tile + wordmark, above the page card
+      :demo      the demo door: the full logo, centred, smaller
+    The wordmark is set in text so it stays crisp on light backgrounds (the image's wordmark sits on
+    navy); the cube is the image itself, cut from app/assets/images/GlassBoxLogo.jpg. company: shown
+    after the wordmark on :header only. %>
+<% variant = local_assigns.fetch(:variant, :header) %>
+<% company = local_assigns[:company] %>
+<% case variant %>
+<% when :auth %>
+  <div class="brand brand--auth">
+    <%= image_tag "glassbox-logo.jpg", alt: "GlassBox: evidence you can see, decisions someone owns, merit that counts", class: "brand__hero", width: 768, height: 768 %>
+  </div>
+<% when :demo %>
+  <div class="brand brand--demo">
+    <%= image_tag "glassbox-logo.jpg", alt: "GlassBox: evidence you can see, decisions someone owns, merit that counts", class: "brand__hero brand__hero--small", width: 768, height: 768 %>
+  </div>
+<% else %>
+  <div class="brand brand--<%= variant %>">
+    <%= image_tag "glassbox-mark.png", alt: "", class: "brand__mark", width: 244, height: 256 %>
+    <span class="brand__word" aria-label="GlassBox"><span class="brand__word-glass">Glass</span><span class="brand__word-box">Box</span></span>
+    <% if company.present? %>
+      <span class="brand__sep" aria-hidden="true"></span>
+      <span class="brand__company"><%= company %></span>
+    <% end %>
+  </div>
+<% end %>

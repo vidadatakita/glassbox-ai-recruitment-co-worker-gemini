@@ -1,0 +1,9 @@
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-briefcase", title: "Position & 90-day target", text: "Position, grade, headcount, and the result expected after 90 days." } do %>
+  <dl class="job-brief-facts">
+    <dt>Grade</dt><dd><%= job.golongan_label %></dd>
+    <dt>Headcount</dt><dd><%= job.headcount ? "#{job.headcount} #{'person'.pluralize(job.headcount)}" : "-" %></dd>
+    <dt>Employment type</dt><dd><%= employment_label(job) %></dd>
+    <dt>Confidentiality</dt><dd><%= job.confidential? ? "Confidential vacancy: the company name is hidden" : "The company name is shown" %></dd>
+    <dt>90-day target</dt><dd><%= job.success_90d.presence || "Not filled in yet." %></dd>
+  </dl>
+<% end %>

@@ -1,0 +1,24 @@
+<div class="card custom-card portal-queue-section">
+  <div class="card-header"><div class="card-title">Link requests not matched automatically (<%= requests.size %>)</div></div>
+  <div class="card-body table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>Vacancy code</th><th>Contact</th><th>Received (WIB)</th><th></th></tr></thead>
+      <tbody>
+        <% if requests.empty? %><tr><td colspan="4" class="text-muted">None. "Request a new link" requests whose email matches no application appear here.</td></tr><% end %>
+        <% requests.each do |request| %>
+          <tr>
+            <td><%= request.job_code.presence || "-" %></td>
+            <td><%= request.contact %></td>
+            <td><%= wib(request.created_at) %></td>
+            <td>
+              <%= form_with url: handle_link_request_staff_work_queue_path(request), method: :post, data: { turbo: false, submit_guard: true } do %>
+                <%# The value only mirrors the label: no controller reads params[:commit]. %>
+                <button type="submit" class="btn btn-sm btn-light" name="commit" value="Mark done"><i class="fa fa-check"></i> Mark done</button>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

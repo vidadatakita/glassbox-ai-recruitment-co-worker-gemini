@@ -1,0 +1,15 @@
+<% content_for :title, "Thank you" %>
+<%= render "candidate_shared/job_top", job: @job %>
+<div class="closed">
+  <p class="big">Thank you for your interest.</p>
+  <p>Based on your answers, this position has a requirement that is not met at this time.</p>
+  <%# Two ways to arrive here. From step 1 nothing personal has been typed, so nothing is
+      stored. From the final submit (answers changed in the form) the application IS stored,
+      eliminated by rule (rule 16), under the consent just given; say so honestly. %>
+  <% if @application %>
+    <p>Your application has been recorded with this result and is kept under the terms you agreed to.</p>
+    <p class="linkbox"><%= link_to candidate_status_url(@token), candidate_status_url(@token) %></p>
+  <% else %>
+    <p>We have not stored any data from this form.</p>
+  <% end %>
+</div>

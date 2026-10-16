@@ -1,0 +1,88 @@
+# Indonesian screen text formats. Times are shown in WIB (Asia/Jakarta), the app's time zone
+# (blueprint §2.2 rule 8); formats that print a time say "WIB" so nobody guesses the zone.
+id:
+  date:
+    abbr_day_names: [Min, Sen, Sel, Rab, Kam, Jum, Sab]
+    day_names: [Minggu, Senin, Selasa, Rabu, Kamis, Jumat, Sabtu]
+    abbr_month_names: [~, Jan, Feb, Mar, Apr, Mei, Jun, Jul, Agu, Sep, Okt, Nov, Des]
+    month_names: [~, Januari, Februari, Maret, April, Mei, Juni, Juli, Agustus, September, Oktober, November, Desember]
+    order: [day, month, year]
+    formats:
+      default: "%d-%m-%Y"
+      long: "%-d %B %Y"
+      short: "%-d %b %Y"
+      weekday_long: "%A, %-d %B %Y"
+  time:
+    am: am
+    pm: pm
+    formats:
+      default: "%-d %B %Y %H.%M WIB"
+      long_wib: "%A, %-d %B %Y, %H.%M WIB"
+      short_wib: "%-d %b %Y %H.%M WIB"
+  number:
+    format: { delimiter: ".", separator: ",", precision: 1 }
+  errors:
+    messages:
+      blank: "wajib diisi"
+      invalid: "tidak valid"
+      inclusion: "tidak termasuk pilihan"
+      taken: "sudah dipakai"
+      not_a_number: "harus berupa angka"
+      greater_than: "harus lebih besar dari %{count}"
+      not_an_integer: "harus bilangan bulat"
+  # Field names in "Riwayat perubahan brief" (feature 03, JobBriefChange#changes_made keys).
+  brief_fields:
+    title: Jabatan
+    golongan: Golongan
+    headcount: Jumlah yang dibutuhkan
+    employment_type: Status kerja
+    confidential: Kerahasiaan
+    success_90d: Target 90 hari
+    activities: Aktivitas
+    salary_min: Gaji minimum
+    salary_max: Gaji maksimum
+    show_salary: Tampilkan gaji
+    placements: Lokasi penempatan
+    relocation: Bersedia di luar kota
+    work_arrangement: Sistem kerja
+    requirements: Syarat dan pertanyaan knockout
+    package: Paket
+    package_override_reason: Alasan paket
+    stage_plan: Bobot dan ambang lolos
+    competencies: Kompetensi
+    brief_status: Status brief
+  # Backstop for Briefs::SaveStep's RecordInvalid rescue: if a model message ever reaches the
+  # screen, its field name is Bahasa (test engine F-05). Every field is also pre-checked with its
+  # own Bahasa message in SaveStep / Briefs::Params.
+  activerecord:
+    attributes:
+      job:
+        title: Jabatan
+        golongan: Golongan
+        headcount: Jumlah yang dibutuhkan
+        employment_type: Status kerja
+        work_arrangement: Sistem kerja
+        relocation: Bersedia di luar kota
+        salary_min: Gaji minimum
+        salary_max: Gaji maksimum
+        package: Paket
+        brief_status: Status brief
+      activity:
+        description: Uraian aktivitas
+        output: Hasil kerja
+        share_percent: Porsi waktu
+        position: Urutan
+      requirement:
+        tier: Tingkat syarat
+        text: Syarat
+        cv_evidence: Bukti di CV
+        weight: Bobot
+        position: Urutan
+      competency:
+        name: Nama kompetensi
+        layer: Lapisan
+        stage_code: Tahap penilai
+        position: Urutan
+      knockout_question:
+        text: Pertanyaan knockout
+        position: Urutan

@@ -1,0 +1,46 @@
+test:
+  service: Disk
+  root: <%= Rails.root.join("tmp/storage") %>
+
+local:
+  service: Disk
+  root: <%= Rails.root.join("storage") %>
+
+# Use bin/rails credentials:edit to set the AWS secrets (as aws:access_key_id|secret_access_key)
+# amazon:
+#   service: S3
+#   access_key_id: <%= Rails.application.credentials.dig(:aws, :access_key_id) %>
+#   secret_access_key: <%= Rails.application.credentials.dig(:aws, :secret_access_key) %>
+#   region: us-east-1
+#   bucket: your_own_bucket-<%= Rails.env %>
+
+# Remember not to checkin your GCS keyfile to a repository
+# google:
+#   service: GCS
+#   project: your_project
+#   credentials: <%= Rails.root.join("path/to/gcs.keyfile") %>
+#   bucket: your_own_bucket-<%= Rails.env %>
+
+# mirror:
+#   service: Mirror
+#   primary: local
+#   mirrors: [ amazon, google, microsoft ]
+
+# D52 (3): Google Cloud Storage, used ONLY when GLASSBOX_STORAGE_SERVICE=google (production.rb), or
+# by the migration task `glassbox:google:migrate_storage`. Built lazily by Active Storage, so this
+# entry does nothing while the app stores files on local disk. Private bucket: no `public: true`,
+# so a URL is always a signed URL that expires (config.active_storage.service_urls_expire_in).
+# The app itself never hands out these URLs: every download goes through a controller that checks
+# the role and sets Content-Disposition (send_data). Credentials: the service account key file
+# CONTENT from Rails credentials google.service_account_json or ENV GOOGLE_SERVICE_ACCOUNT_JSON.
+<% google_json = Rails.application.credentials.dig(:google, :service_account_json).to_s.strip.presence || ENV["GOOGLE_SERVICE_ACCOUNT_JSON"].to_s.strip.presence %>
+<%# A malformed key leaves the google service without credentials instead of crashing every boot
+    (local-storage installs must still start) and never quotes the key (test engine F-10-01). If
+    google IS selected, GoogleIntegration::Config.validate_storage! refuses to boot with a safe message. %>
+<% google_key = begin; google_json ? Glassbox::GoogleKey.parse(google_json) : {}; rescue Glassbox::GoogleKey::Invalid; {}; end %>
+google:
+  service: GCS
+  project: <%= google_key["project_id"].to_s.to_json %>
+  bucket: <%= (Rails.application.credentials.dig(:google, :storage_bucket).to_s.strip.presence || ENV["GOOGLE_STORAGE_BUCKET"].to_s.strip).to_json %>
+  credentials: <%= google_key.to_json %>
+  cache_control: "private, max-age=0"

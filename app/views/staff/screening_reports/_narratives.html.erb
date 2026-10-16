@@ -1,0 +1,46 @@
+<%# SPEC §2.5, D62 h2: four boxes drafted by the AI, every claim with its CV quote and the quote
+    check; marked "AI draft" until the job's consultant approves THIS result. %>
+<% result = row.result %>
+<% approval = board.narrative_approval(result) %>
+<% boxes = { "strengths" => ["Strengths", "fa-thumbs-o-up"], "blind_spots" => ["Blind spots & weaknesses", "fa-eye-slash"],
+             "tolerance_risks" => ["Tolerance & risks", "fa-exclamation-triangle"], "credibility_value" => ["Credibility & value to the owner", "fa-handshake-o"] } %>
+<div class="hris-form-card" id="narasi">
+  <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-commenting-o" aria-hidden="true"></i></div>
+    <div><h3>Narrative analysis
+      <% if result&.narratives.present? %>
+        <% if approval %><span class="portal-state portal-state--success">Approved by the consultant</span><% else %><span class="portal-state portal-state--warning">AI draft</span><% end %>
+      <% end %></h3>
+      <p>Drafted by the AI from the CV; every statement carries its CV quote. It stays a draft until the vacancy's consultant approves it.</p></div></div>
+  <div class="hris-form-card__body">
+    <% if result.nil? || result.narratives.blank? %>
+      <p class="text-muted mb-0"><%= result.nil? ? "Not screened by the AI yet." : "This AI result was made before the report prompt version; there is no narrative yet." %></p>
+    <% else %>
+      <div class="report-boxes">
+        <% boxes.each do |key, (title, icon)| %>
+          <section class="report-box">
+            <h4><i class="fa <%= icon %>" aria-hidden="true"></i> <%= title %></h4>
+            <% claims = result.narratives[key].to_a %>
+            <% if claims.empty? %><p class="text-muted mb-0">No notes from the AI.</p><% end %>
+            <ul class="report-claims">
+              <% claims.each do |claim| %>
+                <li><%= report_ai(claim["claim"], row) %><br><%= render "staff/screening_reports/quote", quote: claim["quote"], verified: claim["verified"], row: row %></li>
+              <% end %>
+            </ul>
+          </section>
+        <% end %>
+      </div>
+      <% if result.protected_attribute_categories.any? %>
+        <p class="portal-insight mt-2 mb-0"><i class="fa fa-shield me-1" aria-hidden="true"></i>The AI reported protected attributes in this CV (categories: <%= result.protected_attribute_categories.join(", ") %>). Check the narrative before approving.</p>
+      <% end %>
+      <% if approval %>
+        <p class="text-muted small mt-2 mb-0">Approved by <%= approval.approved_by.name %> · <%= wib(approval.created_at) %><%= " · #{approval.note}" if approval.note.present? %></p>
+      <% elsif current_user.role == "consultant" && (board.job.consultant_id.nil? || board.job.consultant_id == current_user.id) %>
+        <%= form_with url: staff_job_screening_report_narratives_path(board.job, row.application.id), method: :post, class: "report-inline-form mt-3", data: { turbo: false, submit_guard: true } do %>
+          <label class="form-label" for="narasi_note">Note (optional)</label>
+          <input type="text" class="form-control" id="narasi_note" name="note" maxlength="500">
+          <%= label_button "Approve narrative", "fa-check" %>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+</div>

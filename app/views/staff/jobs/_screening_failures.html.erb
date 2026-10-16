@@ -1,0 +1,32 @@
+<%# §4.3: "Screening failed" and "CV unreadable" are listed by person, with the reason, so the
+    operator knows what to do next. Never a default score. A stacked list, not a table, so the
+    reason and the action stay readable at phone width. %>
+<%# Feature 09 (D51 B): a CV the reviewer declined ("Not sent") is listed too, so the person
+    who must decide it by hand sees who it is, not only a count. %>
+<% rows = board.failed + board.unreadable + board.finalize_errors + board.not_sent %>
+<% if rows.any? %>
+  <ul class="list-unstyled screening-failures mb-3">
+    <% rows.each do |p| %>
+      <li class="border-bottom py-2 d-flex flex-wrap gap-2 align-items-start justify-content-between">
+        <div class="screening-failures__text">
+          <p class="mb-1"><strong><%= screening_person(p, board) %></strong> <%= screening_state_badge(p) %></p>
+          <p class="mb-1">
+            <% if p.screening_state == "done" %><%= ScreeningBoard.failure_label(p) %>.
+            <% elsif p.screening_state == "screening_failed" %><%= ScreeningBoard.failure_label(p) %>. No score was produced.
+            <% elsif p.screening_state == "not_sent" %>The reviewer decided not to send this CV to the AI. Decide this applicant's CV screening by hand.
+            <% else %>The CV has no readable text (for example a scan). Paste the CV text or ask the applicant for a new CV.<% end %>
+          </p>
+          <p class="text-muted small mb-0">Since <%= wib(p.screening_state_at) %></p>
+        </div>
+        <% pasteable = p.screening_state == "cv_unreadable" || (p.screening_state == "screening_failed" && %w[personal_data too_little_text no_evidence_section].include?(p.screening_failure)) %>
+        <% if pasteable && current_user.role == "consultant" %>
+          <%= label_link "Paste CV text", "fa-paste", staff_participation_cv_text_path(p), class: "btn-sm" %>
+        <% elsif p.screening_state == "not_sent" && can_open_applications? %>
+          <%= link_to staff_application_path(p.job_application), class: "btn btn-sm btn-primary-light", title: "View applicant details" do %>
+            <i class="fa fa-plus" aria-hidden="true"></i> View details<span class="visually-hidden"> <%= screening_person(p, board) %></span>
+          <% end %>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+<% end %>

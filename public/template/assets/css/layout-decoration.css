@@ -1,0 +1,822 @@
+/* Shared modern decoration layer for system pages built on Zynix. */
+.layout-decoration-page {
+  max-width: 1520px;
+  margin: 0 auto;
+  padding-bottom: 2.5rem;
+}
+
+/* Shared vertical rhythm for pages composed from multiple sibling sections.
+ * Apply this class to the parent content container instead of adding one-off
+ * margins to individual cards. Horizontal Bootstrap row/column gutters remain
+ * untouched, while every direct child receives the same Zynix section gap. */
+.layout-decoration-section-stack {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.layout-decoration-section-stack > * {
+  min-width: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.layout-decoration-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.layout-decoration-header h1 {
+  margin: 0;
+  color: var(--default-text-color);
+  font-size: clamp(1.35rem, 2vw, 1.9rem);
+  font-weight: 700;
+}
+
+.layout-decoration-header p {
+  margin: 0.35rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.layout-decoration-shell {
+  overflow: hidden;
+  border: 1px solid var(--hris-hairline);
+  border-radius: var(--hris-radius-lg);
+  background: var(--hris-surface);
+  box-shadow: var(--hris-shadow-card);
+}
+
+.layout-decoration-shell__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--hris-hairline);
+  background: var(--hris-surface-muted);
+}
+
+.layout-decoration-shell__body {
+  padding: 1.25rem;
+}
+
+.layout-decoration-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.layout-decoration-filter {
+  margin-bottom: 1rem;
+}
+
+.layout-decoration-filter label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--hris-label);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.layout-decoration-filter .form-control {
+  min-height: 2.55rem;
+  border-color: var(--default-border);
+  border-radius: 0.45rem;
+  font-size: 0.84rem;
+}
+
+.layout-decoration-filter .form-control:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.18rem var(--primary01);
+}
+
+/* Baris filter daftar — satu bentuk untuk semua halaman absensi.
+   Dipakai sebagai blok pertama di dalam badan kartu, bukan di dalam
+   .card-header, supaya judul periode dan kendali filter tidak berebut ruang.
+   Kelas .layout-decoration-filter yang lama sengaja tidak diubah: sembilan
+   halaman lain masih memakainya. */
+.hris-filter-bar {
+  /* tinggi blok label; dipakai untuk menyejajarkan tombol dengan kolom input */
+  --hris-filter-label-block: 1.35rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1.15rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--hris-hairline);
+  border-radius: var(--hris-radius-md);
+  background: var(--hris-surface-muted);
+}
+
+.hris-filter-bar__field {
+  flex: 1 1 190px;
+  min-width: 0;
+}
+
+.hris-filter-bar__field--wide {
+  flex: 2 1 260px;
+}
+
+.hris-filter-bar__action {
+  flex: 0 0 auto;
+  padding-top: var(--hris-filter-label-block);
+}
+
+.hris-filter-bar__action .btn {
+  min-height: 2.55rem;
+  padding-right: 1.5rem;
+  padding-left: 1.5rem;
+}
+
+.hris-filter-bar label {
+  display: block;
+  min-height: 1rem;
+  margin: 0 0 0.35rem;
+  color: var(--hris-label);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.hris-filter-bar .form-control,
+.hris-filter-bar .form-select {
+  width: 100%;
+  min-height: 2.55rem;
+  border-color: var(--default-border);
+  border-radius: 0.45rem;
+  font-size: 0.84rem;
+}
+
+.hris-filter-bar .form-control:focus,
+.hris-filter-bar .form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.18rem var(--primary01);
+}
+
+/* select2 menuliskan lebar inline (width: 'resolve' pada initializer global),
+   jadi lebar kolom hanya bertahan bila dipaksa dari sini. */
+.hris-filter-bar .select2-container {
+  width: 100% !important;
+}
+
+.hris-filter-bar .select2-container--default .select2-selection--multiple {
+  min-height: 2.55rem;
+  border-color: var(--default-border);
+  border-radius: 0.45rem;
+}
+
+.hris-filter-bar .hris-field-hint {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 575.98px) {
+  .hris-filter-bar__action {
+    flex: 1 1 100%;
+    padding-top: 0;
+  }
+
+  .hris-filter-bar__action .btn {
+    width: 100%;
+  }
+}
+
+/* ⛔ THIS WRAPPER MUST SCROLL SIDEWAYS. DO NOT PUT `overflow: hidden` BACK.
+   Owner, 2026-09-12: "daftar dokumen di table nya nda bisa di scroll kiri
+   kanan" on /paf_documents, with the last column clipped mid-value.
+
+   The cause was this rule. It declared `overflow: hidden` — not a missing
+   scroll, an ACTIVE one — so no table in the application could ever scroll
+   horizontally, across 159 view files that use this class. It surfaced on the
+   PAF list only because that table lost its eight percentage column widths and
+   gained a ninth column, becoming the first table wide enough to exceed its
+   card.
+
+   `hidden` was almost certainly there to make the rounded corners clip the
+   table's square ones. That still works: both axes remain non-visible, so
+   border-radius clips exactly as before. Only the horizontal axis is now
+   scrollable, which is the same shape as .salaries-admin-report-table-wrap in
+   hris-zynix.css.
+
+   Pinned by test/stylesheets/layout_table_scroll_test.rb. */
+.layout-decoration-table-wrap {
+  border: 1px solid var(--hris-hairline);
+  border-radius: var(--hris-radius-md);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.layout-decoration-table-wrap .table {
+  margin-bottom: 0;
+}
+
+.layout-decoration-table-wrap .table thead th {
+  background: var(--hris-table-head-bg);
+  color: var(--hris-label);
+  font-size: 0.69rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.layout-decoration-table-wrap .table tbody td {
+  vertical-align: middle;
+  font-size: 0.8rem;
+}
+
+.layout-decoration-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.26rem 0.52rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.layout-decoration-status--active {
+  color: rgb(var(--success-rgb));
+  background: rgba(var(--success-rgb), 0.12);
+}
+
+.layout-decoration-status--inactive {
+  color: rgb(var(--danger-rgb));
+  background: rgba(var(--danger-rgb), 0.1);
+}
+
+.draft-schema-comparison {
+  margin: 0 0 1.5rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.5rem;
+  background: var(--custom-white);
+}
+
+.draft-schema-comparison__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--default-border);
+}
+
+.draft-schema-comparison__eyebrow {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.draft-schema-comparison__header h3,
+.draft-schema-comparison__group h4 {
+  margin: 0;
+  color: var(--default-text-color);
+  font-weight: 600;
+}
+
+.draft-schema-comparison__header h3 {
+  font-size: 1rem;
+}
+
+.draft-schema-comparison__header p {
+  margin: 0.3rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.draft-schema-comparison__status {
+  flex: 0 0 auto;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--default-border);
+  border-radius: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.draft-schema-comparison__group {
+  padding: 1rem 1.25rem 0;
+}
+
+.draft-schema-comparison__group:last-child {
+  padding-bottom: 1rem;
+}
+
+.draft-schema-comparison__group h4 {
+  margin-bottom: 0.65rem;
+  font-size: 0.82rem;
+}
+
+.draft-schema-comparison__table {
+  margin-bottom: 0;
+  border: 1px solid var(--default-border);
+}
+
+.draft-schema-comparison__table thead th {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.draft-schema-comparison__table th,
+.draft-schema-comparison__table td {
+  vertical-align: middle;
+  font-size: 0.8rem;
+}
+
+.draft-schema-comparison__table tbody th {
+  color: var(--default-text-color);
+  font-weight: 500;
+}
+
+.draft-schema-comparison__table td {
+  font-variant-numeric: tabular-nums;
+}
+
+.draft-schema-comparison__proposed {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+.layout-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.layout-switch__input {
+  position: relative;
+  width: 2.5rem;
+  height: 1.35rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(var(--light-rgb));
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.layout-switch__input:before {
+  content: "";
+  position: absolute;
+  top: 0.18rem;
+  left: 0.2rem;
+  width: 0.98rem;
+  height: 0.98rem;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.22);
+  transition: transform 0.15s ease;
+}
+
+.layout-switch__input:checked {
+  background: var(--primary-color);
+}
+
+.layout-switch__input:checked:before {
+  transform: translateX(1.05rem);
+}
+
+.layout-switch__input:focus {
+  outline: 0;
+  box-shadow: 0 0 0 0.18rem var(--primary02);
+}
+
+.people-index-page .content-header {
+  margin-bottom: 1.1rem;
+}
+
+.people-index-page .content {
+  padding: 0;
+}
+
+.people-index-shell__title h2 {
+  margin: 0;
+  color: var(--default-text-color);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.people-index-shell__title p {
+  margin: 0.2rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.people-index-downloads {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.25rem 0 1rem;
+}
+
+.people-index-downloads__actions {
+  margin-left: auto;
+}
+
+.people-index-table-wrap {
+  overflow-x: auto;
+}
+
+.setting-flow-page {
+  max-width: 1480px;
+}
+
+.setting-flow-header {
+  margin-bottom: 0.9rem;
+}
+
+.setting-flow-title h2 {
+  margin: 0;
+  color: var(--default-text-color);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.setting-flow-title h2 i {
+  margin-right: 0.35rem;
+  color: var(--primary-color);
+}
+
+.setting-flow-title p {
+  margin: 0.2rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.setting-flow-page .box.box-info {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.setting-flow-page .form-horizontal .form-group {
+  margin-bottom: 0.95rem;
+}
+
+.setting-flow-page .form-horizontal h4 {
+  margin: 1.1rem 0 0.6rem;
+  color: var(--default-text-color);
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.setting-flow-page .form-horizontal hr {
+  margin: 0 0 1rem;
+  border-color: var(--default-border);
+  opacity: 1;
+}
+
+.setting-flow-page .form-horizontal i {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-style: normal;
+}
+
+.setting-flow-page .form-horizontal .text-red {
+  color: rgb(var(--danger-rgb)) !important;
+}
+
+.setting-flow-contract-row .control-label {
+  padding-top: 0.45rem;
+}
+
+.setting-flow-hint {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.setting-flow-hint--danger {
+  color: rgb(var(--danger-rgb));
+  font-weight: 700;
+}
+
+.setting-flow-page .form-horizontal select,
+.setting-flow-page .form-horizontal input,
+.setting-flow-page .form-horizontal textarea {
+  border-radius: 0.45rem;
+}
+
+.setting-flow-page .form-horizontal input[type="checkbox"] {
+  width: 2.5rem;
+  height: 1.35rem;
+  margin-right: 0.45rem;
+  border: 0;
+  border-radius: 999px;
+  vertical-align: middle;
+  background: rgb(var(--light-rgb));
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.setting-flow-page .form-horizontal input[type="checkbox"]:before {
+  content: "";
+  position: absolute;
+  top: 0.18rem;
+  left: 0.2rem;
+  width: 0.98rem;
+  height: 0.98rem;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.22);
+  transition: transform 0.15s ease;
+}
+
+.setting-flow-page .form-horizontal input[type="checkbox"]:checked {
+  background: var(--primary-color);
+}
+
+.setting-flow-page .form-horizontal input[type="checkbox"]:checked:before {
+  transform: translateX(1.05rem);
+}
+
+.setting-flow-page .form-horizontal input[type="checkbox"]:focus {
+  outline: 0;
+  box-shadow: 0 0 0 0.18rem var(--primary02);
+}
+
+@media (max-width: 991.98px) {
+  .layout-decoration-shell__header,
+  .layout-decoration-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .layout-decoration-actions {
+    width: 100%;
+  }
+
+  .layout-decoration-actions .btn {
+    flex: 1;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .layout-decoration-shell__body {
+    padding: 1rem;
+  }
+
+  .people-index-downloads .btn,
+  .layout-decoration-actions .btn {
+    width: 100%;
+  }
+}
+
+/* Global detail-page treatment for legacy show templates. This keeps
+ * show/detail flows visually aligned with the Zynix profile reference
+ * without requiring every template to be rewritten at once. */
+.content-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem 1rem;
+  padding: 1.15rem 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--hris-hairline);
+  border-radius: var(--hris-radius-lg);
+  background: var(--hris-surface);
+  box-shadow: var(--hris-shadow-card);
+}
+
+.content-header h1 {
+  margin: 0;
+  color: var(--default-text-color);
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.content-header h1 small {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.content-header p {
+  margin: 0.35rem 0 0;
+  color: var(--text-muted);
+}
+
+.content-header .breadcrumb {
+  margin: 0 0 0 auto;
+}
+
+.content-header + .content,
+.content-header + .row,
+.content-header + .col-lg-12 {
+  margin-top: 1rem;
+}
+
+.content .box,
+.content .form-panel,
+.content .showback,
+.content .nav-tabs-custom,
+.content .invoice {
+  overflow: hidden;
+  margin-bottom: 1rem;
+  border: 1px solid var(--hris-hairline);
+  border-radius: var(--hris-radius-lg);
+  background: var(--hris-surface);
+  box-shadow: var(--hris-shadow-card);
+}
+
+.content .box-header,
+.content .invoice .page-header,
+.content .nav-tabs-custom > .nav-tabs {
+  background: var(--hris-surface-muted);
+  border-bottom: 1px solid var(--hris-hairline);
+}
+
+.content .box-header,
+.content .box-body,
+.content .box-footer,
+.content .showback,
+.content .nav-tabs-custom > .tab-content,
+.content .invoice {
+  padding-left: 1.15rem;
+  padding-right: 1.15rem;
+}
+
+.content .box-body,
+.content .box-footer,
+.content .showback,
+.content .nav-tabs-custom > .tab-content {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.content .box-body p,
+.content .showback p,
+.content .invoice p {
+  margin-bottom: 0.85rem;
+  color: var(--default-text-color);
+}
+
+.content .box-body p strong,
+.content .showback p strong,
+.content .invoice p strong {
+  display: inline-block;
+  min-width: 10rem;
+  margin-right: 0.35rem;
+  color: var(--hris-label);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.content .box-body .table-responsive,
+.content .showback .table-responsive,
+.content .invoice .table-responsive {
+  margin-top: 0.35rem;
+}
+
+.content .box-body .table,
+.content .showback .table,
+.content .invoice .table {
+  margin-bottom: 0;
+}
+
+/* Formal, readable list tables everywhere: uppercase muted headers on a soft
+   tint, hairline row separators, and a subtle primary-tinted hover row. */
+.content .box-body .table thead th,
+.content .showback .table thead th,
+.content .invoice .table thead th {
+  padding: 0.7rem 0.75rem;
+  color: var(--hris-label);
+  background: var(--hris-table-head-bg);
+  border-bottom: 1px solid var(--hris-hairline);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.content .box-body .table tbody td,
+.content .showback .table tbody td,
+.content .invoice .table tbody td {
+  padding: 0.7rem 0.75rem;
+  border-top-color: var(--hris-hairline);
+  vertical-align: middle;
+}
+
+.content .box-body .table.table-hover tbody tr:hover > td,
+.content .showback .table.table-hover tbody tr:hover > td {
+  background: rgba(var(--primary-rgb), 0.03);
+}
+
+.content .box-footer,
+.content .showback .box-footer {
+  border-top: 1px solid var(--hris-hairline);
+  background: rgba(var(--light-rgb), 0.18);
+}
+
+.content .nav-tabs-custom {
+  background: transparent;
+}
+
+.content .nav-tabs-custom > .nav-tabs {
+  padding: 0.85rem 1rem 0;
+}
+
+.content .nav-tabs-custom > .tab-content {
+  background: var(--custom-white);
+}
+
+.content .nav-tabs-custom > .nav-tabs > li > a {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.content .nav-tabs-custom > .nav-tabs > li.active > a,
+.content .nav-tabs-custom > .nav-tabs > li.active > a:focus,
+.content .nav-tabs-custom > .nav-tabs > li.active > a:hover {
+  color: var(--primary-color);
+  background: var(--custom-white);
+  border-top-color: var(--primary-color);
+}
+
+.content .invoice .page-header {
+  margin: 0;
+  padding: 1rem 0;
+  border-top: 0;
+}
+
+.content .invoice .row {
+  margin-left: -0.75rem;
+  margin-right: -0.75rem;
+}
+
+.content .invoice [class*="col-"] {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.content .invoice address {
+  margin-bottom: 0;
+  color: var(--default-text-color);
+}
+
+.content .invoice .lead {
+  margin-bottom: 0.5rem;
+  color: var(--default-text-color);
+  font-weight: 800;
+}
+
+.content .invoice .well {
+  background: rgba(var(--light-rgb), 0.32);
+  border-color: var(--default-border);
+}
+
+@media (max-width: 767.98px) {
+  .content-header {
+    padding: 1rem;
+  }
+
+  .content-header .breadcrumb {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .content .box-body p strong,
+  .content .showback p strong,
+  .content .invoice p strong {
+    display: block;
+    min-width: 0;
+    margin-right: 0;
+    margin-bottom: 0.2rem;
+  }
+}

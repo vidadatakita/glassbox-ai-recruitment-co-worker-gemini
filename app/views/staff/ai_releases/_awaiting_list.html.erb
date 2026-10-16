@@ -1,0 +1,25 @@
+<%# Texts waiting for a reviewer. A stacked list (readable at phone width), detail via fa-plus. %>
+<div class="card custom-card">
+  <div class="card-header"><div class="card-title">Awaiting review (<%= items.size %>)</div></div>
+  <div class="card-body">
+    <% if items.empty? %>
+      <p class="text-muted mb-0">No text is awaiting review. Every CV that passes redaction appears here before it is sent to the AI.</p>
+    <% else %>
+      <ul class="list-unstyled ai-release-list mb-0">
+        <% items.each do |(participation, release)| %>
+          <li class="border-bottom py-2 d-flex flex-wrap gap-2 align-items-start justify-content-between">
+            <div>
+              <p class="mb-1"><strong><%= screening_person(participation) %></strong>
+                <% if release.residual? %><span class="portal-state portal-state--danger">Personal data detected</span><% else %><span class="portal-state portal-state--warning">Awaiting review</span><% end %>
+                <% if release.supersedes_id %><span class="portal-state portal-state--muted">Cut by a reviewer</span><% end %></p>
+              <p class="text-muted small mb-0">Prepared <%= wib(release.created_at) %></p>
+            </div>
+            <%= link_to staff_ai_release_path(release), class: "btn btn-sm btn-primary-light", title: "Check text" do %>
+              <i class="fa fa-plus" aria-hidden="true"></i> Check<span class="visually-hidden"> text of <%= screening_person(participation) %></span>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  </div>
+</div>

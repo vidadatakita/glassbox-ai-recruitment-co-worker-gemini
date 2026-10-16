@@ -1,0 +1,12 @@
+<%# "Not sent — decide manually": the note is required (server and browser). %>
+<div class="card custom-card">
+  <div class="card-header"><div class="card-title">Not sent</div></div>
+  <div class="card-body">
+    <%= form_with url: staff_ai_release_decline_path(release), method: :post, data: { turbo: false, submit_guard: true } do %>
+      <label class="form-label" for="note_<%= release.id %>">Reason (required)</label>
+      <textarea class="form-control mb-2" id="note_<%= release.id %>" name="note" rows="2" required></textarea>
+      <p class="small text-muted">This CV is not sent to the AI. The consultant decides this stage manually.</p>
+      <%= label_button "Not sent — decide manually", "fa-hand-paper-o", purpose: :neutral %>
+    <% end %>
+  </div>
+</div>

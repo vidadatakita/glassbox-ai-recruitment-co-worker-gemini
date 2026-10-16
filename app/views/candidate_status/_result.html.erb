@@ -1,0 +1,27 @@
+<%# Result per stage (BP §3.6 B4): outcome and a reason category, never a score. Objection
+    (E21) only on an S1 result. The label suffix stripped here is the one CandidateStatus appends. %>
+<section class="card" aria-label="Result: <%= step.label %>">
+  <h2><%= step.label.sub(": not passed", "") %></h2>
+  <span class="pill bad">Not passed</span>
+  <dl class="kv"><dt>Reason</dt><dd><%= step.reason %></dd></dl>
+  <p class="small">Thank you for applying. Your data will be deleted after the retention period shown when you applied.</p>
+  <% if step.participation&.stage&.code == "S1" %>
+    <% objection = step.objection %>
+    <% if objection.nil? %>
+      <details>
+        <summary>Think this decision is wrong? Raise an objection</summary>
+        <%= form_with url: candidate_status_object_path(params[:token], step.participation.id), method: :post, data: { turbo: false, submit_guard: true } do %>
+          <div class="field">
+            <label for="objection_<%= step.participation.id %>">Your objection</label>
+            <textarea id="objection_<%= step.participation.id %>" name="text" rows="4" required></textarea>
+          </div>
+          <button type="submit" class="btn ghost" name="commit" value="Send objection">Send objection</button>
+        <% end %>
+      </details>
+    <% elsif objection.answered? %>
+      <div class="next"><span class="small"><%= Objection::OUTCOMES.fetch(objection.outcome) %></span><b><%= objection.answer %></b></div>
+    <% else %>
+      <span class="pill warn">Your objection is being reviewed</span>
+    <% end %>
+  <% end %>
+</section>

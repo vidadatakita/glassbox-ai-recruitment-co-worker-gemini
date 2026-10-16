@@ -1,0 +1,14 @@
+<%# Feature 09 (D51 B): the reviewer's release list for one job. The main view only orchestrates;
+    each section is its own partial. Reviewer only (controller). %>
+<% content_for :title, "Review before AI · #{@job.title}" %>
+<div class="portal-page loan-index-page layout-decoration-page ai-release">
+  <%= render "staff/shared/page_header", eyebrow: "Review before AI", title: @job.title,
+             subtitle: "Read the text to be sent to the AI, exactly as it will be sent. Send only if no personal data is visible.",
+             actions: label_link("Back", "fa-arrow-left", staff_job_path(@job, anchor: "screening"), purpose: :neutral, icon_end: true) %>
+  <section class="content">
+    <%= render "staff/ai_releases/key_notice", count: @items.size %>
+    <%= render "staff/ai_releases/pilot_measure", measure: @measure, scope_label: "this vacancy" %>
+    <%= render "staff/ai_releases/awaiting_list", items: @items %>
+    <%= render "staff/ai_releases/decided_list", actions: @decided %>
+  </section>
+</div>

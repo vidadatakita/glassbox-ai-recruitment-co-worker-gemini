@@ -1,0 +1,32 @@
+<%# Consent text, D35 + D39 (2026-10-10). Two layers, identical words, one version:
+    - OPEN: who collects (controller identity, with the legal basis on the same line), purpose,
+      retention (from the setting, D32), and the rights, which include the right to withdraw.
+    - "Full details": the remaining Pasal 21(1) items, word for word from the same version.
+    Without JavaScript the whole text is shown. With it, the details are collapsed VISUALLY only
+    (a clip class, never aria-hidden or display:none), so a screen reader still reads everything
+    (D39). The version recorded with the application covers both layers (Pasal 22(1)). One purpose
+    only: a second purpose (e.g. talent pool) needs its own block and checkbox (Pasal 22(4)-(5)). %>
+<% details_id = "consent-details" %>
+<div class="consent" aria-label="Consent to the use of your data">
+  <dl>
+    <dt><%= ConsentTemplate::SECTIONS[:controller_identity] %></dt>
+    <dd><%= consent.controller_identity %> <span class="consent-basis"><%= ConsentTemplate::SECTIONS[:legal_basis] %>: <%= consent.legal_basis %></span></dd>
+    <dt><%= ConsentTemplate::SECTIONS[:purpose] %></dt><dd><%= consent.purpose %></dd>
+    <dt>Retention period</dt>
+    <dd>Your data is kept for <%= retention_days %> days after the vacancy closes, then deleted.</dd>
+    <dt><%= ConsentTemplate::SECTIONS[:rights] %></dt><dd><%= consent.rights %></dd>
+  </dl>
+  <div class="consent-details" id="<%= details_id %>" data-consent-details>
+    <dl>
+      <% ConsentTemplate::DETAIL_SECTIONS.each do |field| %>
+        <dt><%= ConsentTemplate::SECTIONS.fetch(field) %></dt><dd data-consent-field="<%= field %>"><%= consent.public_send(field) %></dd>
+      <% end %>
+    </dl>
+  </div>
+  <span class="small">Text version: <%= consent.version %></span>
+</div>
+<%# The disclosure control sits directly above the checkbox (D39). It is a type="button", so it
+    never submits; it is never disabled. %>
+<button type="button" class="consent-toggle" aria-controls="<%= details_id %>" aria-expanded="true" hidden data-consent-toggle>
+  Full details
+</button>

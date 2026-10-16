@@ -1,0 +1,24 @@
+<%# The job's brief at a glance on the vacancy home (feature 03): status, what is still missing,
+    and the way to the full brief. %>
+<% check = Briefs::BriefCheck.new(job) %>
+<% open_count = check.problems.size %>
+<div class="hris-form-card job-brief-box">
+  <div class="hris-form-card__header">
+    <div class="hris-form-card__icon hris-form-card__icon--<%= job.brief_complete? ? "success" : "warning" %>"><i class="fa fa-file-text-o" aria-hidden="true"></i></div>
+    <div><h3>Vacancy brief <%= brief_status_badge(job) %></h3>
+      <p><%= job.brief_complete? ? "The basis of CV screening, the test and the interviews for this vacancy." : "#{open_count} items incomplete. The job ad can be approved once the brief is complete." %></p></div>
+    <div class="hris-form-card__action">
+      <%= link_to staff_job_brief_path(job), class: "btn btn-sm btn-primary-light", title: "View vacancy brief details" do %>
+        <i class="fa fa-plus" aria-hidden="true"></i> View details
+      <% end %>
+    </div>
+  </div>
+  <div class="hris-form-card__body">
+    <dl class="job-brief-facts job-brief-facts--inline">
+      <dt>Grade</dt><dd><%= job.golongan_label %></dd>
+      <dt>Package</dt><dd><%= package_label(job.package) %></dd>
+      <dt>Employment type</dt><dd><%= employment_label(job) %></dd>
+      <dt>Placement</dt><dd><%= placement_summary(job) %></dd>
+    </dl>
+  </div>
+</div>
