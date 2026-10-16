@@ -60,6 +60,23 @@ class Screening::GeminiClientTest < ActiveSupport::TestCase
     assert_equal "Bearer uji-token", sent.headers["Authorization"]
   end
 
+  test "a Vertex AI express-mode key goes to Vertex AI with the key in a header" do
+    sent = nil
+    stub_request(:post, VERTEX_URL).with { |req| sent = req }.to_return(json_response(gemini_reply))
+    gemini_env("AI_API_KEY_ENDPOINT" => "vertex", "GOOGLE_CLOUD_PROJECT" => "glassbox-uji") do
+      judge_sample
+      assert_equal "ENV AI_API_KEY, Vertex AI express mode", Screening::Config.key_source
+    end
+    assert_equal "uji-gemini-key", sent.headers["X-Goog-Api-Key"]
+    assert_nil sent.headers["Authorization"]
+
+    # Without a project, express mode lets Google pick the location.
+    express = "https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.8-pro:generateContent"
+    stub_request(:post, express).to_return(json_response(gemini_reply))
+    gemini_env("AI_API_KEY_ENDPOINT" => "vertex", "GOOGLE_CLOUD_PROJECT" => nil) { judge_sample }
+    assert_requested :post, express
+  end
+
   test "failure policy: 429/5xx retried, other 4xx and refusals final, cut-off answers malformed" do
     cases = {
       json_response({}, status: 429) => [Screening::Errors::Transient, "HTTP 429"],

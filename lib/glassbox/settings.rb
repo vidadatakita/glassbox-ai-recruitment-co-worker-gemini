@@ -63,6 +63,8 @@ module Glassbox
       "AI_THINKING_MEDIUM" => { required: false, values: %w[low medium high], about: "thinking level of the MEDIUM tier; default medium" },
       "AI_THINKING_LOW" => { required: false, values: %w[low medium high], about: "thinking level of the LOW tier; default low" },
       "AI_SCREENING_REVIEW" => { required: false, values: %w[auto required], about: "auto (default): AI screens each CV as it arrives, people decide on the result; required: a reviewer releases each CV before the AI sees it" },
+      "AI_API_KEY_ENDPOINT" => { required: false, values: %w[gemini vertex], about: "gemini (default): AI_API_KEY is an AI Studio key; vertex: it is a Vertex AI express-mode key" },
+      "GOOGLE_CLOUD_PROJECT" => { required: false, about: "Vertex AI project of an express-mode AI_API_KEY (id or number); unset = Google picks the location" },
       "GOOGLE_CLOUD_LOCATION" => { required: false, about: "Vertex AI location for Gemini; default global" },
       # D52 Google integrations. ALL optional ON PURPOSE: each integration is off until its keys are
       # set (GoogleIntegration::Config); Rails credentials google.<name> win over these variables.
