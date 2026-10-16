@@ -46,7 +46,7 @@ class Screening::OutgoingRequestTest < ActiveSupport::TestCase
   test "request shape: configured model in the URL, key in the header, JSON answer under the shared schema" do
     body = JSON.parse(screen_fixture_cv)
     request = @fake.requests.first
-    assert_match %r{/models/gemini-3\.8-pro:generateContent\z}, request[:url].to_s
+    assert_match %r{/models/gemini-3\.8-flash:generateContent\z}, request[:url].to_s
     assert_equal FAKE_KEY, request[:headers]["x-goog-api-key"]
     assert_equal "application/json", body.dig("generationConfig", "responseMimeType")
     assert_equal JSON.parse(Screening::AiClient::SCHEMA.to_json), request_schema(body)
