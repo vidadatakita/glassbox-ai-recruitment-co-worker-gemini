@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Recruitment Co-worker</title>
+<meta name="description" content="Gemini reads the CVs. Your team makes the call. An AI co-worker for every hiring decision, in development for the Google Cloud AI Builder Cup 2026.">
+<style>
+:root{--bg:#f5f7fb;--surface:#fff;--ink:#0f1a2e;--muted:#5a6579;--line:#dfe4ee;--navy:#0b2a55;--accent:#1a73e8;--accent-soft:#e8f0fe;--ok:#1e7e4a;--ok-bg:#e3f4ea;--warn:#9a6200;--warn-bg:#fff2d6;--bad:#a83232;--bad-bg:#fbe6e6;
+--font:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+@media (prefers-color-scheme:dark){:root{--bg:#0c121d;--surface:#141c2b;--ink:#e8edf6;--muted:#a1acc0;--line:#27324a;--navy:#a8c4ff;--accent:#8ab4f8;--accent-soft:#1a2a45;--ok:#62d29c;--ok-bg:#12301f;--warn:#f1c06c;--warn-bg:#33270f;--bad:#ff9090;--bad-bg:#3b1818;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 var(--font);padding:32px 16px 56px}
+.wrap{max-width:1000px;margin:0 auto;display:grid;gap:48px}
+h1,h2,h3{margin:0;line-height:1.2}
+h1{font-size:clamp(1.9rem,5vw,3rem);color:var(--navy);letter-spacing:-.01em}
+h2{font-size:1.35rem;color:var(--navy)}
+p{margin:0}
+.eyebrow{font-size:.75rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:1.1rem;color:var(--muted);max-width:60ch}
+.badge{display:inline-block;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:.8rem;border-radius:999px;padding:4px 12px}
+header{display:grid;gap:16px}
+.principles{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:8px}
+.card .n{font-weight:800;color:var(--accent)}
+.preview{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:grid;gap:16px;position:relative;overflow:hidden}
+.bar{height:12px;border-radius:6px;background:var(--line)}
+.blur{filter:blur(5px);user-select:none}
+.rec{border-radius:12px;padding:14px;background:var(--accent-soft);display:grid;gap:8px}
+.rec b{color:var(--accent)}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+.btn{border:0;border-radius:10px;padding:12px 18px;font:700 .95rem var(--font);cursor:default}
+.go{background:var(--ok-bg);color:var(--ok)} .ai{background:var(--accent);color:#fff} .stop{background:var(--bad-bg);color:var(--bad)}
+.tag{position:absolute;top:14px;right:14px;background:var(--warn-bg);color:var(--warn);font-size:.75rem;font-weight:700;border-radius:999px;padding:3px 10px}
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;counter-reset:s}
+.steps li{counter-increment:s;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;font-weight:600;display:grid;gap:4px}
+.steps li::before{content:counter(s,decimal-leading-zero);font-size:.8rem;color:var(--accent);font-weight:800}
+footer{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padding-top:16px;display:grid;gap:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Google Cloud AI Builder Cup 2026 · Future of Work &amp; Enterprise Productivity</span>
+  <h1>Gemini reads the CVs.<br>Your team makes the call.</h1>
+  <p class="lede">An AI co-worker for every hiring decision: faster for the recruiter, fair for the candidate, explainable for the owner.</p>
+  <span class="badge">In development</span>
+</header>
+
+<section>
+  <div class="principles">
+    <div class="card"><span class="n">01</span><h3>Gemini suggests, people decide</h3><p>The AI proposes at every step. A named person chooses.</p></div>
+    <div class="card"><span class="n">02</span><h3>Evidence behind every view</h3><p>Every recommendation says what it is based on.</p></div>
+    <div class="card"><span class="n">03</span><h3>Fair by design</h3><p>Details that must not influence a hiring decision never reach the model.</p></div>
+  </div>
+</section>
+
+<section style="display:grid;gap:14px">
+  <h2>A glimpse of the decision moment</h2>
+  <div class="preview" aria-label="Preview of the decision screen, details hidden">
+    <span class="tag">Preview</span>
+    <div class="blur" aria-hidden="true" style="display:grid;gap:10px">
+      <div class="bar" style="width:55%"></div>
+      <div class="bar" style="width:80%"></div>
+      <div class="bar" style="width:68%"></div>
+    </div>
+    <div class="rec">
+      <b>Gemini's recommendation</b>
+      <div class="blur" aria-hidden="true" style="display:grid;gap:8px"><div class="bar" style="width:90%"></div><div class="bar" style="width:72%"></div></div>
+    </div>
+    <div class="btns">
+      <button class="btn go" type="button">Continue</button>
+      <button class="btn ai" type="button">Follow AI recommendation</button>
+      <button class="btn stop" type="button">Stop</button>
+    </div>
+    <p style="color:var(--muted);font-size:.9rem">The person decides. The choice and its reason are recorded.</p>
+  </div>
+</section>
+
+<section style="display:grid;gap:14px">
+  <h2>From job title to hire</h2>
+  <ol class="steps">
+    <li>Job brief</li><li>Job ad</li><li>Broadcast</li><li>Apply</li><li>Screening</li><li>Interview 1</li><li>Interview 2</li><li>Decision</li><li>Close-out</li>
+  </ol>
+</section>
+
+<footer>
+  <span>Built with Gemini on Google Cloud. All data in the demo is synthetic.</span>
+  <span>© 2026 DataKita. All rights reserved.</span>
+</footer>
+
+</div>
+</body>
+</html>
