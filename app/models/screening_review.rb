@@ -11,8 +11,10 @@ class ScreeningReview < ApplicationRecord
     "sample" => "10% sample of passes",
     "unverified" => "Quote unverified",
     "calibration_disagreement" => "Consultant and AI disagreed in calibration",
-    # ADR 0004 line 3: the model saw a protected attribute in the redacted text.
-    "protected_attribute" => "The AI saw a protected attribute"
+    # ADR 0004 line 3: the model saw a protected attribute in the redacted text. Since prompt
+    # s1-2026-10-16.4 also the model's instruction_seen flag (Screening::Run#instruction_seen?),
+    # which shares this reason: the database allows only these five.
+    "protected_attribute" => "The AI saw a protected attribute or an instruction"
   }.freeze
 
   belongs_to :participation

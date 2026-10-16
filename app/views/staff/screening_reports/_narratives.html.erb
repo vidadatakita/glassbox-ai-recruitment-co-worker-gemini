@@ -29,8 +29,12 @@
           </section>
         <% end %>
       </div>
-      <% if result.protected_attribute_categories.any? %>
-        <p class="portal-insight mt-2 mb-0"><i class="fa fa-shield me-1" aria-hidden="true"></i>The AI reported protected attributes in this CV (categories: <%= result.protected_attribute_categories.join(", ") %>). Check the narrative before approving.</p>
+      <% protected = result.protected_attribute_categories - [Screening::AiClient::INSTRUCTION_FLAG] %>
+      <% if protected.any? %>
+        <p class="portal-insight mt-2 mb-0"><i class="fa fa-shield me-1" aria-hidden="true"></i>The AI reported protected attributes in this CV (categories: <%= protected.join(", ") %>). Check the narrative before approving.</p>
+      <% end %>
+      <% if result.protected_attribute_categories.include?(Screening::AiClient::INSTRUCTION_FLAG) %>
+        <p class="portal-insight mt-2 mb-0"><i class="fa fa-shield me-1" aria-hidden="true"></i>The AI reported text in this CV written as an instruction to the AI. It was told to ignore it; read the CV before approving.</p>
       <% end %>
       <% if approval %>
         <p class="text-muted small mt-2 mb-0">Approved by <%= approval.approved_by.name %> · <%= wib(approval.created_at) %><%= " · #{approval.note}" if approval.note.present? %></p>

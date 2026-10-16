@@ -30,6 +30,11 @@ module Screening
     # Third line of defence (ADR 0004): the model reports, by category only, any protected
     # attribute it notices in the (redacted) text. A true flag routes the result to the reviewer.
     PROTECTED_CATEGORIES = %w[religion gender age marital_status ethnicity address appearance family health other].freeze
+    # Prompt s1-2026-10-16.4: the model also reports text in the CV written as an instruction to it
+    # (instruction_seen), the injections Screening::InjectionCheck's rules do not recognise. A true
+    # flag is stored as this word beside the protected categories (Screening::Run#parse), so the
+    # result goes to the reviewer the same way; it is never offered to the model as a category.
+    INSTRUCTION_FLAG = "instruction".freeze
 
     # Feature 08: one fact or one narrative claim, each with its verbatim CV quote.
     FACT_SCHEMA = {
