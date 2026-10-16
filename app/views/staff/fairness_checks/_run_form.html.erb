@@ -1,6 +1,7 @@
 <%# One form, standing alone (never inside another form). The submit button keeps its name and
     value and is never disabled: a guard that disabled it would drop the value from the request. %>
-<%= form_with url: staff_job_fairness_check_path(job), method: :post, local: true, class: "fairness-check__run" do |f| %>
+<%# turbo: false because #create renders the result page (200), which Turbo refuses for a form. %>
+<%= form_with url: staff_job_fairness_check_path(job), method: :post, local: true, class: "fairness-check__run", data: { turbo: false } do |f| %>
   <p class="small text-muted mb-2">
     <% if result %>Run again to see whether the AI answers the same way on the same bytes.<% else %>Runs five short AI calls on the invented CV. Nothing is stored; the table appears on this page.<% end %>
   </p>
