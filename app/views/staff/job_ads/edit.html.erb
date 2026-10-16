@@ -7,7 +7,9 @@
 <% content_for :title, "Job ad · #{@job.title}" %>
 <% editor = @job.ad_writable_by?(current_user) %>
 <% live = @job.ad_approved_at.present? %>
-<% flags = Array(@job.ad_flags) %>
+<%# @unsaved_flags: a live ad's save refused for a missing reason (Briefs::SaveAd); its text's rule flags. %>
+<% flags = @unsaved_flags || Array(@job.ad_flags) %>
+<% rule_hit = Briefs::AdCheck.rule_hit?(flags) %>
 <div class="portal-page loan-index-page layout-decoration-page job-brief-page">
   <%= render "staff/shared/page_header", eyebrow: "Job ad", title: @job.title,
              subtitle: "The text applicants read on the application page. Checked automatically for discriminatory requirements, then approved by HR.",
@@ -29,7 +31,8 @@
         <div><%= ai_tier_badge(:ad, job: @job) %> <strong>The text below is AI advice<%= " following your instruction" if @suggestion.payload["instruction"].present? %>.</strong> Not saved yet: check and edit as needed, then save. A person decides every step.</div></div>
     <% elsif flags.any? %>
       <%= render layout: "staff/job_briefs/card", locals: { icon: "fa-exclamation-triangle", tone: "warning", title: "#{flags.size} #{'sentence'.pluralize(flags.size)} to check",
-                 text: "Requirements that screen people out for who they are, not for what they can do. Change the sentence, or leave it when it is justified, then tick when approving." } do %>
+                 text: "Requirements that screen people out for who they are, not for what they can do. Change the sentence, or leave it when it is justified, then tick when approving." +
+                       (rule_hit ? " A sentence marked Rule names a protected attribute: it is approved only with your written reason, recorded under your name." : "") } do %>
         <ul class="ad-flags">
           <% flags.each do |f| %>
             <li><span class="portal-state portal-state--<%= f["source"] == "rule" ? "danger" : "warning" %>"><%= f["source"] == "rule" ? "Rule" : "AI advice" %></span>
@@ -61,6 +64,10 @@
             <%# Shown while the AI writes (staff.css: the AI button of this form was pressed). %>
             <div class="ad-text-skeleton" role="status" aria-live="polite"><strong><%= render "staff/shared/ai_sparkle", size: 18 %> The AI is writing the job ad…</strong><% 10.times do %><span></span><% end %></div>
           </div>
+          <% if live && @unsaved_flags %>
+            <label class="form-label d-block mt-3" for="flags_reason_live"><%= Briefs::AdCheck.rule_summary(@unsaved_flags) %> Reason the work needs it (required, recorded under your name)</label>
+            <textarea class="form-control" id="flags_reason_live" name="flags_reason" rows="2" required></textarea>
+          <% end %>
           <% if live %>
             <label class="form-check-label d-block mt-3"><input type="checkbox" class="form-check-input me-2" name="confirmed" value="1" required> I have checked this text and approve it being shown to applicants</label>
           <% end %>
@@ -79,6 +86,12 @@
           <div class="hris-form-actions__note">
             <% if flags.any? %>
               <label class="form-check-label"><input type="checkbox" class="form-check-input me-2" name="flags_checked" value="1" required> I have checked the <%= flags.size %> <%= "flag".pluralize(flags.size) %> above</label>
+              <% if rule_hit %>
+                <div class="w-100 mt-2">
+                  <label class="form-label mb-1" for="flags_reason"><%= Briefs::AdCheck.rule_summary(flags) %> Reason the work needs it (required, recorded under your name)</label>
+                  <textarea class="form-control" id="flags_reason" name="flags_reason" rows="2" required></textarea>
+                </div>
+              <% end %>
             <% else %>
               <i class="fa fa-info-circle" aria-hidden="true"></i><span>Once approved, the job ad is shown to applicants and the Applicant portal can be opened.</span>
             <% end %>

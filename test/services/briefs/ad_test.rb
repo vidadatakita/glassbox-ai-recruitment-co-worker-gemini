@@ -34,10 +34,41 @@ class Briefs::AdTest < ActiveSupport::TestCase
     flags = Briefs::AdCheck.rule_flags(text)
     assert_equal ["- Male, maximum age 30", "- Attractive appearance", "- Christian only", "- Not married, no children", "- Minimum height 160 cm", "- Manager of a young company"],
                  flags.map { |f| f["quote"] }
-    # The first matching row wins per line: "Male, maximum age 30" is reported under the age rule.
-    assert_equal ["An age limit may not be a requirement unless the law requires it.", "Physical appearance is not a work ability.", "Religion may not be a requirement.",
+    # Every row a line trips is reported, in rule-table order: "Male, maximum age 30" names age AND gender.
+    assert_equal [%w[age gender], %w[appearance], %w[religion], ["marital status"], ["body size"], %w[age]], flags.map { |f| f["categories"] }
+    assert_equal ["An age limit may not be a requirement unless the law requires it. Gender may not be a requirement when anyone can do the work.",
+                  "Physical appearance is not a work ability.", "Religion may not be a requirement.",
                   "Marital status or pregnancy may not be a requirement.", "Body size may only be asked for when the work truly needs it; write the reason.",
                   "An age limit may not be a requirement unless the law requires it."], flags.map { |f| f["reason"] }
+  end
+
+  # 16 Oct end-to-end test: this line got the age reason only, and the ad was approved and shown.
+  # Mutant: back to the first matching row per line -> red.
+  test "a line that names four protected attributes is one flag that names all four" do
+    flag = Briefs::AdCheck.rule_flags("- Female, max 28, attractive, unmarried").sole
+    assert_equal ["age", "gender", "appearance", "marital status"], flag["categories"]
+    assert_equal "The job ad names a protected attribute (age, gender, appearance, marital status).", Briefs::AdCheck.rule_summary([flag])
+    assert Briefs::AdCheck.rule_hit?([flag])
+    refute Briefs::AdCheck.rule_hit?([{ "quote" => "fresh graduate", "reason" => "x", "source" => "ai" }]), "an AI flag needs the tick only"
+    assert_equal "The job ad names a protected attribute.", Briefs::AdCheck.rule_summary([{ "quote" => "- Pria", "reason" => "x", "source" => "rule" }]),
+                 "a flag stored before the categories existed"
+  end
+
+  test "a live ad's save that names a protected attribute needs HR's written reason, recorded with the change" do
+    @job.update_columns(ad_approved_at: 2.days.ago, ad_approved_by_id: @hr.id, ad_text: "Tentang posisi ini\nTeks.")
+    text = "Tentang posisi ini\n- Female, max 28, attractive, unmarried"
+    Screening::Config.stub(:enabled?, false) do
+      refused = Briefs::SaveAd.call(job: @job, actor: @hr, text:, confirmed: true)
+      refute refused.ok?
+      assert refused.needs_reason
+      assert_includes refused.error, "(age, gender, appearance, marital status)"
+      assert_equal ["- Female, max 28, attractive, unmarried"], refused.flags.map { |f| f["quote"] }
+      assert_equal "Tentang posisi ini\nTeks.", @job.reload.ad_text, "nothing saved, nothing shown"
+      assert Briefs::SaveAd.call(job: @job, actor: @hr, text:, confirmed: true, reason: "  Uji:   alasan tertulis. ").ok?
+    end
+    assert_equal text, @job.reload.ad_text
+    change = @job.brief_changes.where(step: "ad").last
+    assert_equal ["age, gender, appearance, marital status", "Uji: alasan tertulis."], change.changes_made["ad_flags_reason"]
   end
 
   test "an AI flag is kept only when its quote is really in the ad, and never repeats a rule flag" do

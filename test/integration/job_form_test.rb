@@ -64,8 +64,15 @@ class JobFormTest < ActionDispatch::IntegrationTest
     assert_equal "Versi AI.", suggestion.ad_text
     patch approve_ad_staff_job_path(job)
     assert_nil job.reload.ad_approved_at, "a flagged ad is not approved without the tick"
+    # The saved line names age and gender (rule flags): the tick alone is not enough, a reason is.
+    get staff_job_ad_path(job)
+    assert_select "textarea[name=flags_reason][required]"
     patch approve_ad_staff_job_path(job), params: { flags_checked: "1" }
+    assert_nil job.reload.ad_approved_at, "a sentence that names a protected attribute needs a written reason"
+    assert_match(/names a protected attribute \(age, gender\)/, flash[:alert])
+    patch approve_ad_staff_job_path(job), params: { flags_checked: "1", flags_reason: "Uji: alasan tertulis." }
     assert job.reload.ad_approved_at
+    assert_equal ["age, gender", "Uji: alasan tertulis."], job.brief_changes.where(step: "ad").last.changes_made["ad_flags_reason"]
     open_portal(job)
     get lamar_path(job.public_code)
     assert_includes response.body, "About this vacancy"

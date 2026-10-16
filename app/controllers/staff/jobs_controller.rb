@@ -32,7 +32,22 @@ module Staff
         return redirect_to(staff_job_ad_path(@job), alert: "The job ad has flags that need checking. Check or change the sentences, then tick \"I have checked the flags above\" before approving.")
       end
 
-      @job.update!(ad_approved_at: Time.current, ad_approved_by_id: current_user.id) if @job.ad_approved_at.nil?
+      # ...and one that names a protected attribute (a rule flag) only with HR's written reason,
+      # recorded with the approval, as for a flagged requirement kept in the brief.
+      reason = params[:flags_reason].to_s.squish
+      if Briefs::AdCheck.rule_hit?(@job.ad_flags) && reason.empty?
+        return redirect_to(staff_job_ad_path(@job), alert: "#{Briefs::AdCheck.rule_summary(@job.ad_flags)} Change the sentence, or write why the work needs it, before approving.")
+      end
+
+      if @job.ad_approved_at.nil?
+        ActiveRecord::Base.transaction do
+          @job.update!(ad_approved_at: Time.current, ad_approved_by_id: current_user.id)
+          if Briefs::AdCheck.rule_hit?(@job.ad_flags)
+            JobBriefChange.create!(job: @job, actor: current_user, actor_role: current_user.role, step: "ad", created_at: Time.current,
+                                   changes_made: { "ad_flags_reason" => [Briefs::AdCheck.rule_categories(@job.ad_flags).join(", "), reason] })
+          end
+        end
+      end
       redirect_to staff_job_path(@job), notice: "Job ad approved. The Applicant portal can be opened."
     end
 
