@@ -1,7 +1,7 @@
 require "test_helper"
 
 # Feature 08 (D61, D62 h2/h3; plan Part 2 §i): the optional "report" block of the S1 answer,
-# prompt s1-2026-10-16.2. The Gemini API is stubbed at the HTTP boundary (FakeGemini), so the
+# prompt s1-2026-10-16.3. The Gemini API is stubbed at the HTTP boundary (FakeGemini), so the
 # request asserted is the one the real gem built.
 class Screening::ReportBlockTest < ActiveSupport::TestCase
   include ActiveJob::TestHelper
@@ -38,7 +38,7 @@ class Screening::ReportBlockTest < ActiveSupport::TestCase
 
   test "the report block is stored with every quote checked; an invented quote is kept and marked" do
     result = screen(report)
-    assert_equal "s1-2026-10-16.2", result.prompt_version
+    assert_equal "s1-2026-10-16.3", result.prompt_version
     assert_equal({ "text" => "Admin Gudang, PT Logistik Makmur", "quote" => "Admin Gudang di PT Logistik Makmur", "verified" => true },
                  result.last_position)
     assert result.education["verified"]

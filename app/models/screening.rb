@@ -25,5 +25,10 @@ module Screening
   # and label_reason are asked for in English instead of Indonesian, and the redaction marker the
   # prompt names is [REDACTED]. Schema, criteria, flag and the stored label values unchanged.
   # .2 (16 Oct): Appendix A-structured anchors for ratings 1/2/3 in the system prompt; scale unchanged.
-  PROMPT_VERSION = "s1-2026-10-16.2"
+  # .3 (16 Oct, accuracy pass): evidence first (each criterion's quote is generated before its
+  # judgement), a stated method per requirement, level words ("advanced", "senior") gate rating 3,
+  # ties go to the lower anchor, Indonesian education levels and experience arithmetic, stricter
+  # quote rules, a label that must agree with the must-have judgements. Scale, ids, stored values
+  # and the report block's keys unchanged.
+  PROMPT_VERSION = "s1-2026-10-16.3"
 end

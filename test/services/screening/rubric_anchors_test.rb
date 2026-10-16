@@ -32,7 +32,7 @@ class Screening::RubricAnchorsTest < ActiveSupport::TestCase
     # The scale did not move: the schema still accepts exactly 0-3 and met/not_met.
     assert_equal %w[met not_met 0 1 2 3], request_schema(@fake.parsed_bodies.sole).dig("properties", "criteria", "items", "properties", "judgement", "enum")
     result = @participation.screening_results.sole
-    assert_equal "s1-2026-10-16.2", result.prompt_version
-    assert_equal "s1-2026-10-16.2", @participation.score_entries.sole.prompt_version
+    assert_equal "s1-2026-10-16.3", result.prompt_version
+    assert_equal "s1-2026-10-16.3", @participation.score_entries.sole.prompt_version
   end
 end

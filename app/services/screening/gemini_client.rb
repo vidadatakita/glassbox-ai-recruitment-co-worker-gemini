@@ -72,7 +72,8 @@ module Screening
 
       usage = response["usageMetadata"] || {}
       Reply.new(model: response["modelVersion"].presence || @model, text:,
-                input_tokens: usage["promptTokenCount"], output_tokens: usage["candidatesTokenCount"])
+                input_tokens: usage["promptTokenCount"], output_tokens: usage["candidatesTokenCount"],
+                thinking_tokens: usage["thoughtsTokenCount"])
     end
 
     def post(method, body)

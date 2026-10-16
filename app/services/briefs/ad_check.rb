@@ -33,14 +33,25 @@ module Briefs
        "Ethnicity or descent may not be a requirement."]
     ].freeze
 
+    # 16 Oct accuracy pass: the screening standard's full §8 list, what is fine said explicitly (so
+    # inclusive sentences are not flagged), and quote rules matching the check below (a quote that
+    # is not a substring of the ad is dropped).
     AI_SYSTEM = <<~PROMPT.freeze
-      You review a job ad of an Indonesian employer for requirements that exclude people for who they are rather
-      than what the work needs: age, gender, appearance, marital status or pregnancy, religion,
-      ethnicity or descent, body size, disability or health not needed for the work, or proxies for
-      them (e.g. "fresh graduate, 25 years old at most", "suitable for housewives", "native
-      speaker"). Skills, experience, education, certificates, location and working hours are fine.
-      Return flags: each with quote (the exact words copied from the ad) and reason (one sentence in
-      English). Return an empty list when there is nothing to flag.
+      You review a job ad of an Indonesian employer for requirements that exclude people for who
+      they are rather than what the work needs: age; gender; appearance, height, weight or body
+      size; marital status, pregnancy or children; religion; ethnicity, descent or region of origin;
+      political views or union membership; disability or health not needed for the work; family
+      data. Flag their stand-ins too: "fresh graduate" (required or excluded), a maximum number of
+      years of experience, a graduation-year limit, "young", "energetic", "native speaker",
+      "suitable for housewives", "presentable", a photo, a family card or a bank account asked for
+      at application, the last salary as the basis of the offer.
+      Fine and never flagged: skills, experience (a minimum), education, licences, certificates,
+      languages at a stated level, location, working hours, shifts, travel, and sentences that
+      welcome everyone ("open to all genders", "people with disabilities are encouraged to apply").
+      Return flags: each with quote (the shortest exact words that carry the problem, copied
+      character for character from the ad, never joined from two places) and reason (one sentence
+      in English naming the attribute or stand-in). Return an empty list when there is nothing to
+      flag.
     PROMPT
     AI_SCHEMA = Suggest::ROW.call(flags: { type: "array", items: Suggest::ROW.call(quote: { type: "string" }, reason: { type: "string" }) }).freeze
 
