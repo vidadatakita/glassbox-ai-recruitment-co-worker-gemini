@@ -27,12 +27,13 @@
             </td>
             <% if result %>
               <td>
+                <%# A missing answer is said as such, never as a difference (end-to-end test, 16 Oct 2026). %>
                 <% if rv.error %>
-                  <span class="portal-state portal-state--danger">No answer from the AI for this variant</span>
-                <% elsif rv.swap? && rv.difference_kind(result.base) == :same_input_different_answer %>
-                  <span class="portal-state portal-state--info">Same input, different model answer</span>
+                  <span class="portal-state portal-state--warning">No answer from the AI for this variant</span>
                 <% elsif rv.swap? && rv.difference_kind(result.base) == :redaction_gap %>
                   <span class="portal-state portal-state--danger">Different input</span>
+                <% elsif rv.control? && result.base.error %>
+                  <span class="portal-state portal-state--warning">No base answer to compare with</span>
                 <% elsif rv.control? %>
                   <span class="portal-state <%= result.merit_control_moved? ? 'portal-state--success' : 'portal-state--danger' %>"><%= result.merit_control_moved? ? "Score moved, as it must" : "Score did not move" %></span>
                 <% elsif rv.kind == :base %>
@@ -40,6 +41,7 @@
                 <% else %>
                   <span class="portal-state portal-state--success">Same as the base</span>
                 <% end %>
+                <% if rv.answer_from %><span class="d-block small text-muted">Asked once with <%= result.variants.fetch(rv.answer_from).label %> (same bytes)</span><% end %>
               </td>
             <% end %>
           </tr>
