@@ -47,7 +47,7 @@ module Screening
     # Cloud project (glassbox:ai:smoke TIER=high|medium|low at deploy; results in docs/BUILD-LOG.md). A
     # configured id outside it stops the boot (validate_models!), never a silent fallback. Confirmed
     # ids are appended here at deploy; the list is the record.
-    KNOWN_MODELS = %w[gemini-3.8-pro gemini-3.8-flash gemini-3.5-flash-lite].freeze
+    KNOWN_MODELS = %w[gemini-3.8-pro gemini-3.8-flash gemini-3.5-flash-lite gemini-4-argon].freeze
 
     module_function
 
