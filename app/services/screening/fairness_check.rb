@@ -117,15 +117,19 @@ module Screening
     end
 
     # judge: a callable (content) -> AiClient::Reply; defaults to the screening client's #generate.
-    def self.call(job:, judge: nil, cv: BASE_CV, name: BASE_NAME)
-      new(job:, cv:, name:, judge:).call
+    # parallel: send the five requests at the same time. Default: only against the real API (no
+    # judge seam, no test transport), where five HIGH-tier calls in a row would keep the screen
+    # waiting for their sum; a scripted reply sequence needs the requests in order.
+    def self.call(job:, judge: nil, cv: BASE_CV, name: BASE_NAME, parallel: nil)
+      new(job:, cv:, name:, judge:, parallel:).call
     end
 
-    def initialize(job:, cv:, name:, judge: nil)
+    def initialize(job:, cv:, name:, judge: nil, parallel: nil)
       @job = job
       @cv = cv
       @name = name
       @judge = judge
+      @parallel = parallel.nil? ? judge.nil? && AiClient.http_override.nil? : parallel
       @rubric = Rubric.for(job)
       @groups = CvSections.enabled(company: job.client_company)
     end
@@ -150,7 +154,9 @@ module Screening
     end
 
     def call
-      variants = prepare.transform_values { |variant| judged(variant) }
+      prepared = prepare
+      replies = @parallel ? ask_in_parallel(prepared) : prepared.transform_values { |variant| ask(variant) }
+      variants = prepared.to_h { |key, variant| [key, judged(variant, replies.fetch(key))] }
       model_id = variants.values.filter_map(&:model_id).first
       Result.new(tier: TIER, model_id:, prompt_version: PROMPT_VERSION, rubric_digest: @rubric.digest, variants:)
     end
@@ -169,22 +175,50 @@ module Screening
     end
 
     def judge
-      @judge ||= begin
-        client = Config.client(:fairness, job: @job)
-        ->(content) { client.generate(system: AiClient::SYSTEM_PROMPT, schema: AiClient::SCHEMA, content:) }
-      end
+      @judge ||= client_judge
     end
 
-    # One model call per variant. A provider error or a malformed answer is recorded on the variant
-    # (the table shows it) instead of aborting the whole check: the other columns are still evidence.
-    def judged(variant)
-      content = AiClient.user_content(variant.redacted_text, @rubric.payload)
-      reply = judge.call(content)
+    def client_judge
+      client = Config.client(:fairness, job: @job)
+      ->(content) { client.generate(system: AiClient::SYSTEM_PROMPT, schema: AiClient::SCHEMA, content:) }
+    end
+
+    CALL_ERRORS = [Errors::Base, Errors::NotConfigured, Errors::Unreleased].freeze
+
+    # One model call per variant: the reply, or the provider error to record on that variant.
+    def ask(variant, with = nil)
+      (with || judge).call(AiClient.user_content(variant.redacted_text, @rubric.payload))
+    rescue *CALL_ERRORS => e
+      e
+    end
+
+    # One client per variant (a client approves one text at a time, so threads must not share it),
+    # built here on the calling thread; each thread then only waits on its HTTP call. An injected
+    # judge is shared and must be thread-safe. The calling thread lets go of the autoload interlock
+    # while it waits, as Rails asks of code that joins threads.
+    def ask_in_parallel(prepared)
+      judges = prepared.transform_values do
+        @judge || client_judge
+      rescue *CALL_ERRORS => e
+        e
+      end
+      threads = prepared.to_h do |key, variant|
+        judge = judges.fetch(key)
+        [key, Thread.new { Rails.application.executor.wrap { judge.is_a?(Exception) ? judge : ask(variant, judge) } }]
+      end
+      ActiveSupport::Dependencies.interlock.permit_concurrent_loads { threads.transform_values(&:value) }
+    end
+
+    # A provider error or a malformed answer is recorded on the variant (the table shows it) instead
+    # of aborting the whole check: the other columns are still evidence.
+    def judged(variant, reply)
+      raise reply if reply.is_a?(Exception)
+
       judgements = parse(reply.text, variant.redacted_text)
       score = Score.compute(@rubric, judgements)
       variant.with(judgements:, score: score.score, wajib_met: score.wajib_met, unverified_count: score.unverified_count,
                    model_id: reply.model, input_tokens: reply.input_tokens, output_tokens: reply.output_tokens)
-    rescue Errors::Base, Errors::NotConfigured, Errors::Unreleased, Malformed => e
+    rescue *CALL_ERRORS, Malformed => e
       variant.with(error: "#{e.class.name.demodulize}: #{e.message}"[0, 200])
     end
 

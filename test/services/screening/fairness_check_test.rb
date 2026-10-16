@@ -110,6 +110,38 @@ class Screening::FairnessCheckTest < ActiveSupport::TestCase
     assert_equal result.base.judgements, result.variants.fetch(:religion).judgements
   end
 
+  test "parallel: the five requests are in flight together and each reply lands on its own variant" do
+    replies = { base: answer, control: answer(sebaiknya: "1") }.transform_values do |criteria|
+      JSON.generate({ criteria:, protected_attribute_seen: false, protected_attribute_categories: [] })
+    end
+    lock = Mutex.new
+    in_flight = peak = 0
+    judge = lambda do |content|
+      lock.synchronize { peak = [peak, in_flight += 1].max }
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 2
+      sleep 0.01 until lock.synchronize { peak == 5 } || Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+      lock.synchronize { in_flight -= 1 }
+      text = content.include?("Basic computer use") ? replies[:control] : replies[:base]
+      Screening::AiClient::Reply.new(model: FAKE_MODEL, text:, input_tokens: 1, output_tokens: 1)
+    end
+    result = Screening::FairnessCheck.call(job: @job, judge:, parallel: true)
+    assert_equal 5, peak, "all five requests must be in flight at the same time"
+    assert result.passed?, "the swaps match the base and the merit control moved, whatever order the replies came back in"
+    assert_operator result.control.score, :<, result.base.score
+
+    # Control: with a judge seam the default stays sequential, so scripted replies keep their order.
+    in_flight = peak = 0
+    counting = lambda do |content|
+      lock.synchronize { peak = [peak, in_flight += 1].max }
+      sleep 0.01
+      lock.synchronize { in_flight -= 1 }
+      Screening::AiClient::Reply.new(model: FAKE_MODEL, text: replies[content.include?("Basic computer use") ? :control : :base],
+                                     input_tokens: 1, output_tokens: 1)
+    end
+    Screening::FairnessCheck.call(job: @job, judge: counting)
+    assert_equal 1, peak
+  end
+
   test "the fairness CV never goes through a release: no AiRelease row and no applicant is written" do
     assert_no_difference(["AiRelease.count", "Candidate.count", "JobApplication.count", "ScreeningResult.count"]) do
       run_check(Array.new(5) { gemini_message(answer) })
