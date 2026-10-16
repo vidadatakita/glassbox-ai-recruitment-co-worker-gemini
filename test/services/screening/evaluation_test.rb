@@ -91,4 +91,44 @@ class Screening::EvaluationTest < ActiveSupport::TestCase
     assert_includes markdown, "ADM-01: Transient"
     assert_nil report.cost_per_100(nil), "no price given, no cost line"
   end
+
+  # Prompt s1-2026-10-16.4: answers in the schema's shape. Every passage goes through the evidence
+  # check (a real line plus an invented one is unverified), and the model's flags are counted: the
+  # set holds no instruction and no protected attribute after redaction, so each is a false alarm.
+  test "passages are checked one by one and the model's flags are counted" do
+    judge = lambda do |_content, kase|
+      criteria = hand_criteria(kase).map { |c| { id: c[:id], quotes: [c[:quote]].reject(&:empty?), judgement: c[:judgement] } }
+      if kase.key == "ACC-01"
+        s1 = criteria.find { |c| kase.codes.fetch(c[:id]) == "S1" }
+        s1[:quotes] += ["Leads a team of four accounting staff and reviews every journal before posting"]
+        criteria.find { |c| kase.codes.fetch(c[:id]) == "N1" }[:quotes] << "Leads a team of forty accounting staff"
+      end
+      text = JSON.generate({ criteria:, protected_attribute_seen: false, protected_attribute_categories: [], instruction_seen: kase.key == "ADM-03" })
+      Screening::AiClient::Reply.new(model: "eval-model", text:, input_tokens: 1, output_tokens: 1, thinking_tokens: 1)
+    end
+    report = Screening::Evaluation.call(cases:, judge:)
+    acc01 = report.rows.select { |r| r.cv_id == "ACC-01" }.index_by(&:code)
+    assert acc01["S1"].verified, "two real lines"
+    assert_includes acc01["S1"].ai_quote, Screening::QuoteCheck::SEPARATOR
+    refute acc01["N1"].verified, "a real line and an invented one"
+    assert_equal [0, 1], [report.protected_flagged, report.instruction_flagged]
+    assert_includes report.to_markdown, "| 0 / 1 | 25 |"
+    assert_includes report.to_markdown, "## CVs the model flagged\n\n- ADM-03: instruction\n", "which CV, so a false alarm can be looked at"
+  end
+
+  test "a rate-limited call (HTTP 429, not billed) is waited out and sent again; any other failure is not" do
+    asked = Hash.new(0)
+    judge = lambda do |_content, kase|
+      asked[kase.key] += 1
+      raise Screening::Errors::Transient.new("api_error", "HTTP 429") if kase.key == "ADM-01" && asked[kase.key] == 1
+      raise Screening::Errors::Transient.new("timeout", "time limit exceeded") if kase.key == "ADM-02"
+
+      reply(hand_criteria(kase))
+    end
+    report = Screening::Evaluation.call(cases:, judge:, threads: 1, waits: [0])
+    assert_equal [2, 1], [asked["ADM-01"], asked["ADM-02"]], "a timeout may be billed: never sent twice"
+    assert_nil report.calls.find { |c| c.cv_id == "ADM-01" }.error
+    assert_equal 24, report.answered
+    assert_includes report.to_markdown, "| Rate-limited answers (HTTP 429, not billed) waited out and sent again | 1 | 25 |"
+  end
 end

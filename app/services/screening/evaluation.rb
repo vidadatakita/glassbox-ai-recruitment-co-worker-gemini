@@ -24,7 +24,13 @@ module Screening
       # How far apart: points on the 0-3 scale; a must-have mismatch counts as the full scale.
       def distance = rating? ? (hand.to_i - ai.to_i).abs : (agree? ? 0 : Score::TOP)
     end
-    Call = Data.define(:cv_id, :model, :input_tokens, :output_tokens, :thinking_tokens, :seconds, :error)
+    # flags: what the model reported beside the judgements (protected categories, and
+    # AiClient::INSTRUCTION_FLAG). The invented CVs hold no instruction and, after redaction, no
+    # protected attribute, so every flag here is a false alarm a reviewer would have to clear.
+    # rate_limited: HTTP 429 answers waited out before this call's answer (not billed).
+    Call = Data.define(:cv_id, :model, :input_tokens, :output_tokens, :thinking_tokens, :seconds, :error, :flags, :rate_limited) do
+      def initialize(cv_id:, model:, input_tokens:, output_tokens:, thinking_tokens:, seconds:, error:, flags: [], rate_limited: 0) = super
+    end
     Outcome = Data.define(:cv_id, :vacancy, :hand_score, :ai_score, :hand_outcome, :ai_outcome) do
       def agree? = hand_outcome == ai_outcome
     end
@@ -55,21 +61,28 @@ module Screening
       lambda do |_content, kase|
         criteria = kase.rubric.criteria.map do |c|
           judgement, quote = kase.hand.fetch(kase.codes.fetch(c.key))
-          { id: c.key, quote:, judgement: }
+          { id: c.key, quotes: [quote].reject(&:empty?), judgement: }
         end
-        text = JSON.generate({ criteria:, protected_attribute_seen: false, protected_attribute_categories: [] })
+        text = JSON.generate({ criteria:, protected_attribute_seen: false, protected_attribute_categories: [], instruction_seen: false })
         AiClient::Reply.new(model: "hand-scores (dry run)", text:, input_tokens: 0, output_tokens: 0, thinking_tokens: 0)
       end
     end
 
+    # A rate-limited call (HTTP 429: refused before the model ran, so not billed) is sent again
+    # after each of these waits, in seconds; then it counts as a CV without an answer. The run of
+    # 16 Oct lost 2 of 25 CVs to 429. Other failures, a timeout included (it may be billed), are
+    # never repeated.
+    RATE_LIMIT_WAITS = [15, 45].freeze
+
     # judge: (content, case) -> AiClient::Reply; default: the screening task's client (tier HIGH),
     # one client per worker thread. threads: calls in flight at once.
-    def self.call(cases: demo_cases, judge: nil, threads: 4) = new(cases:, judge:, threads:).call
+    def self.call(cases: demo_cases, judge: nil, threads: 4, waits: RATE_LIMIT_WAITS) = new(cases:, judge:, threads:, waits:).call
 
-    def initialize(cases:, judge: nil, threads: 4)
+    def initialize(cases:, judge: nil, threads: 4, waits: RATE_LIMIT_WAITS)
       @cases = cases
       @judge = judge
       @threads = threads.to_i.clamp(1, 16)
+      @waits = waits
     end
 
     def call
@@ -77,10 +90,10 @@ module Screening
       rows = []
       calls = []
       outcomes = []
-      @cases.zip(screened).each do |kase, (reply, seconds, judgements, error)|
+      @cases.zip(screened).each do |kase, (reply, seconds, judgements, error, flags, rate_limited)|
         calls << Call.new(cv_id: kase.key, model: reply&.model, input_tokens: reply&.input_tokens.to_i,
                           output_tokens: reply&.output_tokens.to_i, thinking_tokens: reply&.thinking_tokens.to_i,
-                          seconds:, error:)
+                          seconds:, error:, flags: flags.to_a, rate_limited: rate_limited.to_i)
         next if judgements.nil?
 
         kase.rubric.criteria.each do |c|
@@ -127,21 +140,35 @@ module Screening
     end
 
     # The same text Screening::ReleaseGate prepares: evidence sections, then the redactor with the
-    # applicant's own name. Returns [reply, seconds, judgements or nil, error or nil].
+    # applicant's own name. Returns [reply, seconds, judgements or nil, error or nil, flags, rate-limited answers].
     def screen(kase, judge)
       redacted = Redactor.call(EvidenceSections.keep(kase.cv, groups: CvSections::DEFAULT).to_s, names: [kase.name]).text
-      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      reply = judge.call(AiClient.user_content(redacted, kase.rubric.payload), kase)
+      rate_limited = 0
+      begin
+        started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        reply = judge.call(AiClient.user_content(redacted, kase.rubric.payload), kase)
+      rescue Errors::Transient => e
+        raise unless e.detail == "HTTP 429" && (wait = @waits[rate_limited])
+
+        rate_limited += 1
+        sleep(wait)
+        retry
+      end
       seconds = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - started).round(2)
-      [reply, seconds, parse(reply.text, kase.rubric, extracted: kase.cv, redacted:), nil]
+      judgements, flags = parse(reply.text, kase.rubric, extracted: kase.cv, redacted:)
+      [reply, seconds, judgements, nil, flags, rate_limited]
     rescue Errors::Base, Errors::NotConfigured, Errors::Unreleased, Malformed => e
-      [reply, seconds, nil, "#{e.class.name.demodulize}: #{e.message}"[0, 200]]
+      [reply, seconds, nil, "#{e.class.name.demodulize}: #{e.message}"[0, 200], [], rate_limited]
     end
 
     # The per-criterion rules of Screening::Run#parse: every requirement exactly once, a judgement
-    # allowed for its tier, each quote through the evidence check exactly as a real run checks it.
+    # allowed for its tier, each quote through the evidence check exactly as a real run checks it
+    # (every passage of a criterion, QuoteCheck.check). Returns [judgements, flags]; flags as
+    # Call#flags, read as plainly as the answer gives them (the run's fail-safe reading of a
+    # malformed flag is not measured here).
     def parse(text, rubric, extracted:, redacted:)
-      entries = JSON.parse(text).then { |data| data.is_a?(Hash) ? data["criteria"] : nil }
+      data = JSON.parse(text)
+      entries = data.is_a?(Hash) ? data["criteria"] : nil
       raise Malformed, "the answer is not in the expected shape" unless entries.is_a?(Array)
 
       judgements = {}
@@ -153,14 +180,15 @@ module Screening
         judgement = entry["judgement"].to_s
         raise Malformed, "judgement not allowed for the tier" unless Rubric::JUDGEMENTS.fetch(criterion.tier).include?(judgement)
 
-        quote = entry["quote"].to_s
-        judgements[criterion.key] = { "judgement" => judgement, "quote" => quote,
-                                      "verified" => QuoteCheck.verified?(judgement:, quote:, extracted:, redacted:) }
+        judgements[criterion.key] = { "judgement" => judgement, **QuoteCheck.check(entry, judgement:, extracted:, redacted:) }
       end
       missing = rubric.criteria.map(&:key) - judgements.keys
       raise Malformed, "#{missing.size} requirement(s) not judged" if missing.any?
 
-      judgements
+      flags = []
+      flags += Array(data["protected_attribute_categories"]).map(&:to_s).presence || ["other"] if data["protected_attribute_seen"] == true
+      flags << AiClient::INSTRUCTION_FLAG if data["instruction_seen"] == true
+      [judgements, flags]
     rescue JSON::ParserError
       raise Malformed, "the answer is not JSON"
     end
@@ -195,6 +223,9 @@ module Screening
       end
 
       def per_call(field) = mean(calls.select { |c| c.error.nil? }.map { |c| c.public_send(field).to_i })
+      # Answered CVs the model flagged: a protected attribute, or instruction-like text.
+      def protected_flagged = calls.count { |c| c.error.nil? && (c.flags - [AiClient::INSTRUCTION_FLAG]).any? }
+      def instruction_flagged = calls.count { |c| c.error.nil? && c.flags.include?(AiClient::INSTRUCTION_FLAG) }
       def seconds = calls.select { |c| c.error.nil? && c.seconds }.map(&:seconds)
 
       def cost_per_100(prices)
@@ -238,6 +269,10 @@ module Screening
         if cost
           lines << "| Cost per 100 CVs (USD; input #{prices[:input]}, output and thinking #{prices[:output]} per 1M tokens) | #{format('%.2f', cost)} | #{answered} |"
         end
+        lines << "| CVs the model flagged: protected attribute / instruction-like text (the set holds neither, so each is a false alarm) | " \
+                 "#{protected_flagged} / #{instruction_flagged} | #{answered} |"
+        retried = calls.sum(&:rate_limited)
+        lines << "| Rate-limited answers (HTTP 429, not billed) waited out and sent again | #{retried} | #{calls.size} |" if retried.positive?
         lines << ""
         lines << "## Agreement per requirement"
         lines << ""
@@ -257,6 +292,13 @@ module Screening
           largest_disagreements.each do |r|
             lines << "| #{r.cv_id} | #{r.code} #{r.requirement} | #{r.hand} | #{r.ai} | #{r.hand_quote.presence || '(none)'} | #{r.ai_quote.presence || '(none)'} (#{r.verified ? 'yes' : 'no'}) |"
           end
+        end
+        flagged = calls.select { |c| c.error.nil? && c.flags.any? }
+        if flagged.any?
+          lines << ""
+          lines << "## CVs the model flagged"
+          lines << ""
+          flagged.each { |c| lines << "- #{c.cv_id}: #{c.flags.join(', ')}" }
         end
         errors = calls.select(&:error)
         if errors.any?
