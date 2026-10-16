@@ -37,10 +37,12 @@ end
 
 # The demo applications record the consent text the candidate agreed to, so a fresh database needs
 # one in force. Invented demo wording, clearly marked; a real install publishes its own text on
-# Pengaturan Sistem.
+# Pengaturan Sistem. English only (AI Builder Cup rule), and never the literal "[PLACEHOLDER": that
+# prefix keeps the portal closed (ConsentTemplate#placeholder_sections, Portal::ConsentReadiness).
 ConsentTemplate.in_force || ConsentTemplate.create!(
-  ConsentTemplate::SECTIONS.keys.to_h { |field| [field, "Teks contoh untuk demo, bukan teks hukum (#{ConsentTemplate::SECTIONS[field]})."] }
-    .merge(version: "demo-1", effective_from: 1.day.ago, created_at: Time.current)
+  ConsentTemplate::SECTIONS.to_h do |field, heading|
+    [field, "[DEMO TEXT, not legal text] Sample wording for the demo (#{heading}). A real install publishes the employer's own text."]
+  end.merge(version: "demo-1", effective_from: 1.day.ago, created_at: Time.current)
 )
 
 puts "Seeded #{company.name}: users #{User.count}. Password: #{password}"
@@ -63,10 +65,10 @@ glassbox_reviewer = User.find_by!(email_address: "reviewer@glassbox.example")
 if Rails.env.development? || Glassbox::Settings.demo_mode?
   admin = User.find_by!(email_address: "admin@terangnusantara.example")
   if ConsentTemplate.none?
-    demo_line = "[CONTOH DEMO, bukan teks hukum] Isi bagian ini ditulis oleh legal klien."
+    demo_line = "[DEMO TEXT, not legal text] The employer's legal team writes this section."
     ConsentTemplate.create!(
       ConsentTemplate::SECTIONS.keys.index_with { demo_line }.merge(
-        purpose: "[CONTOH DEMO] Data Anda dipakai hanya untuk proses rekrutmen ini.",
+        purpose: "[DEMO TEXT] Your data is used only for this recruitment process.",
         version: "demo-2026-10-10", effective_from: 1.day.ago
       )
     )
