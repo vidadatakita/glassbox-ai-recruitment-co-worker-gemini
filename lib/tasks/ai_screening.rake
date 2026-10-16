@@ -34,6 +34,27 @@ namespace :glassbox do
       abort "FAILED: #{e.kind} (#{e.detail}). See the runbook's failure table."
     end
 
+    # Plan task A9 (Screening::Evaluation): the numbers the README and the deck may claim. Each run
+    # writes a Markdown summary and a per-judgement CSV to tmp/evaluation/, named by prompt version,
+    # so a prompt change can be compared run against run.
+    desc "Agreement and cost check: the 25 invented demo CVs screened by Gemini vs the hand scores (JUDGE=hand: dry run, no model call; THREADS=4; PRICE_INPUT_PER_MTOK and PRICE_OUTPUT_PER_MTOK in USD add the cost per 100 CVs)"
+    task eval: :environment do
+      dry = ENV["JUDGE"] == "hand"
+      abort "No credentials for provider #{Screening::Config.provider}: set AI_API_KEY (or the service account), or run JUDGE=hand." unless dry || Screening::Config.enabled?
+
+      prices = { input: ENV["PRICE_INPUT_PER_MTOK"], output: ENV["PRICE_OUTPUT_PER_MTOK"] }
+      prices = prices.values.all?(&:present?) ? prices.transform_values { |v| Float(v) } : nil
+      puts "Screening #{Screening::Evaluation.demo_cases.size} invented CVs (#{dry ? 'dry run with the hand scores' : "Tier HIGH, #{Screening::Config.model(:screening)}"}) ..."
+      report = Screening::Evaluation.call(judge: (Screening::Evaluation.hand_judge if dry), threads: ENV.fetch("THREADS", 4))
+      dir = Rails.root.join("tmp/evaluation")
+      FileUtils.mkdir_p(dir)
+      base = dir.join("agreement-#{report.prompt_version}-#{dry ? 'dry-run' : 'gemini'}-#{Time.current.utc.strftime('%Y%m%dT%H%M%SZ')}")
+      File.write("#{base}.md", markdown = report.to_markdown(prices:))
+      File.write("#{base}.csv", report.to_csv)
+      puts markdown
+      puts "Written: #{base}.md and #{base}.csv"
+    end
+
     desc "Count input tokens for one screening request (no generation), on the invented sample CV and rubric"
     task count_tokens: :environment do
       abort "AI is not configured for provider #{Screening::Config.provider}." unless Screening::Config.enabled?
