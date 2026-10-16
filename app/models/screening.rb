@@ -30,5 +30,10 @@ module Screening
   # ties go to the lower anchor, Indonesian education levels and experience arithmetic, stricter
   # quote rules, a label that must agree with the must-have judgements. Scale, ids, stored values
   # and the report block's keys unchanged.
-  PROMPT_VERSION = "s1-2026-10-16.3"
+  # .4 (16 Oct, after the agreement check of .3: 75.4% exact on ratings, 12 of 17 rating
+  # disagreements with the AI higher): anchors by what the CV shows (named only = 1, concrete detail
+  # below the level asked = 2, the level or scale asked = 3; a single unit is not "several" or "a
+  # team"; an implied duty at most 2), one to three verbatim passages per criterion ("quotes", each
+  # checked), and the instruction_seen flag. Scale, ids, stored values and the report block unchanged.
+  PROMPT_VERSION = "s1-2026-10-16.4"
 end

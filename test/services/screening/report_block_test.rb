@@ -38,7 +38,7 @@ class Screening::ReportBlockTest < ActiveSupport::TestCase
 
   test "the report block is stored with every quote checked; an invented quote is kept and marked" do
     result = screen(report)
-    assert_equal "s1-2026-10-16.3", result.prompt_version
+    assert_equal "s1-2026-10-16.4", result.prompt_version
     assert_equal({ "text" => "Admin Gudang, PT Logistik Makmur", "quote" => "Admin Gudang di PT Logistik Makmur", "verified" => true },
                  result.last_position)
     assert result.education["verified"]

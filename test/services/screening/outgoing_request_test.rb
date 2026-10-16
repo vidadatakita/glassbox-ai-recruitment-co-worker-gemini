@@ -108,7 +108,7 @@ class Screening::OutgoingRequestTest < ActiveSupport::TestCase
   test "the schema requires the protected-attribute flag and the prompt says what it is for" do
     body = JSON.parse(screen_fixture_cv)
     schema = body.dig("generationConfig", "responseJsonSchema")
-    assert_equal %w[criteria protected_attribute_seen protected_attribute_categories], schema["required"]
+    assert_equal %w[criteria protected_attribute_seen protected_attribute_categories instruction_seen], schema["required"]
     assert_equal "boolean", schema.dig("properties", "protected_attribute_seen", "type")
     assert_equal Screening::AiClient::PROTECTED_CATEGORIES, schema.dig("properties", "protected_attribute_categories", "items", "enum")
     assert_includes body.dig("systemInstruction", "parts", 0, "text"), "must never influence any judgement"
