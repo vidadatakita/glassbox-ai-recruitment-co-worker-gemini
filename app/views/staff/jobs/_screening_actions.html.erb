@@ -4,6 +4,14 @@
       <%= label_button "Start screening", "fa-play" %>
     <% end %>
   <% end %>
+  <%# The HR owner and the reviewer retry failed AI screenings themselves (the public demo has no
+      consultant door). Shown only while there is a failed row a new attempt can fix. %>
+  <% retryable = %w[hr_pic reviewer].include?(current_user.role) && board.enabled? ? board.retryable : [] %>
+  <% if retryable.any? %>
+    <%= form_with url: staff_job_screening_retry_path(job), method: :post, class: "d-inline", data: { turbo: false, submit_guard: true } do %>
+      <%= label_button "Retry failed screening (#{retryable.size})", "fa-repeat" %>
+    <% end %>
+  <% end %>
   <% if %w[consultant reviewer].include?(current_user.role) %>
     <%= label_link "Calibration", "fa-balance-scale", staff_job_screening_calibration_path(job), purpose: :neutral %>
   <% end %>
