@@ -1,0 +1,22 @@
+<%# Import from Excel (slice D): download the template (with the brief's activities and competencies as
+    drop-downs) or the current bank, fill it, upload it. All or nothing: a wrong row adds nothing and is
+    listed with its row number. Its own form; the downloads are links. %>
+<%= render layout: "staff/job_briefs/card", locals: { id: "question-bank-import", icon: "fa-file-excel-o", tone: "success", title: "Import from Excel",
+           text: "Write many questions at once in Excel. Every row is checked; if one row is wrong nothing is added and each problem is listed with its row number." } do %>
+  <p class="mb-2">
+    <%= link_to staff_job_question_bank_workbook_path(job), class: "btn btn-sm btn-light label-btn" do %><i class="fa fa-download me-1" aria-hidden="true"></i>Download the template<% end %>
+    <% if bank&.questions&.any? %>
+      <%= link_to staff_job_question_bank_workbook_path(job, filled: 1), class: "btn btn-sm btn-light label-btn ms-1" do %><i class="fa fa-download me-1" aria-hidden="true"></i>Download this bank (<%= bank.questions.size %> questions)<% end %>
+    <% end %>
+  </p>
+  <%= form_with url: staff_job_question_bank_import_path(job), method: :post, multipart: true, class: "question-bank-import",
+                data: { turbo: false, submit_guard: true } do %>
+    <label class="form-label" for="bank_import_file">Filled workbook (.xlsx, 5 MB at most)</label>
+    <input type="file" class="form-control mb-2" id="bank_import_file" name="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
+    <% if bank&.approved? %>
+      <label class="form-label" for="bank_import_reason">Reason for version <%= bank.version + 1 %> (version <%= bank.version %> is approved)</label>
+      <input type="text" class="form-control mb-2" id="bank_import_reason" name="new_version_reason">
+    <% end %>
+    <%= label_button "Import questions", "fa-upload" %>
+  <% end %>
+<% end %>

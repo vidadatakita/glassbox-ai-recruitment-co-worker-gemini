@@ -20,11 +20,14 @@ class TestScoringScreenTest < ActionDispatch::IntegrationTest
     refute_match(/Terapkan|unggah|berkas|Tautan/i, doc.at("body").text, "wording standard")
   end
 
+  # Three-role model (17 Oct 2026): the reviewer is an HR manager, blind before the gate like every
+  # non-superadmin role, so the answer is labelled by candidate number.
   test "the reviewer sees the answer, the scan state before the download, the pinned rubric and the 1-5 form" do
     sign_in_as reviewer
     get staff_job_test_scorings_path(@job)
     assert_response :success
-    assert_includes response.body, "Dewi Lestari"
+    assert_includes response.body, "Candidate 01"
+    refute_includes response.body, "Dewi Lestari", "the HR manager must not see the name before the gate (D62 h7)"
     assert_includes response.body, "Not scanned by antivirus"
     @attempt.test_case.criteria.each do |criterion|
       assert_includes response.body, criterion.anchor_5
@@ -62,14 +65,21 @@ class TestScoringScreenTest < ActionDispatch::IntegrationTest
     assert_empty s2_of(@application).score_entries
   end
 
-  test "HR PIC and owner see candidate numbers only, no names and no answer download" do
-    %w[hr_pic owner].each do |role|
+  # Three-role model (17 Oct 2026): every non-superadmin person is blind before the gate. The HR
+  # managers (old owner and reviewer) download answers; the HR admins (old HR PIC and consultant) do
+  # not while the gate is open (old HR PIC rule, SPEC report §2.4).
+  test "HR admin and HR manager see candidate numbers only; the HR admin gets no answer download while the gate is open" do
+    %w[hr_pic consultant owner reviewer].each do |role|
       sign_in_as staff_user(role)
       get staff_job_test_scorings_path(@job)
       assert_response :success
       assert_includes response.body, "Candidate 01"
       refute_includes response.body, "Dewi Lestari", "#{role} must not see the name (D62 h7)"
-      refute_includes response.body, "Download answer"
+      if staff_user(role).role == "hr_admin"
+        refute_includes response.body, "Download answer", "#{role} downloads while the gate is open"
+      else
+        assert_includes response.body, "Download answer", "#{role} (HR manager) has no download"
+      end
       sign_out
     end
   end
@@ -98,7 +108,10 @@ class TestScoringScreenTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "HR PIC: no answer download while the gate is open, even with a key minted for HR; owner never" do
+  # Three-role model (17 Oct 2026): no role is refused at the controller any more (owner is an HR
+  # manager, admitted by require_role!), so the owner's refusal is now the key check: a key minted for
+  # the HR admin does not open for anyone else.
+  test "HR admin: no answer download while the gate is open, even with a key minted for HR; another user's key never opens" do
     key = TechnicalTests.answer_key(staff_user("hr_pic"), @attempt)
     sign_in_as staff_user("hr_pic")
     get staff_test_attempt_answer_path(@attempt, k: key)
@@ -106,10 +119,10 @@ class TestScoringScreenTest < ActionDispatch::IntegrationTest
     sign_out
     sign_in_as staff_user("owner")
     get staff_test_attempt_answer_path(@attempt, k: key)
-    assert_redirected_to staff_jobs_path
+    assert_redirected_to staff_job_test_scorings_path(@job), "a key minted for the HR admin opened for the owner"
   end
 
-  test "HR PIC downloads the answer once the gate is closed (SPEC report §2.4), with its own signed key" do
+  test "HR admin downloads the answer once the gate is closed (SPEC report §2.4), with its own signed key" do
     s1 = s1_of(@application)
     s1.update!(attendance: "attended")
     add_score(s1, 80)
@@ -122,7 +135,9 @@ class TestScoringScreenTest < ActionDispatch::IntegrationTest
     get link
     assert_response :success
     assert_match(/\Aattachment/, response.headers["Content-Disposition"])
-    assert_equal [true, true, true, false, false],
+    # Gate closed: both HR admins and both HR managers download; superadmin passes every role check
+    # (three-role model, 17 Oct 2026), so it downloads too.
+    assert_equal [true, true, true, true, true],
                  %w[reviewer consultant hr_pic owner admin].map { |r| TechnicalTests.answer_downloadable_by?(staff_user(r), @job.reload) }
   end
 

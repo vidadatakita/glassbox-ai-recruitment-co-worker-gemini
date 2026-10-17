@@ -112,9 +112,9 @@ class GoogleEngineStorageMailSettingsTest < ActionDispatch::IntegrationTest
     assert_equal "failed", MailDelivery.deliver!(application, "status_link") { tls }.status
   end
 
-  # G-A1. Every non-admin role, not one sample.
-  test "Settings (with Google integrations) is closed to every role except admin" do
-    (User::ROLE_LABELS.keys - [ "admin" ]).each do |role|
+  # G-A1. Every non-superadmin role, not one sample.
+  test "Settings (with Google integrations) is closed to every role except superadmin" do
+    (User::ROLE_LABELS.keys - [ "superadmin" ]).each do |role|
       sign_in_as(staff_user(role))
       get staff_settings_path
       assert_redirected_to staff_jobs_path, "#{role} must not see Settings"
@@ -123,7 +123,7 @@ class GoogleEngineStorageMailSettingsTest < ActionDispatch::IntegrationTest
     sign_in_as(staff_user("admin"))
     get staff_settings_path
     assert_response :success
-    assert_match "Google integrations", response.body, "control: admin sees the section"
+    assert_match "Google integrations", response.body, "control: superadmin sees the section"
   end
 
   # G-A2. Every secret, every state (off / active / failed), never on the page.

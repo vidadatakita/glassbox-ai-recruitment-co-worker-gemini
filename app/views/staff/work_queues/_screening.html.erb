@@ -7,12 +7,12 @@
 <% boards = jobs.map { |job| ScreeningBoard.new(job) } %>
 <% board_for = boards.index_by { |b| b.job.id } %>
 <div class="card custom-card portal-queue-section" id="screening">
-  <div class="card-header"><div class="card-title">CV screening by AI (<%= failed.size + boards.sum { |b| b.to_review.size + (current_user.role == "reviewer" ? b.awaiting_release.size : 0) } %>)</div></div>
+  <div class="card-header"><div class="card-title">CV screening by AI (<%= failed.size + boards.sum { |b| b.to_review.size + (current_user.role.in?(%w[hr_manager superadmin]) ? b.awaiting_release.size : 0) } %>)</div></div>
   <div class="card-body">
     <% unless Screening::Config.enabled? %>
       <div class="alert alert-warning" role="status"><strong><%= ScreeningBoard::OFF_MESSAGE %></strong> <%= boards.sum { |b| b.waiting.size + b.queued.size + b.awaiting_release.size } %> applications are waiting for screening; no score is produced.</div>
     <% end %>
-    <% if failed.empty? && boards.all? { |b| b.to_review.empty? && (current_user.role != "reviewer" || b.awaiting_release.empty?) } %>
+    <% if failed.empty? && boards.all? { |b| b.to_review.empty? && (!current_user.role.in?(%w[hr_manager superadmin]) || b.awaiting_release.empty?) } %>
       <p class="text-muted mb-0">No failed screening and nothing awaiting review. Applications whose screening failed, unreadable CVs, and AI results a reviewer needs to check appear here.</p>
     <% end %>
     <% if failed.any? %>
@@ -40,7 +40,7 @@
     <%= render "staff/work_queues/ai_release", boards: boards %>
     <% boards.select { |b| b.to_review.any? }.each do |b| %>
       <p class="mb-1"><strong><%= b.job.title %></strong>: <%= b.to_review.size %> AI results awaiting review<%= " (not yet calibrated)" unless b.calibrated? %>.
-        <% if current_user.role == "reviewer" %><%= link_to "Open Screening review", staff_job_screening_review_path(b.job) %><% end %></p>
+        <% if current_user.role.in?(%w[hr_manager superadmin]) %><%= link_to "Open Screening review", staff_job_screening_review_path(b.job) %><% end %></p>
     <% end %>
   </div>
 </div>

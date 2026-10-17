@@ -1,11 +1,14 @@
-# Demo data for the AI Builder Cup: one job, "Supervisor Akuntansi (Demo Cup)", with invented
+# Demo data for the AI Builder Cup: one job, "Accounting Supervisor (Cup demo)", with invented
 # candidates at every point of the nine steps, so the demo can be walked end to end and the
-# Ringkasan Dampak has numbers. EVERYTHING HERE IS INVENTED (synthetic data only, Cup rule). No AI
-# is called: every AI row carries the model id "demo-tanpa-ai (data contoh)".
+# Impact summary has numbers. EVERYTHING HERE IS INVENTED (synthetic data only, Cup rule); all text
+# is English (owner's rule, 17 Oct 2026). No AI is called: every AI row carries
+# DemoScreeningReport::MODEL_ID ("demo-tanpa-ai (data contoh)"). That id is a CODE, not text:
+# Impact::DEMO_MODEL matches the exact string so the Impact summary can say its figures include
+# invented data; translating it here alone would silently drop that notice.
 #
-#   A  full journey: gate Lanjut (AI) -> Interview 1 -> Interview 2 scored by the user from the link
+#   A  full journey: gate "Follow AI advice" (Continue) -> Interview 1 -> Interview 2 scored by the user from the link
 #      -> salary agreed by the owner -> offer letter sent
-#   B  Tidak Lanjut at the gate with a note -> rejection letter sent
+#   B  "Do not continue" at the gate with a note -> rejection letter sent
 #   C  Interview 2 with the user's link still waiting (open it live in the demo)
 #   D, G  gate with the AI recommendation ready, waiting for the HR PIC's choice (choose live)
 #   E, F, H, I  as DemoScreeningReport leaves them (test states, knockout-like profiles)
@@ -16,7 +19,7 @@
 require_relative "demo_screening_report"
 
 module DemoCup
-  TITLE = "Supervisor Akuntansi (Demo Cup)".freeze
+  TITLE = "Accounting Supervisor (Cup demo)".freeze
   # Invented Indonesian names (no real person), so letters and pages read naturally in the demo.
   NAMES = { "A" => "Rina Pratiwi", "B" => "Budi Santoso", "C" => "Siti Rahmawati", "D" => "Agus Setiawan",
             "E" => "Dewi Anggraini", "F" => "Joko Prasetyo", "G" => "Maya Kusuma", "H" => "Fajar Nugroho",
@@ -49,12 +52,12 @@ module DemoCup
   end
 
   def competencies(job)
-    [["S3", "L4", "Menyusun laporan keuangan bulanan", "Laporan terlambat dan banyak koreksi", "Laporan tepat waktu dengan sedikit koreksi", "Laporan tepat waktu, rapi, dan dipakai manajemen",
-      "Ceritakan proses tutup buku bulanan yang terakhir Anda pimpin."],
-     ["S3", "I", "Integritas data keuangan", "Menutupi selisih", "Melaporkan selisih ke atasan", "Menelusuri, menjelaskan, dan mencegah selisih berulang",
-      "Apa yang Anda lakukan saat menemukan selisih kas?"],
-     ["S5", "L5", "Membimbing staf akuntansi", "Mengerjakan sendiri pekerjaan staf", "Memeriksa dan memberi koreksi", "Melatih staf sampai kesalahan turun",
-      "Bagaimana Anda membuat staf baru mandiri dalam sebulan?"]].each_with_index do |(stage, layer, name, a1, a3, a5, q), i|
+    [["S3", "L4", "Prepares the monthly financial statements", "Statements late with many corrections", "Statements on time with few corrections", "Statements on time, tidy, and used by management",
+      "Tell us about the last monthly close you led."],
+     ["S3", "I", "Integrity of financial data", "Hides differences", "Reports differences to the supervisor", "Traces, explains, and prevents repeated differences",
+      "What do you do when you find a cash difference?"],
+     ["S5", "L5", "Coaches accounting staff", "Does the staff's work personally", "Reviews and gives corrections", "Trains staff until errors fall",
+      "How do you make a new staff member independent within a month?"]].each_with_index do |(stage, layer, name, a1, a3, a5, q), i|
       job.competencies.create!(position: i + 1, stage_code: stage, layer:, name:, anchor_1: a1, anchor_3: a3, anchor_5: a5, questions: q)
     end
   end
@@ -68,9 +71,9 @@ module DemoCup
     StageRecommendation.create!(
       participation:, requested_by: actor, status: "ready", advice:, ai_score: score, model_id: MODEL_ID,
       prompt_version: Progression::Recommend::PROMPT_VERSION, created_at: at,
-      summary: summary || (advice == "lanjut" ? "Data contoh: bukti tahap ini cukup kuat untuk lanjut." : "Data contoh: bukti tahap ini belum cukup."),
-      reasons: { "strengths" => ["Data contoh: menyusun jurnal dan rekonsiliasi bulanan"], "gaps" => ["Data contoh: pengalaman audit eksternal belum terlihat"],
-                 "risks" => [], "change_view" => "Data contoh: hasil tahap berikutnya." }
+      summary: summary || (advice == "lanjut" ? "Sample data: the evidence at this stage is strong enough to proceed." : "Sample data: the evidence at this stage is not yet enough."),
+      reasons: { "strengths" => ["Sample data: prepares monthly journals and reconciliations"], "gaps" => ["Sample data: no external audit experience shown yet"],
+                 "risks" => [], "change_view" => "Sample data: the result of the next stage." }
     )
   end
 
@@ -94,32 +97,32 @@ module DemoCup
     recommend(gate(job, "A"), hr, "lanjut", 80, at:)
     choose(gate(job, "A"), hr, "ikut_ai", at: at + 1.hour)
     s3 = stage_of(job, "A", "S3")
-    interview(s3, hr, 4, "Data contoh: menjelaskan tutup buku dan rekonsiliasi dengan runtut.", at: at + 1.day)
+    interview(s3, hr, 4, "Sample data: explained the month-end close and reconciliation step by step.", at: at + 1.day)
     recommend(s3, hr, "lanjut", 78, at: at + 1.day + 5.minutes)
     choose(s3, hr, "ikut_ai", at: at + 1.day + 1.hour)
     s5 = stage_of(job, "A", "S5")
-    invite, _token = Progression::InviteInterviewer.call(participation: s5, actor: hr, name: "Ibu Ratna (Manajer Keuangan, data contoh)", now: at + 2.days)
-    entry = interview(s5, hr, 5, "Data contoh: sudah pernah melatih dua staf baru sampai mandiri.", at: at + 2.days + 3.hours)
+    invite, _token = Progression::InviteInterviewer.call(participation: s5, actor: hr, name: "Ms Ratna (Finance Manager, sample data)", now: at + 2.days)
+    entry = interview(s5, hr, 5, "Sample data: has trained two new staff members to work independently.", at: at + 2.days + 3.hours)
     invite.update!(score_entry: entry, submitted_at: entry.entered_at)
     UserRecommendation.create!(job_application: s5.job_application, user_name: invite.interviewer_name, pick: "lanjut",
-                               note: "Data contoh.", entered_by: hr, created_at: entry.entered_at)
+                               note: "Sample data.", entered_by: hr, created_at: entry.entered_at)
     recommend(s5, hr, "lanjut", 84, at: at + 2.days + 3.hours + 2.minutes)
     choose(s5, hr, "ikut_ai", at: at + 2.days + 4.hours)
     application = s5.job_application
     rec = SalaryRecommendation.create!(job_application: application, requested_by: hr, status: "ready", position: 0.6,
-                                       amount: Progression::Salary.amount_for(job, 0.6), summary: "Data contoh: kandidat kuat di semua tahap.",
-                                       factors: ["Data contoh: Interview 2 bernilai 5"], model_id: MODEL_ID,
+                                       amount: Progression::Salary.amount_for(job, 0.6), summary: "Sample data: a strong candidate at every stage.",
+                                       factors: ["Sample data: Interview 2 scored 5"], model_id: MODEL_ID,
                                        prompt_version: Progression::Salary::PROMPT_VERSION, created_at: at + 2.days + 5.hours)
     Progression::Salary.agree(application:, actor: owner, amount: rec.amount, note: nil, seen_recommendation_id: rec.id)
-    letter(application, hr, "offer", "Penawaran kerja: #{job.title}",
-           "Dear [Candidate name],\n\nCongratulations: we offer you the position of #{job.title} at #{Progression::Letters.rupiah(rec.amount)} per month.\n\nHR (data contoh)",
+    letter(application, hr, "offer", "Job offer: #{job.title}",
+           "Dear [Candidate name],\n\nCongratulations: we offer you the position of #{job.title} at #{Progression::Letters.rupiah(rec.amount)} per month.\n\nHR (sample data)",
            at: at + 2.days + 6.hours)
   end
 
   def journey_b(job, hr:, at:)
     recommend(gate(job, "B"), hr, "tidak_lanjut", 52, at:)
-    choose(gate(job, "B"), hr, "ikut_ai", at: at + 2.hours, note: "Data contoh: nilai tes teknis 58, di bawah ambang 60.")
-    letter(application(job, "B"), hr, "rejection", "Kabar lamaran Anda: #{job.title}",
+    choose(gate(job, "B"), hr, "ikut_ai", at: at + 2.hours, note: "Sample data: technical test score 58, below the threshold of 60.")
+    letter(application(job, "B"), hr, "rejection", "News about your application: #{job.title}",
            "Dear [Candidate name],\n\nThank you for your time. We will not take your application further on this occasion.\n\nHR Team (sample data)",
            at: at + 3.hours)
   end
@@ -128,11 +131,11 @@ module DemoCup
     recommend(gate(job, "C"), hr, "lanjut", 85, at:)
     choose(gate(job, "C"), hr, "lanjut", at: at + 1.hour)
     s3 = stage_of(job, "C", "S3")
-    interview(s3, hr, 4, "Data contoh: berpengalaman sebagai manajer; perlu dipastikan mau di posisi supervisor.", at: at + 1.day)
+    interview(s3, hr, 4, "Sample data: experienced as a manager; confirm they will accept a supervisor position.", at: at + 1.day)
     recommend(s3, hr, "lanjut", 76, at: at + 1.day + 5.minutes)
     choose(s3, hr, "lanjut", at: at + 1.day + 2.hours)
     _invite, token = Progression::InviteInterviewer.call(participation: stage_of(job, "C", "S5"), actor: hr,
-                                                         name: "Ibu Ratna (Manajer Keuangan, data contoh)", now: at + 2.days)
+                                                         name: "Ms Ratna (Finance Manager, sample data)", now: at + 2.days)
     token
   end
 

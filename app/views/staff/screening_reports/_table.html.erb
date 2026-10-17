@@ -1,7 +1,17 @@
 <%# One row per applicant (SPEC §1), sorted by the gate result, then the AI score 0-100, the S2
     score, the application time (D62 h9). Contact data sits under the name, only for roles allowed
-    to contact (Visibility#contacts?); a separate column pushed the table past 1280 px. %>
+    to contact (Visibility#contacts?); a separate column pushed the table past 1280 px.
+
+    Empty values: a cell with nothing to say carries .is-empty, so the stacked phone card drops it
+    instead of listing "—" lines (layout_reports.css), and on desktop it shows "—" with a title.
+    When a column is empty in EVERY row, the header says so once ("none given by applicants");
+    the salary cell still keeps its FIT caption in every row, since the xlsx carries it per row too. Every value sits in .report-cell__value so the phone card can align label and
+    value on one grid; the markup inside each value is unchanged. %>
 <% contacts = board.visibility.contacts? %>
+<% no_salary = ->(row) { row.application.expected_salary_min.nil? || row.application.expected_salary_max.nil? } %>
+<% salary_none = board.rows.any? && board.rows.all?(&no_salary) %>
+<% appointment_none = board.rows.any? && board.rows.all? { it.appointment.nil? } %>
+<% pick_none = board.rows.any? && board.rows.all? { it.recommendation.nil? } %>
 <div class="hris-form-card">
   <div class="hris-form-card__header">
     <div class="hris-form-card__icon"><i class="fa fa-list-ol" aria-hidden="true"></i></div>
@@ -17,9 +27,11 @@
             <th>AI score (S1)<small class="report-th-note">scale 1–5</small></th>
             <th>Technical test<br>score (S2)<small class="report-th-note">0–100</small></th>
             <th>CV screening<br>result</th>
-            <th>Expected salary<small class="report-th-note">info, not scored</small></th>
-            <th>Label</th><th>Interview<br>appointment</th><th>Hiring manager's<br>pick</th>
-            <th><span class="visually-hidden">Actions</span></th>
+            <th<%= ' title="No applicant gave an expected salary"'.html_safe if salary_none %>>Expected salary<small class="report-th-note"><%= salary_none ? "none given by applicants · info, not scored" : "info, not scored" %></small></th>
+            <th>Label</th>
+            <th<%= ' title="No interview appointment booked yet"'.html_safe if appointment_none %>>Interview<br>appointment<% if appointment_none %><small class="report-th-note">none booked yet</small><% end %></th>
+            <th<%= ' title="No hiring manager\'s pick recorded yet"'.html_safe if pick_none %>>Hiring manager's<br>pick<% if pick_none %><small class="report-th-note">none recorded yet</small><% end %></th>
+            <th><span class="visually-hidden">Detail</span></th>
           </tr>
         </thead>
         <tbody>
@@ -28,18 +40,32 @@
           <% end %>
           <% board.rows.each_with_index do |row, i| %>
             <% person = report_person(row, board) %>
+            <% last_position = report_ai(ScreeningReport::Text.last_position(row.result), row) %>
+            <% salary_missing = no_salary.(row) %>
             <tr>
               <td data-label="No"><%= i + 1 %></td>
               <td class="report-table__person"><%= link_to person, staff_job_screening_report_candidate_path(board.job, row.application.id) %>
                 <% if contacts %><small class="report-cell__note report-contact"><%= row.candidate&.email %><br><%= row.candidate&.phone %><%= safe_join([tag.br, row.application.domicile_city]) if row.application.domicile_city.present? %></small><% end %></td>
-              <td data-label="Last position"><%= report_ai(ScreeningReport::Text.last_position(row.result), row) %></td>
-              <td data-label="AI score (S1)" class="report-nowrap"><%= report_ai_score(row) %></td>
-              <td data-label="Technical test score"><%= report_test_score(row.test) %></td>
-              <td data-label="CV screening result"><%= report_gate_badge(row) %></td>
-              <td data-label="Expected salary" class="report-nowrap"><%= ScreeningReport::Text.salary_short(row.application.expected_salary_min, row.application.expected_salary_max) %><small class="report-cell__note"><%= ScreeningReport::Budget.label(row.budget) %></small></td>
-              <td data-label="Label"><%= report_label_badge(row) %></td>
-              <td data-label="Interview appointment"><%= ScreeningReport::Text.appointment(row.appointment) %></td>
-              <td data-label="Hiring manager's pick"><%= ScreeningReport::Text.recommendation(row.recommendation) %></td>
+              <td data-label="Last position" class="<%= "is-empty" if last_position == "—" %>"><span class="report-cell__value"><%= last_position %></span></td>
+              <td data-label="AI score (S1)" class="report-nowrap"><span class="report-cell__value"><%= report_ai_score(row) %></span></td>
+              <td data-label="Technical test score"><span class="report-cell__value"><%= render "staff/screening_reports/test_score", cell: row.test %></span></td>
+              <td data-label="CV screening result"><span class="report-cell__value"><%= report_gate_badge(row) %></span></td>
+              <%# Salary and Label carry no .report-cell__value wrapper: the xlsx tie-out test reads
+                  these cells as they are (salary = first text node, FIT caption = the <small>; label =
+                  its span and small), screen row = xlsx row. .report-cell--pair gives them a third
+                  column in the phone grid instead. %>
+              <td data-label="Expected salary" class="report-nowrap report-cell--pair<%= " is-empty" if salary_missing %>"><%= ScreeningReport::Text.salary_short(row.application.expected_salary_min, row.application.expected_salary_max) %><small class="report-cell__note"><%= ScreeningReport::Budget.label(row.budget) %></small></td>
+              <td data-label="Label" class="report-cell--pair"><%= report_label_badge(row) %></td>
+              <% if row.appointment %>
+                <td data-label="Interview appointment"><span class="report-cell__value"><%= ScreeningReport::Text.appointment(row.appointment) %></span></td>
+              <% else %>
+                <td data-label="Interview appointment" class="is-empty"><span class="report-cell__value" title="No interview appointment booked yet"><%= ScreeningReport::Text.appointment(row.appointment) %></span></td>
+              <% end %>
+              <% if row.recommendation %>
+                <td data-label="Hiring manager's pick"><span class="report-cell__value"><%= ScreeningReport::Text.recommendation(row.recommendation) %></span></td>
+              <% else %>
+                <td data-label="Hiring manager's pick" class="is-empty"><span class="report-cell__value" title="No hiring manager's pick recorded yet"><%= ScreeningReport::Text.recommendation(row.recommendation) %></span></td>
+              <% end %>
               <td class="hris-table-actions">
                 <%= link_to staff_job_screening_report_candidate_path(board.job, row.application.id), class: "btn btn-sm btn-primary-light", title: "View report for #{person}" do %>
                   <i class="fa fa-plus" aria-hidden="true"></i><span class="visually-hidden">View report for <%= person %></span>

@@ -1,0 +1,14 @@
+<%# Headline tiles: only the measures that have a measured figure, so the row is a quick read of
+    what AiCoHire changed and does not repeat empty matrix cells. The caption names the change when
+    the client's BEFORE exists, otherwise what the figure counts. Reading time per CV is left to the
+    matrix: it is an estimate built from another row. %>
+<% tiles = { hours: "success", read: "info", reasoned: "primary", agreement: "warning" } %>
+<% shown = rows.select { |row| tiles.key?(row.key) && !row.after.nil? } %>
+<% if shown.any? %>
+  <div class="row impact-headline">
+    <% shown.each do |row| %>
+      <%= render "staff/shared/metric", variant: tiles[row.key], icon: row.icon, label: row.measure, col: "col-xl-3 col-sm-6",
+                 value: row.after_text, caption: (row.before.nil? ? "#{row.count} counted" : "Before: #{row.before_text} · #{row.change}") %>
+    <% end %>
+  </div>
+<% end %>

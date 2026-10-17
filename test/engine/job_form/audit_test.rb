@@ -10,15 +10,15 @@ class JobFormAuditTest < ActiveSupport::TestCase
   test "job_brief_changes is append-only in the database and in the model" do
     job = briefed_job
     row = job.brief_changes.first
-    refused_by_database { JobBriefChange.where(id: row.id).update_all(actor_role: "owner") }
+    refused_by_database { JobBriefChange.where(id: row.id).update_all(actor_role: "hr_manager") }
     refused_by_database { JobBriefChange.where(id: row.id).delete_all }
     refused_by_database { ActiveRecord::Base.connection.execute("TRUNCATE job_brief_changes CASCADE") }
-    assert_raises(ActiveRecord::ReadOnlyRecord) { row.update!(actor_role: "owner") }
+    assert_raises(ActiveRecord::ReadOnlyRecord) { row.update!(actor_role: "hr_manager") }
     assert_raises(ActiveRecord::ReadOnlyRecord) { row.destroy! }
-    assert_equal "hr_pic", row.reload.actor_role
+    assert_equal "hr_admin", row.reload.actor_role
     # Control: an INSERT is allowed, so the refusals above are about the operation, not the table.
     assert_difference -> { JobBriefChange.count }, 1 do
-      JobBriefChange.create!(job:, actor: staff_user("consultant"), actor_role: "consultant", step: "1",
+      JobBriefChange.create!(job:, actor: staff_user("consultant"), actor_role: "hr_admin", step: "1",
                              changes_made: { "title" => %w[a b] }, created_at: Time.current)
     end
   end
@@ -39,16 +39,18 @@ class JobFormAuditTest < ActiveSupport::TestCase
     assert_equal [30, 40], change["activities"].map { |rows| rows.first["share_percent"] }
   end
 
-  test "each row records the actor and the role; a consultant's completion is recorded as the consultant" do
+  test "each row records the actor and the role; a second HR Admin's completion is recorded as that person" do
     job = briefed_job(complete: false)
     consultant = staff_user("consultant")
     save_step!(job, "1", step1_params(title: "Diubah konsultan"), actor: consultant)
     assert Briefs::Complete.call(job: job.reload, actor: consultant).ok?
     rows = job.brief_changes.order(:id).last(2)
-    assert_equal [["1", consultant.id, "consultant"], ["complete", consultant.id, "consultant"]],
+    assert_equal [["1", consultant.id, "hr_admin"], ["complete", consultant.id, "hr_admin"]],
                  rows.map { |r| [r.step, r.actor_id, r.actor_role] }
     first = job.brief_changes.order(:id).first
-    assert_equal [staff_user("hr_pic").id, "hr_pic"], [first.actor_id, first.actor_role]
+    # Two people with the same role: the rows tell them apart by actor_id, not by role.
+    refute_equal consultant.id, first.actor_id
+    assert_equal [staff_user("hr_pic").id, "hr_admin"], [first.actor_id, first.actor_role]
     assert_equal({ "brief_status" => %w[draft complete] }, rows.last.changes_made)
   end
 

@@ -4,7 +4,7 @@
 <% content_for :top do %>
   <header class="cand-hero">
     <div class="cand-hero__inner">
-      <div class="cand-brand"><b>GlassBox</b><span>Applicant portal</span></div>
+      <div class="cand-brand cand-brand--portal"><span>Applicant portal</span></div>
       <span class="co"><%= job.confidential? ? "Company name withheld" : job.client_company.name %></span>
       <p class="cand-hero__title"><%= job.title %></p>
       <ul class="cand-facts" aria-label="Vacancy summary">

@@ -1,17 +1,21 @@
 <%# D53: per criterion the 1-5 shown to the client (ScreeningReport::CriterionScale) beside the AI's
     original judgement, which is what the score and the decisions use. Quotes verbatim, an unfound
-    quote marked, never hidden (§4.1 step 6). %>
+    quote marked, never hidden (§4.1 step 6).
+    .table-stack + data-label: below 576 px each requirement becomes its own block (workflow.css),
+    so the quote column is no longer clipped inside a sideways-scrolling table. The rule line is
+    printed exactly as the constant: the xlsx prints the same text and a test ties the two together,
+    so any wording change belongs in ScreeningReport::CriterionScale::RULE, not here. %>
 <div class="table-responsive">
-  <table class="table table-sm align-middle screening-criteria report-criteria">
+  <table class="table table-sm align-middle screening-criteria report-criteria table-stack">
     <thead><tr><th>Requirement</th><th>Tier</th><th>Score (1–5)</th><th>AI advice</th><th>CV quote</th></tr></thead>
     <tbody>
       <% result.criteria.each do |c| %>
         <tr>
-          <td><%= c["text"] %></td>
-          <td><%= tier_label(c["tier"]) %><%= " · weight #{c["weight"]}" if c["tier"] == "sebaiknya" %></td>
-          <td class="report-criteria__score"><strong class="report-score"><%= ScreeningReport::CriterionScale.of(c["tier"], c["judgement"]) %></strong></td>
-          <td><%= judgement_label(c["tier"], c["judgement"]) %></td>
-          <td><%= render "staff/screening_reports/quote", quote: c["quote"], verified: c["verified"], row: row %></td>
+          <td data-label="Requirement"><%= c["text"] %></td>
+          <td data-label="Tier"><%= tier_label(c["tier"]) %><%= " · weight #{c["weight"]}" if c["tier"] == "sebaiknya" %></td>
+          <td data-label="Score (1–5)" class="report-criteria__score"><strong class="report-score"><%= ScreeningReport::CriterionScale.of(c["tier"], c["judgement"]) %></strong></td>
+          <td data-label="AI advice"><%= judgement_label(c["tier"], c["judgement"]) %></td>
+          <td data-label="CV quote" class="report-criteria__quote"><%= render "staff/screening_reports/quote", quote: c["quote"], verified: c["verified"], row: row %></td>
         </tr>
       <% end %>
     </tbody>

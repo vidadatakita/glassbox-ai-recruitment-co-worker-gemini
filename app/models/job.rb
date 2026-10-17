@@ -25,7 +25,7 @@ class Job < ApplicationRecord
   # other user sees none (fail closed). Every staff lookup goes through this (BaseController#org_jobs).
   scope :visible_to, lambda { |user|
     if user&.client_company_id then where(client_company_id: user.client_company_id)
-    elsif user&.role.in?(%w[consultant reviewer admin]) then all
+    elsif user&.role.in?(%w[hr_admin hr_manager superadmin]) then all
     else none
     end
   }
@@ -70,7 +70,8 @@ class Job < ApplicationRecord
   def legacy_ad? = ad_approved_at.present? && ad_text.blank?
   # Who may write the ad: HR PIC always (after approval each save re-approves it, with the tick);
   # the consultant until HR has approved it.
-  def ad_writable_by?(user) = user&.role == "hr_pic" || (ad_approved_at.nil? && user&.role == "consultant")
+  # Three roles (17 Oct 2026): the HR Admin and the superadmin write the ad, draft or live.
+  def ad_writable_by?(user) = user&.role.in?(%w[hr_admin superadmin])
 
   # Blueprint §2.2 rule 3: once any stage has opened, the fields that drive scoring are frozen
   # (stages, weights, thresholds, knockout questions, requirements, competencies, Golongan,

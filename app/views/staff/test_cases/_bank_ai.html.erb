@@ -1,0 +1,45 @@
+<%# AI draft (TestCases::DraftBank): one button asks for what the sections still lack; the proposal
+    is shown as a list to tick, and only ticked rows enter the bank (SaveBank "accept_ai"). The AI
+    sees the position, activities and competencies, never applicant data. Two forms, not nested. %>
+<%= render layout: "staff/job_briefs/card", locals: { id: "question-bank-ai", icon: "fa-magic", tone: "info", title: "Draft questions with AI",
+           text: "The AI proposes questions from the saved activities and competencies. Nothing is added until you tick it, and the HR Manager still approves the bank." } do %>
+  <%= form_with url: staff_job_question_bank_ai_draft_path(job), method: :post, class: "question-bank-ai__ask",
+                data: { turbo: false, submit_guard: true, ai_overlay: "Drafting questions with Gemini",
+                        ai_overlay_steps: "Reading the activities and competencies|Writing technical and role questions|Checking each answer key|Preparing the list for you to tick" } do %>
+    <%= label_button proposal ? "Draft again" : "Draft questions", "fa-magic", purpose: :neutral %>
+  <% end %>
+  <% rows = Array(proposal&.payload&.dig("bank", "questions")) %>
+  <% if proposal %>
+    <%= form_with url: staff_job_question_bank_accept_ai_path(job, proposal), method: :post, scope: :bank, class: "question-bank-ai__pick mt-3",
+                  data: { turbo: false, submit_guard: true, tick_scope: true } do %>
+      <p class="mb-2"><strong><%= rows.size %> proposed questions.</strong> Tick the ones to add; you can edit each one after adding it.
+        <% if proposal.payload.dig("bank", "dropped").to_i.positive? %><span class="text-muted"><%= proposal.payload.dig("bank", "dropped") %> unusable rows were left out.</span><% end %></p>
+      <div class="question-bank-ai__bar">
+        <label class="question-bank-ai__all"><input type="checkbox" class="form-check-input" data-tick-all> Tick all</label>
+        <span class="question-bank-ai__count" data-tick-count><%= rows.size %> proposed</span>
+        <button type="submit" name="commit" value="Add ticked questions" class="btn btn-primary btn-sm question-bank-ai__add"><i class="fa fa-plus-square me-2" aria-hidden="true"></i>Add <span data-tick-n>0</span> ticked questions</button>
+      </div>
+      <p class="question-bank-ai__hint"><i class="fa fa-info-circle" aria-hidden="true"></i> The AI questions are saved only with <strong>Add ticked questions</strong>. The page's Save button stores the case document, not these questions.</p>
+      <ol class="question-bank-ai__list">
+        <% rows.each_with_index do |row, i| %>
+          <li>
+            <label class="question-bank-ai__row">
+              <%# Unticked by default: the card promises nothing is added until the HR Admin ticks it, so each row is read first. %>
+              <input type="checkbox" class="form-check-input" name="bank[picks][]" value="<%= i %>" data-tick-item>
+              <span>
+                <span class="portal-state portal-state--info"><%= QuestionBank::SECTIONS[row["section"]] %></span>
+                <span class="portal-state portal-state--muted"><%= BankQuestion::KINDS[row["kind"]] %></span>
+                <small class="text-muted">tests: <%= row["link_text"] %></small><br>
+                <%= row["prompt"] %>
+                <% if row["kind"] == "multiple_choice" %>
+                  <ol type="A" class="question-bank-options"><% row["options"].sort_by { |k, _| k.to_i }.each do |k, text| %><li class="<%= 'is-correct' if k == row['correct'] %>"><%= text %><%= " (correct)" if k == row["correct"] %></li><% end %></ol>
+                <% end %>
+              </span>
+            </label>
+          </li>
+        <% end %>
+      </ol>
+      <div class="action-row mt-2"><button type="submit" name="commit" value="Add ticked questions" class="btn btn-primary question-bank-ai__add"><i class="fa fa-plus-square me-2" aria-hidden="true"></i>Add <span data-tick-n>0</span> ticked questions</button></div>
+    <% end %>
+  <% end %>
+<% end %>

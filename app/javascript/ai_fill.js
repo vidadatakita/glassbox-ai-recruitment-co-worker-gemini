@@ -29,12 +29,17 @@ document.addEventListener("submit", async (event) => {
     if (reply.ok) {
       Object.entries(reply.fields || {}).forEach(([name, value]) => {
         const field = scope.querySelector(`[name="${name}"]`)
-        if (field) { field.value = value; field.dispatchEvent(new Event("input", { bubbles: true })) }
+        // A radio group is answered by checking the radio whose value is the reply (setting .value on
+        // the first radio would rename that option instead).
+        if (field?.type === "radio") {
+          const pick = scope.querySelector(`[name="${name}"][value="${value}"]`)
+          if (pick) { pick.checked = true; pick.dispatchEvent(new Event("change", { bubbles: true })) }
+        } else if (field) { field.value = value; field.dispatchEvent(new Event("input", { bubbles: true })) }
       })
     }
     say(scope, reply.message || "The AI could not write. Try again.", reply.ok)
   } catch {
-    say(scope, "Koneksi terputus. Coba lagi.", false)
+    say(scope, "Connection lost. Try again.", false)
   } finally {
     delete form.dataset.submitted
     delete form.dataset.submitter

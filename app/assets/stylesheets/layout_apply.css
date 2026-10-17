@@ -1,0 +1,44 @@
+/* Layout pass, 17 Oct 2026 (Vida: every layout proper, responsive, not too much information).
+   Presentational rules only for the candidate pages (lamar/**, apply/**). Loaded by
+   layouts/candidate.html.erb after candidate.css and brand.css, so these rules win on equal
+   specificity without !important. */
+
+/* Screen-reader-only text. Bootstrap is not loaded on candidate pages, so the class the views use
+   (the step headings' job title, the test's "Your answer" labels) needs its own definition here. */
+.cand .visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Phone order of the apply shell (below the 900px two-column breakpoint in candidate.css):
+   "What to prepare" first, then the form card, then the contact / anti-scam block. Before this the
+   trust block sat above the card and pushed the first question about 170px down, while "What to
+   prepare" only appeared after the Next button, when it was too late to prepare anything. The
+   trust block stays on the page, whole, directly under the form.
+   Only the visual order changes. Neither aside holds a link or a field, so the keyboard tab order
+   (which follows the markup) meets the same controls in the same sequence. */
+@media (max-width: 899.98px) {
+  .cand-shell--aside > .cand-aside--after { order: 1; }
+  .cand-shell--aside > .cand-body { order: 2; }
+  .cand-shell--aside > .cand-aside:not(.cand-aside--after) { order: 3; }
+}
+
+/* "About this vacancy" on a phone: the first lines show, the rest is clipped behind a fade until
+   "Show the full vacancy text" is opened. The clip is visual only (overflow), never display:none,
+   so the whole text stays readable to assistive technology. The toggle is a summary-only details
+   element (lamar/show), so it works without script and announces its expanded state. */
+.job-ad__more { display: none; }
+@media (max-width: 767.98px) {
+  .job-ad__text { position: relative; max-height: 13rem; overflow: hidden; }
+  .job-ad__text::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3rem; background: linear-gradient(to bottom, rgba(255, 255, 255, 0), var(--surface, #fff)); pointer-events: none; }
+  .job-ad:has(> .job-ad__more[open]) > .job-ad__text { max-height: none; }
+  .job-ad:has(> .job-ad__more[open]) > .job-ad__text::after { display: none; }
+
+  .job-ad__more { display: block; padding: 0 16px 14px; }
+  /* Two classes deep on purpose: candidate.css styles every ".job-ad summary" (padding, chevron,
+     and a bottom rule when open) for the outer heading; the toggle must not inherit those. */
+  .job-ad .job-ad__more > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0; border-bottom: 0; font-weight: 700; color: #1D428A; text-decoration: underline; text-underline-offset: 3px; }
+  .job-ad .job-ad__more > summary::after { content: none; }
+  .job-ad__more > summary::-webkit-details-marker { display: none; }
+  .job-ad__more > summary:focus-visible { outline: 2px solid #E87722; outline-offset: 2px; border-radius: 4px; }
+  .job-ad__more-close { display: none; }
+  .job-ad__more[open] .job-ad__more-open { display: none; }
+  .job-ad__more[open] .job-ad__more-close { display: inline; }
+}

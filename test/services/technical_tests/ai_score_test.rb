@@ -43,11 +43,29 @@ class TechnicalTests::AiScoreTest < ActiveSupport::TestCase
     seen = TechnicalTests::AiScore.digest(TechnicalTests::AnswerText.call(attempt).text)
     suggestion = with_ai(client) { TechnicalTests::AiScore.call(attempt:, reviewer: reviewer, seen_sha256: seen) }
 
-    assert_equal [{ "criterion_id" => criteria.first.id, "rating" => 4, "reason" => "Selisih ditemukan.", "quote" => "BRG-01" }], suggestion.criteria
+    assert_equal [{ "criterion_id" => criteria.first.id, "rating" => 4, "reason" => "Selisih ditemukan.", "quote" => "BRG-01", "verified" => true }], suggestion.criteria
     assert_equal seen, suggestion.sent_sha256
     assert_includes client.seen, "<answer>"
     assert_includes client.seen, "1. #{criteria.first.name}"
     assert_empty attempt.reload.review.to_a, "a proposal is never a score"
+  end
+
+  test "every proposed quote is checked verbatim against the answer: an invented quote and an unquoted high rating are unverified" do
+    attempt = answered!(@application)
+    criteria = attempt.test_case.criteria.to_a
+    assert_operator criteria.size, :>=, 2, "control: the test case has two criteria to rate"
+    answer = { "criteria" => [
+      { "criterion" => 1, "quote" => "BRG-02 corrected by 15", "reason" => "Invented.", "rating" => 5 },
+      { "criterion" => 2, "quote" => "", "reason" => "Nothing quoted.", "rating" => 4 }
+    ], "summary" => "x" }
+    seen = TechnicalTests::AiScore.digest(TechnicalTests::AnswerText.call(attempt).text)
+    rows = with_ai(FakeClient.new(answer.to_json)) { TechnicalTests::AiScore.call(attempt:, reviewer: reviewer, seen_sha256: seen) }.criteria
+    assert_equal [false, false], rows.map { |r| r["verified"] }, "a quote not in the answer, and a rating above 1 without a quote, are not evidence"
+
+    answer["criteria"] = [{ "criterion" => 1, "quote" => "BRG-01", "reason" => "Found.", "rating" => 3 },
+                          { "criterion" => 2, "quote" => "", "reason" => "Not addressed.", "rating" => 1 }]
+    rows = with_ai(FakeClient.new(answer.to_json)) { TechnicalTests::AiScore.call(attempt:, reviewer: reviewer, seen_sha256: seen) }.criteria
+    assert_equal [true, true], rows.map { |r| r["verified"] }, "control: a verbatim quote, and a 1 with nothing to quote, stand"
   end
 
   test "refused: text changed since the preview, the job's consultant, the AI switched off" do

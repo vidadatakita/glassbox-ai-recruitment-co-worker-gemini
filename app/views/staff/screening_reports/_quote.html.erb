@@ -1,7 +1,10 @@
 <%# One verbatim CV quote with the result of the quote check (§4.1 step 6). Never hidden when not found.
-    Masked for blind viewers (report_ai, engine-08 F-01); the check itself ran on the unmasked text. %>
-<% if quote.present? %>
-  <q class="report-quote"><%= report_ai(quote, row) %></q>
+    Masked for blind viewers (report_ai, engine-08 F-01); the check itself ran on the unmasked text.
+    A criterion may carry up to three passages (since 16 Oct, stored joined by
+    Screening::QuoteCheck::SEPARATOR): each is shown as its own quote; "verified" covers them all. %>
+<% passages = Screening::QuoteCheck.passages(quote) %>
+<% if passages.any? %>
+  <% passages.each do |passage| %><q class="report-quote"><%= report_ai(passage, row) %></q> <% end %>
   <% unless verified %><span class="portal-state portal-state--danger">unverified</span><% end %>
 <% else %>
   <span class="text-muted">No quote</span>

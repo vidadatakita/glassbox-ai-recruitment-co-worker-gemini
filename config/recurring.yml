@@ -19,6 +19,12 @@ production:
     class: TechnicalTestTickJob
     queue: default
     schedule: every 5 minutes
+  # Three-step application form (17 Oct 2026): an unsubmitted draft is deleted once its vacancy's
+  # portal is closed (it holds a person's details and CV without an application).
+  application_draft_purge:
+    class: ApplicationDraftPurgeJob
+    queue: default
+    schedule: every hour at minute 25
   # A5: the demo workspace goes back to its seed every night, 20:00 UTC = 03:00 WIB. Demo::Reset
   # refuses to run unless DEMO_MODE=1, so this line is harmless on a client install.
   demo_reset:

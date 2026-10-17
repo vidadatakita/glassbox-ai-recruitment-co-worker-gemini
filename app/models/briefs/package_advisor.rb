@@ -8,12 +8,12 @@ module Briefs
   # listed first), not a rule: the spec names no volume input that would choose between them.
   module PackageAdvisor
     NAMES = { 1 => "Post", 2 => "Screen", 3 => "Select", 4 => "Full Selection", 5 => "End-to-end" }.freeze
-    RECOMMENDED = { 1 => [2, 3], 2 => [2, 3], 3 => [3], 4 => [4], 5 => [4], 6 => [4, 5], 7 => [4, 5], 8 => [4, 5] }.freeze
+    RECOMMENDED = { 1 => [2, 3], 2 => [2, 3], 3 => [3], 4 => [3], 5 => [3], 6 => [3], 7 => [3], 8 => [3] }.freeze
     REASONS = {
       [1, 2] => "Grade 1-2 (operative staff): CV screening, a work test and a short interview are enough to choose.",
       [3] => "Grade 3 (team leader): an HR interview is needed besides the test, because the person leads a small team.",
-      [4, 5] => "Grade 4-5 (supervisor): all five stages including the psychological test (D11).",
-      [6, 7, 8] => "Grade 6-8 (manager and above): all five stages plus a reference check."
+      [4, 5] => "Grade 4-5 (supervisor): CV screening, a work test and two interviews.",
+      [6, 7, 8] => "Grade 6-8 (manager and above): CV screening, a work test and two interviews."
     }.freeze
 
     module_function

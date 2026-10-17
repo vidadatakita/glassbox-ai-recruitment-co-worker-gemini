@@ -1,0 +1,35 @@
+<%# The draw rule and the timer. On an approved bank this form starts version n + 1 (a copy) and asks
+    the reason; on a draft it edits in place. %>
+<% approved = bank&.approved? %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-random", title: approved ? "Start version #{bank.version + 1}" : "Draw and time limit",
+           text: approved ? "Version #{bank.version} is final. Saving here starts version #{bank.version + 1} as a copy you can change; write why." :
+                            "How many questions each applicant draws per section, and the minutes for the whole test. The bank holds at least twice the draw." } do %>
+  <%= form_with url: staff_job_question_bank_settings_path(job), method: :post, scope: :bank, class: "question-bank-settings",
+                data: { turbo: false, submit_guard: true } do %>
+    <div class="row g-2 align-items-end">
+      <div class="col-md-3 col-6">
+        <label class="form-label" for="bank_technical_draw">Technical questions per applicant</label>
+        <input type="text" inputmode="numeric" class="form-control" id="bank_technical_draw" name="bank[technical_draw]" value="<%= bank&.technical_draw || QuestionBank::DEFAULT_TECHNICAL_DRAW %>">
+      </div>
+      <div class="col-md-3 col-6">
+        <label class="form-label" for="bank_role_draw">Role questions per applicant</label>
+        <input type="text" inputmode="numeric" class="form-control" id="bank_role_draw" name="bank[role_draw]" value="<%= bank&.role_draw || QuestionBank::DEFAULT_ROLE_DRAW %>">
+      </div>
+      <div class="col-md-3 col-6">
+        <label class="form-label" for="bank_time_limit">Time limit (minutes)</label>
+        <input type="text" inputmode="numeric" class="form-control" id="bank_time_limit" name="bank[time_limit_minutes]" value="<%= bank&.time_limit_minutes || QuestionBank::DEFAULT_TIME_LIMIT %>">
+      </div>
+      <% if approved %>
+        <div class="col-12">
+          <label class="form-label" for="bank_new_version_reason">Reason for the new version</label>
+          <input type="text" class="form-control" id="bank_new_version_reason" name="bank[new_version_reason]">
+        </div>
+      <% end %>
+      <%# The button comes after every field it sends, the required reason included (reading order). %>
+      <div class="col-md-3 col-6">
+        <%= label_button approved ? "Start version #{bank.version + 1}" : "Save settings", approved ? "fa-code-fork" : "fa-save" %>
+      </div>
+    </div>
+    <span class="hris-field-hint">At most <%= QuestionBank::MAX_DRAW %> per section and <%= QuestionBank::MAX_TIME_LIMIT %> minutes.</span>
+  <% end %>
+<% end %>

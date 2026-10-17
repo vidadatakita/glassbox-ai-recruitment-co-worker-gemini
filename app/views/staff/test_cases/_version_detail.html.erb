@@ -29,14 +29,6 @@
         </table>
       </div>
     <% end %>
-    <% if test_case.draft? && TestCases::Authority.may_approve?(current_user) %>
-      <%= form_with url: staff_job_test_case_approve_path(job, test_case), method: :post, class: "test-case-approve",
-                    data: { turbo: false, submit_guard: true } do %>
-        <%# Maker-checker (engine 07 F-02): the fingerprint of exactly what this page shows. %>
-        <input type="hidden" name="content_digest" value="<%= test_case.content_digest %>">
-        <p class="mb-2"><i class="fa fa-info-circle" aria-hidden="true"></i> Check the case study file, the instructions and the rubric. Once approved, this version cannot be changed; any later change becomes a new version.</p>
-        <%= label_button "Approve version #{test_case.version}", "fa-check", purpose: :approve %>
-      <% end %>
-    <% end %>
+    <%= render "staff/test_cases/approve_form", job: job, test_case: test_case %>
   <% end %>
 <% end %>

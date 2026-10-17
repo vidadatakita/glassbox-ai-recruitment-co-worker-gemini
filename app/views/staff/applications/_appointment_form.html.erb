@@ -26,5 +26,5 @@
       <%= f.text_field :contact, value: appointment&.contact, class: "form-control", id: "contact_#{participation.id}", required: true %>
     </div>
   </div>
-  <div class="mt-3"><%= label_button(appointment ? "Save appointment changes" : "Save appointment", "fa-calendar") %></div>
+  <div class="mt-3 action-row"><%= label_button(appointment ? "Save appointment changes" : "Save appointment", "fa-calendar") %></div>
 <% end %>

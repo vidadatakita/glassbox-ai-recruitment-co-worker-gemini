@@ -2,7 +2,7 @@ module Staff
   # Settings (ONP-3): the screen settings and the consent text versions (D35). Admin only.
   # Every change writes an audit row; the button reads Save (house rule on button verbs).
   class SettingsController < BaseController
-    before_action -> { require_role!(:admin) }
+    before_action -> { require_role!(:superadmin) }
 
     def show
       # The settings this user edits: their company's under TENANCY=multi, else the install-wide ones.

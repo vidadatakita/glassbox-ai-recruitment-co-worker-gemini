@@ -20,18 +20,37 @@
       <%# The prompt version stays in the record for audit; users never see model or prompt names (house rule). %>
       <p class="text-muted fs-12 mb-2">Last run <%= wib(Time.zone.parse(check.stored(job)["checked_at"])) %><%= " · stale: run again before completing the brief" if stale %></p>
     <% end %>
+    <%# The rule check usually gives the same sentence for every line it keeps, and an all-"keep" run
+        has nothing to decide. Repeating both on every row made the table unreadable on a phone, so a
+        reason shared by two or more lines is stated once above the table (rows with that reason point
+        to it), and the Decision column only appears when at least one line has or needs a decision.
+        Nothing stored is hidden: every other reason and every decision still renders in its row. %>
+    <% reason_counts = lines.map { |l| l["reason"].to_s.strip }.reject(&:empty?).tally %>
+    <% common_reason, common_count = reason_counts.max_by { |_, n| n } %>
+    <% common_reason = nil unless common_count.to_i >= 2 %>
+    <% all_same_reason = common_reason && common_count == lines.size %>
+    <% show_decision = lines.any? { |l| l["decision"].present? || l["verdict"] != "keep" } %>
+    <% if common_reason %>
+      <p class="requirement-check-common fs-13 mb-2"><strong><%= all_same_reason ? "Reason for every line:" : "Reason, unless the row says otherwise:" %></strong> <%= common_reason %></p>
+    <% end %>
+    <% unless show_decision %>
+      <p class="text-muted fs-13 mb-2">No line is flagged, so no decision is needed.</p>
+    <% end %>
     <div class="table-responsive">
-      <table class="table table-sm align-middle requirement-check-table">
-        <thead><tr><th>Requirement</th><th>Verdict</th><th>Source</th><th>Reason</th><th>Decision</th></tr></thead>
+      <table class="table table-sm align-middle requirement-check-table table-stack">
+        <thead><tr><th>Requirement</th><th>Verdict</th><th>Source</th><% unless all_same_reason %><th>Reason</th><% end %><% if show_decision %><th>Decision</th><% end %></tr></thead>
         <tbody>
           <% lines.each do |l| %>
             <% flagged = l["verdict"] != "keep" %>
             <tr>
               <td><%= l["text"] %><% if l["replacement"].present? %><br><small class="text-muted">Neutral wording: <em><%= l["replacement"] %></em></small><% end %></td>
-              <td><span class="portal-state portal-state--<%= { "keep" => "success", "replace" => "warning", "delete" => "danger" }.fetch(l["verdict"], "muted") %>"><%= { "keep" => "Keep", "replace" => "Replace", "delete" => "Delete" }.fetch(l["verdict"], l["verdict"]) %></span></td>
-              <td><span class="portal-state portal-state--<%= l["source"] == "ai" ? "info" : "muted" %>"><%= l["source"] == "ai" ? "AI advice" : "Rule" %></span></td>
-              <td class="fs-13"><%= l["reason"] %></td>
-              <td>
+              <td data-label="Verdict"><span class="portal-state portal-state--<%= { "keep" => "success", "replace" => "warning", "delete" => "danger" }.fetch(l["verdict"], "muted") %>"><%= { "keep" => "Keep", "replace" => "Replace", "delete" => "Delete" }.fetch(l["verdict"], l["verdict"]) %></span></td>
+              <td data-label="Source"><span class="portal-state portal-state--<%= l["source"] == "ai" ? "info" : "muted" %>"><%= l["source"] == "ai" ? "AI advice" : "Rule" %></span></td>
+              <% unless all_same_reason %>
+                <td class="fs-13" data-label="Reason"><% if common_reason && l["reason"].to_s.strip == common_reason %><span class="text-muted">As stated above</span><% else %><%= l["reason"] %><% end %></td>
+              <% end %>
+              <% if show_decision %>
+              <td data-label="Decision" class="requirement-check-decision">
                 <% if l["decision"].present? %>
                   <strong><%= { "keep" => "Kept with a reason", "replace" => "Neutral wording used", "delete" => "Deleted" }.fetch(l["decision"], l["decision"]) %></strong>
                   <br><small class="text-muted"><%= l["decided_by_name"] %> · <%= wib(Time.zone.parse(l["decided_at"])) %><%= " · #{l['note']}" if l["note"].present? %></small>
@@ -53,6 +72,7 @@
                   <span class="text-muted">—</span>
                 <% end %>
               </td>
+              <% end %>
             </tr>
           <% end %>
         </tbody>

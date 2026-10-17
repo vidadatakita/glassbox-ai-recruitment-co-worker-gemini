@@ -14,11 +14,11 @@ module Staff
   #                once the gate is closed (SPEC screening report §2.4, D62 h7), owner/admin never
   class TestScoringsController < BaseController
     before_action :load_job, only: :index
-    before_action -> { require_role!(:reviewer, :consultant, :hr_pic, :owner) }, only: :index
-    before_action -> { require_role!(:reviewer) }, only: %i[create ai_preview ai_score]
+    before_action -> { require_role!(:hr_manager, :hr_admin) }, only: :index
+    before_action -> { require_role!(:hr_manager) }, only: %i[create ai_preview ai_score]
     # The HR PIC is admitted here only so TechnicalTests.answer_downloadable_by? can decide (gate
     # closed); org_find below keeps every lookup inside the user's own company.
-    before_action -> { require_role!(:reviewer, :consultant, :hr_pic) }, only: :answer_file
+    before_action -> { require_role!(:hr_manager, :hr_admin) }, only: :answer_file
 
     def index
       raise ActiveRecord::RecordNotFound, "job #{@job.id} has no technical test gate" unless GateBoard.new(@job).applicable?
@@ -27,7 +27,7 @@ module Staff
       @job.job_applications.find_each { |application| TechnicalTests::Expire.call(application) }
       @board = TestScoringBoard.new(@job)
       @consultant_blocked = @job.consultant_id.present? && @job.consultant_id == current_user.id
-      @can_score = current_user.role == "reviewer" && !@consultant_blocked && @board.stage.status == "open"
+      @can_score = current_user.role.in?(%w[hr_manager superadmin]) && !@consultant_blocked && @board.stage.status == "open"
       # ?ai=<id>: the AI's proposal for one answer fills that answer's scoring form (reviewer confirms).
       @ai_suggestion = TestAiSuggestion.joins(test_attempt: { participation: :stage }).where(stages: { job_id: @job.id }).find_by(id: params[:ai]) if params[:ai].present?
     end

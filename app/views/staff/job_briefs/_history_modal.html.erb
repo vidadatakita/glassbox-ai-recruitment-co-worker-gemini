@@ -1,0 +1,33 @@
+<%# D49 (5) "every change recorded", shown in a modal (17 Oct 2026) instead of an inline table so
+    the brief page stays short: the latest changes, newest first, each with who, in which role,
+    which step and which fields went from what to what. Opened by the "Change history" button in
+    the page header (show.html.erb). Bootstrap's modal script is loaded by layouts/staff. %>
+<% changes = brief_history(job) %>
+<div class="modal fade brief-history-modal" id="brief-history-modal" tabindex="-1" aria-labelledby="brief-history-title" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header brief-history-modal__header">
+        <div>
+          <h2 class="modal-title" id="brief-history-title"><i class="fa fa-history me-2" aria-hidden="true"></i>Change history</h2>
+          <p class="brief-history-modal__sub mb-0"><%= job.title %> · Vacancy brief · last <%= changes.size %> changes, newest first</p>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <% if changes.empty? %>
+          <p class="text-muted mb-0">No changes yet. Every brief save is recorded here with a name and time.</p>
+        <% else %>
+          <ol class="brief-history">
+            <% changes.each do |change| %>
+              <%= render "staff/job_briefs/history_entry", change: change %>
+            <% end %>
+          </ol>
+        <% end %>
+      </div>
+      <div class="modal-footer justify-content-between">
+        <span class="text-muted fs-13"><i class="fa fa-info-circle me-1" aria-hidden="true"></i><%= pluralize(job.brief_changes.count, "recorded change") %></span>
+        <button type="button" class="btn btn-light label-btn label-end" data-bs-dismiss="modal">Close <i class="fa fa-times label-btn-icon ms-2" aria-hidden="true"></i></button>
+      </div>
+    </div>
+  </div>
+</div>

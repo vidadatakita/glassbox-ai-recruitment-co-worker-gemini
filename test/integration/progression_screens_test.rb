@@ -1,7 +1,7 @@
 require "test_helper"
 
-# AI Builder Cup step 06 on the applicant page: the HR PIC sees the panel and the three choices,
-# chooses, scores Interview 1; other roles read only and are refused by the controller.
+# AI Builder Cup step 06 on the applicant page: the HR admin sees the panel and the three choices,
+# chooses, scores Interview 1; the HR manager reads only and is refused by the controller.
 class ProgressionScreensTest < ActionDispatch::IntegrationTest
   include TechnicalTestFactory
 
@@ -51,11 +51,17 @@ class ProgressionScreensTest < ActionDispatch::IntegrationTest
     assert_equal Scoring::StageScore.from_ratings(ratings.values.map(&:to_i)), s3.reload.current_score
   end
 
-  test "a consultant reads the panel but cannot choose" do
-    sign_in_as staff_user("consultant")
-    get staff_application_path(@application)
-    assert_nil Nokogiri::HTML(response.body).at_css("button[name=choice]")
-    post staff_participation_choice_path(@s1), params: { choice: "lanjut" }
-    assert_nil @s1.reload.progression_choice
+  # Three-role model (17 Oct 2026): the step-9 decision is an HR admin action, so the old consultant
+  # (now an HR admin) may choose; the role still refused is the HR manager (old owner and reviewer).
+  test "an HR manager reads the panel but cannot choose" do
+    %w[owner reviewer].each do |role|
+      sign_in_as staff_user(role)
+      get staff_application_path(@application)
+      assert_response :success, "#{role} reads the applicant page"
+      assert_nil Nokogiri::HTML(response.body).at_css("button[name=choice]"), "#{role} is offered a choice"
+      post staff_participation_choice_path(@s1), params: { choice: "lanjut" }
+      assert_nil @s1.reload.progression_choice, "#{role} chose"
+      sign_out
+    end
   end
 end

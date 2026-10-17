@@ -4,10 +4,10 @@ one:
   email_address: one@example.com
   password_digest: <%= password_digest %>
   name: Pengguna Uji
-  role: consultant
+  role: superadmin
 
 two:
   email_address: two@example.com
   password_digest: <%= password_digest %>
   name: Pengguna Uji
-  role: consultant
+  role: superadmin

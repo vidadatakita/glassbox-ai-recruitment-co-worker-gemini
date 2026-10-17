@@ -3,23 +3,28 @@
   <%# "Add vacancy" (feature 03) only for the roles that may write a brief (D49 (5)). %>
   <%= render "staff/shared/page_header", eyebrow: "Recruitment", title: "My vacancies",
              subtitle: "Vacancies with their brief status, Applicant portal and number of applications.",
-             actions: (label_link("Add vacancy", "fa-plus", staff_new_job_path) if current_user.role.in?(%w[hr_pic consultant])) %>
+             actions: (label_link("Add vacancy", "fa-plus", staff_new_job_path) if current_user.role.in?(%w[hr_admin superadmin])) %>
   <section class="content">
     <% open_count = @windows.values.count(&:open?) %>
     <% complete_count = @jobs.count(&:brief_complete?) %>
+    <%# Information display (house rule "every figure informs"): the applications total, and the vacancy
+        that draws the most, so the card says what is largest, not only how many. %>
+    <% total_apps = @windows.values.sum(&:application_count) %>
+    <% top_job = @jobs.max_by { |j| @windows[j.id].application_count } %>
     <div class="row loan-index-summary">
       <%= render "staff/shared/metric", variant: "primary", icon: "fa-briefcase", label: "Vacancies",
-                 value: @jobs.size, caption: "#{open_count} open, #{@jobs.count { |j| j.ad_approved_at.nil? }} awaiting job ad approval", col: "col-lg-3 col-sm-6" %>
+                 value: @jobs.size, caption: "#{open_count} open, #{@jobs.count { |j| j.ad_text.blank? }} without a job ad yet", col: "col-lg-3 col-sm-6" %>
       <%= render "staff/shared/metric", variant: (complete_count == @jobs.size ? "success" : "warning"), icon: "fa-file-text-o", label: "Briefs complete",
                  value: "#{complete_count} / #{@jobs.size}", caption: "#{@jobs.size - complete_count} #{'brief'.pluralize(@jobs.size - complete_count)} still draft", col: "col-lg-3 col-sm-6" %>
       <%= render "staff/shared/metric", variant: "success", icon: "fa-unlock", label: "Portals open",
                  value: open_count, caption: "of #{@jobs.size} #{'vacancy'.pluralize(@jobs.size)} accepting applications", col: "col-lg-3 col-sm-6" %>
       <%= render "staff/shared/metric", variant: "info", icon: "fa-file-text-o", label: "Applications",
-                 value: @windows.values.sum(&:application_count), caption: "applications received through the portal", col: "col-lg-3 col-sm-6" %>
+                 value: total_apps, caption: (total_apps.positive? ? "most for #{top_job.title} (#{@windows[top_job.id].application_count}, #{(100.0 * @windows[top_job.id].application_count / total_apps).round}%)" : "none received yet"), col: "col-lg-3 col-sm-6" %>
     </div>
     <div class="card custom-card">
       <div class="card-body table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <p class="text-muted small mb-2">Each vacancy's applications as a share of all <strong><%= total_apps %></strong> received; the next step says what to do now.</p>
+        <table class="table table-hover align-middle mb-0 table-stack">
           <thead><tr><th>Vacancy</th><th>Location</th><th>Brief</th><th>Portal</th><th class="text-end">Applications</th><th>Next step</th><th></th></tr></thead>
           <tbody>
             <% if @jobs.empty? %>
@@ -28,15 +33,20 @@
             <% @jobs.each do |job| %>
               <% window = @windows[job.id] %>
               <tr>
-                <td><%= job.title %><% if job.confidential? %> <span class="badge bg-light text-dark">Confidential</span><% end %>
+                <td data-label="Vacancy"><%= job.title %><% if job.confidential? %> <span class="badge bg-light text-dark">Confidential</span><% end %>
                   <small class="d-block text-muted"><%= job.golongan_label %></small></td>
-                <td><%= placement_summary(job) %></td>
-                <td><%= brief_status_badge(job) %></td>
-                <td><%= window_badge(window) %></td>
-                <td class="text-end"><%= window.application_count %><% if window.quota %> / <%= window.quota %><% end %></td>
-                <td>
-                  <% if job.ad_approved_at.nil? && !job.brief_complete? %>Complete the brief
-                  <% elsif job.ad_approved_at.nil? %>Approve the job ad
+                <td data-label="Location"><%= placement_summary(job) %></td>
+                <td data-label="Brief"><%= brief_status_badge(job) %></td>
+                <td data-label="Portal"><%= window_badge(window) %></td>
+                <% share = total_apps.positive? ? (100.0 * window.application_count / total_apps).round : 0 %>
+                <td class="text-end job-share" data-label="Applications">
+                  <strong><%= window.application_count %></strong><% if window.quota %> / <%= window.quota %><% end %>
+                  <span class="job-share__pct"><%= share %>%</span>
+                  <span class="job-share__bar" aria-hidden="true"><span style="width: <%= share %>%"></span></span>
+                </td>
+                <td data-label="Next step">
+                  <% if !job.brief_complete? %>Complete the brief
+                  <% elsif job.ad_text.blank? %>Write the job ad
                   <% elsif window.state == :never_opened %>Open the Applicant portal
                   <% elsif window.open? %>Watch incoming applications
                   <% else %>Continue the selection<% end %>
@@ -54,22 +64,32 @@
     </div>
     <div class="row loan-index-bottom-cards">
       <div class="col-lg-7">
-        <div class="loan-index-guide-card">
-          <div class="loan-index-guide-card__header"><i class="fa fa-lightbulb-o"></i>
-            <div><h3>How it works</h3><p>From the vacancy brief to incoming applications.</p></div></div>
+        <%# Static onboarding: open while the workspace has fewer than two vacancies, a click away after. %>
+        <details class="loan-index-guide-card jobs-guide"<%= " open" if @jobs.size < 2 %>>
+          <summary class="loan-index-guide-card__header"><i class="fa fa-lightbulb-o"></i>
+            <div><h3>How it works</h3><p>From the vacancy brief to incoming applications.</p></div>
+            <i class="fa fa-chevron-down jobs-guide__toggle" aria-hidden="true"></i></summary>
           <ol>
             <li><span>1</span> Add a vacancy and complete the brief in 4 steps.</li>
-            <li><span>2</span> Approve the job ad once the brief is complete.</li>
+            <li><span>2</span> Write the job ad; the discrimination check reads every sentence.</li>
             <li><span>3</span> Open the Applicant portal, with a deadline or quota if needed.</li>
             <li><span>4</span> Share the application link and watch the incoming applications.</li>
           </ol>
-        </div>
+        </details>
       </div>
       <div class="col-lg-5">
         <div class="loan-index-status-card">
           <h3>Portal status</h3>
-          <% PortalHelper::WINDOW_LABELS.each do |state, (label, _tone)| %>
-            <div><span class="loan-index-status-dot <%= state == :open ? "loan-index-status-dot--success" : "loan-index-status-dot--muted" %>"></span><%= label %> <strong><%= @windows.values.count { |w| w.state == state } %> <%= "vacancy".pluralize(@windows.values.count { |w| w.state == state }) %></strong></div>
+          <%# States with vacancies first; the empty ones stay one click away instead of five "0" rows. %>
+          <% counts = PortalHelper::WINDOW_LABELS.to_h { |state, _| [state, @windows.values.count { |w| w.state == state }] } %>
+          <% used, empty = PortalHelper::WINDOW_LABELS.partition { |state, _| counts[state].positive? } %>
+          <% status_row = ->(state, label) { tag.div { safe_join([tag.span(class: "loan-index-status-dot #{state == :open ? "loan-index-status-dot--success" : "loan-index-status-dot--muted"}"), label, " ", tag.strong("#{counts[state]} #{"vacancy".pluralize(counts[state])}")]) } } %>
+          <% used.each do |state, (label, _tone)| %><%= status_row.(state, label) %><% end %>
+          <% if empty.any? %>
+            <details class="jobs-status-empty">
+              <summary>Other statuses (<%= empty.size %>, no vacancies)</summary>
+              <% empty.each do |state, (label, _tone)| %><%= status_row.(state, label) %><% end %>
+            </details>
           <% end %>
         </div>
       </div>

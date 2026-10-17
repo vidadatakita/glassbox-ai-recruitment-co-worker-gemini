@@ -34,7 +34,7 @@ module Screening
     end
 
     def call
-      refuse!("Only a reviewer can review screening.") unless @reviewer.role == "reviewer"
+      refuse!("Only the HR Manager reviews screening results.") unless @reviewer.role.in?(%w[hr_manager superadmin])
       if @job.consultant_id.present? && @job.consultant_id == @reviewer.id
         refuse!("The reviewer cannot be the consultant of this vacancy.")
       end

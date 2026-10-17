@@ -1,0 +1,37 @@
+<%# AI co-worker for the case document (slice D): one press drafts the case study text AND the case file.
+    Shows the proposed data table (first rows), the planted errors (the answer key: staff only, never in
+    the applicant's file) and a download to check the file. Its own form; the Save form below carries the
+    proposal id so Save attaches the drafted file unless another file is chosen. %>
+<%# The card shows a stored proposal even if the AI is switched off since; only the button needs it. %>
+<% if Screening::Config.enabled? || proposal %>
+  <%= render layout: "staff/job_briefs/card", locals: { id: "ai-case-file", icon_html: render("staff/shared/ai_sparkle", size: 20), tone: "info",
+             title: "Draft the case with AI", text: "The AI drafts the case study (instructions, time limit, rubric) and the case file the applicant works on, from the saved position and activities. You check and edit both; Save stores a draft version; approval is unchanged. No applicant data is sent." } do %>
+    <% if Screening::Config.enabled? %>
+    <%= form_with url: staff_job_test_case_ai_case_path(job), method: :post,
+                  data: { turbo: false, submit_guard: true, ai_swap: true, ai_overlay: "Drafting the case with AI",
+                          ai_overlay_steps: "Reading the position and activities|Writing the case study and rubric|Building the case file and answer key" } do %>
+      <button type="submit" class="btn <%= proposal ? 'btn-outline-primary' : 'btn-primary' %> ai-btn" name="commit" value="Draft case with AI">
+        <%= render "staff/shared/ai_sparkle" %>
+        <span class="ai-btn__idle"><%= proposal ? "Draft the case again" : "Draft case with AI" %></span><span class="ai-btn__busy" role="status">The AI is drafting…</span>
+      </button>
+    <% end %>
+    <% end %>
+    <% if proposal %>
+      <% cf = proposal.payload["case_file"] %>
+      <div class="alert alert-primary job-brief-notice mt-3" role="status">
+        <%= render "staff/shared/ai_sparkle", size: 20 %>
+        <div><strong>Proposed case file: <%= cf["title"] %></strong> (<%= cf["rows"].size %> rows, <%= cf["columns"].size %> columns). Pressing Save below attaches it unless you choose another file.
+          <%= link_to "Download to check", staff_job_test_case_ai_case_file_path(job, proposal.id, saran: params[:saran]), class: "ms-1" %></div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead><tr><th>#</th><% cf["columns"].each do |c| %><th><%= c %></th><% end %></tr></thead>
+          <tbody><% cf["rows"].first(8).each_with_index do |row, i| %><tr><td><%= i + 1 %></td><% row.each do |v| %><td><%= v %></td><% end %></tr><% end %></tbody>
+        </table>
+      </div>
+      <h4 class="fs-14">Answer key (staff only; not in the applicant's file)</h4>
+      <ul class="mb-0"><% cf["planted"].each do |p| %><li>Row <%= p["row"] %> (<%= p["activity"] %>): <%= p["what"] %> → <strong><%= p["correct"] %></strong></li><% end %></ul>
+      <span class="hris-field-hint">Put the answer key into the rubric's "Score 5" lines so the reviewer scores against it.</span>
+    <% end %>
+  <% end %>
+<% end %>

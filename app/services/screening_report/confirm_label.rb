@@ -35,7 +35,7 @@ module ScreeningReport
     def result = @result ||= ScreeningResult.current_for(@participation.id).first
 
     def check!
-      refuse("Only a reviewer confirms the label.") unless @reviewer.role == "reviewer"
+      refuse("Only a reviewer confirms the label.") unless @reviewer.role.in?(%w[hr_manager superadmin])
       refuse("The consultant of this vacancy cannot confirm the label.") if @job.consultant_id == @reviewer.id
       refuse("No AI CV screening result for this candidate yet.") if result.nil?
       refuse("Choose one label.") unless Labels::ALL.key?(@label)

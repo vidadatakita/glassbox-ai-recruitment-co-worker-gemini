@@ -4,6 +4,8 @@ require "test_helper"
 # needs an approved version, a started version is frozen, a new version needs a reason, every
 # change is an audit row. Guards are tested at the service AND the database, each with a control.
 class TestCases::TestCaseVersionsTest < ActiveSupport::TestCase
+  # Three roles (17 Oct 2026): both people are HR Admins. The assigned consultant (a person,
+  # jobs.consultant_id) edits; the HR Admin role (and the superadmin) approves.
   setup do
     @job = briefed_job(golongan: 3, package: 3, complete: false, test_case: false)
     @consultant = staff_user("consultant")
@@ -33,23 +35,26 @@ class TestCases::TestCaseVersionsTest < ActiveSupport::TestCase
 
   # --- who -----------------------------------------------------------------------------------
 
-  test "only a consultant saves, only HR PIC approves; the assigned consultant only" do
-    %w[hr_pic owner reviewer admin].each do |role|
+  test "only an HR Admin saves and approves, never the HR Manager; once assigned, only the assigned consultant saves" do
+    %w[owner reviewer].each do |role|
       refute save(actor: staff_user(role)).ok?, "#{role} saved a test version"
     end
     draft = save.test_case
-    %w[consultant owner reviewer admin].each do |role|
+    %w[owner reviewer].each do |role|
       refute TestCases::Approve.call(test_case: draft, actor: staff_user(role)).ok?, "#{role} approved"
     end
     other = staff_user("consultant", email: "konsultan.lain@uji.example")
     @job.update!(consultant: @consultant)
-    refute save(actor: other).ok?, "a consultant not assigned to the job saved"
+    refute save(actor: other).ok?, "an HR Admin not assigned to the job saved"
+    refute save(actor: @hr).ok?, "the HR Admin who is not the assigned consultant saved"
+    refute save(actor: staff_user("admin")).ok?, "the superadmin is not the assigned consultant either"
     assert save.ok?, "control: the assigned consultant saves"
+    assert TestCases::Approve.call(test_case: TechnicalTestCase.latest_for(@job), actor: @hr).ok?, "control: the HR Admin approves"
   end
 
-  test "the database refuses an approval by anyone but HR PIC" do
+  test "the database refuses an approval by the HR Manager" do
     draft = save.test_case
-    error = refused_by_database { draft.update_columns(approved_by_id: @consultant.id, approved_at: Time.current) }
+    error = refused_by_database { draft.update_columns(approved_by_id: staff_user("reviewer").id, approved_at: Time.current) }
     assert_match(/only HR PIC approves/, error.message)
   end
 
@@ -207,7 +212,7 @@ class TestCases::TestCaseVersionsTest < ActiveSupport::TestCase
     params = case_version_params(@job)
     tc = save(params).test_case
     row = @job.brief_changes.where(step: "5").order(:id).last
-    assert_equal [@consultant.id, "consultant"], [row.actor_id, row.actor_role]
+    assert_equal [@consultant.id, "hr_admin"], [row.actor_id, row.actor_role]
     assert_equal [nil, 1], row.changes_made["test_case_version"]
     count = @job.brief_changes.count
     save(params.except(:case_file))

@@ -43,7 +43,7 @@ class Screening::GatesTest < ActiveSupport::TestCase
   end
 
   test "the model is one setting with the D50 default" do
-    with_env("AI_MODEL" => nil, "AI_MODEL_HIGH" => nil) { assert_equal "gemini-3.8-pro", Screening::Config.model }
+    with_env("AI_MODEL" => nil, "AI_MODEL_HIGH" => nil) { assert_equal "gemini-3.8-flash", Screening::Config.model }
     with_env("AI_MODEL" => "gemini-3.5-flash-lite") { assert_equal "gemini-3.5-flash-lite", Screening::Config.model }
   end
 
@@ -123,8 +123,9 @@ class Screening::GatesTest < ActiveSupport::TestCase
     assert_raises(Screening::PasteCvText::Refused) do
       Screening::PasteCvText.call(participation: @participation, user: consultant, text: "terlalu pendek")
     end
+    # Pasting CV text is an HR admin action (three-role model); the HR manager is refused.
     assert_raises(Screening::PasteCvText::Refused) do
-      Screening::PasteCvText.call(participation: @participation, user: staff_user("hr_pic"), text: FIXTURE_CV)
+      Screening::PasteCvText.call(participation: @participation, user: staff_user("hr_manager"), text: FIXTURE_CV)
     end
     with_ai(fake) do
       fake.push(gemini_message(criteria_for(@job)))

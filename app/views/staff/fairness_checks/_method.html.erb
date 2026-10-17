@@ -3,22 +3,26 @@
 <div class="card custom-card fairness-check__method">
   <div class="card-header"><div class="card-title">How the check works <%= ai_tier_badge(:fairness, job: job) %></div></div>
   <div class="card-body">
-    <p class="mb-2">The swap is applied in the original CV text before redaction; identical redacted bytes prove the redaction, identical scores prove the model saw no difference.</p>
+    <p class="mb-2">The swap is applied in the original CV text before redaction; identical redacted bytes prove the redaction, and the AI cannot answer differently to text it received identically.</p>
     <ul class="small mb-0">
       <li><strong>Base CV</strong>: an invented CV written for this check. No applicant's record is ever used.</li>
       <li><strong>Name, gender, religion swapped</strong>: each swap changes the original text, then the same evidence-section filter and redaction run. The AI must receive the same bytes.</li>
       <li><strong>Control</strong>: one skill line is removed on purpose. Its score must move, which shows the AI reads the CV.</li>
-      <li>The AI is not deterministic: the same bytes can get a different answer. Such a row is labelled <em>same input, different model answer</em>, never bias.</li>
+      <li>The AI is asked once for each different text: variants with the same bytes share that one answer. Different bytes get their own answer.</li>
+      <li>The AI is not deterministic: running the check again can give a different answer on the same bytes. That is model variance, never bias. A variant the AI did not answer is shown as <em>no answer</em>, never as a difference.</li>
     </ul>
     <% if result %>
       <p class="mt-2 mb-0">
         <% if result.passed? %>
           <span class="portal-state portal-state--success">Passed</span> Identical bytes reached the AI for every swap, every swap scored the same as the base, and the control moved the score.
         <% else %>
-          <span class="portal-state portal-state--danger">Needs a look</span>
+          <% if result.identical_to_base? && !result.complete? %><span class="portal-state portal-state--warning">Incomplete</span><% else %><span class="portal-state portal-state--danger">Needs a look</span><% end %>
           <% unless result.identical_to_base? %>A swap changed what the AI received: a redaction gap, shown in red below.<% end %>
-          <% if result.identical_to_base? && !result.scores_identical? %>The AI answered differently on identical bytes: model variance, shown below.<% end %>
-          <% unless result.merit_control_moved? %>The control did not move the score, so this run cannot show that the AI read the CV.<% end %>
+          <% unless result.complete? %>
+            <% tries = result.unanswered.filter_map(&:attempts).max.to_i %>
+            No answer from the AI for <%= result.unanswered.map(&:label).to_sentence %><%= " after #{tries} tries" if tries > 1 %>. That is a missing answer, not a difference: run the check again.
+          <% end %>
+          <% if result.complete? && !result.merit_control_moved? %>The control did not move the score, so this run cannot show that the AI read the CV.<% end %>
         <% end %>
       </p>
     <% end %>

@@ -1,0 +1,32 @@
+<%# Competency test bank (FLOW §7, 17 Oct 2026), the first part of brief step 5. Orchestrates only:
+    where the bank stands and who acts next, the review actions, then the HR Admin's tools (settings,
+    AI draft, add a question) and the two sections. Every action is its own form; none is nested.
+    editor: may build and submit (TestCases::Authority.may_edit_bank?); a draft is the only state
+    that is edited (a submitted bank is returned to draft first, an approved one gets a new version). %>
+<% editor = TestCases::Authority.may_edit_bank?(current_user, job) %>
+<%# drafting: questions can be added or changed now. An approved bank only offers the settings form,
+    which starts version n + 1 (with its reason) as a copy; a submitted bank offers nothing to change. %>
+<% drafting = editor && (bank.nil? || bank.draft?) %>
+<% new_version = editor && bank&.approved? %>
+<section id="question-bank" class="question-bank" aria-labelledby="question-bank-title">
+  <header class="question-bank__intro">
+    <h2 id="question-bank-title"><i class="fa fa-list-ol" aria-hidden="true"></i> Competency test bank</h2>
+    <p>Questions every applicant answers in step 3 of the application, once the HR Manager approves the bank: technical competency (the job's activities) and role competency (the job's competencies). Each applicant gets a random draw, so no two applicants see the same set. The HR Admin builds and submits the bank; the HR Manager approves it.</p>
+  </header>
+  <%= render "staff/job_briefs/errors", errors: bank_errors %>
+  <%= render "staff/test_cases/bank_status", job: job, bank: bank, current_bank: current_bank %>
+  <%= render "staff/test_cases/bank_review", job: job, bank: bank, editor: editor if bank %>
+  <% if drafting || new_version %>
+    <%= render "staff/test_cases/bank_settings", job: job, bank: bank %>
+  <% end %>
+  <% if drafting %>
+    <%= render "staff/test_cases/bank_ai", job: job, bank: bank, proposal: proposal %>
+    <%= render "staff/test_cases/bank_import", job: job, bank: bank %>
+  <% end %>
+  <% QuestionBank::SECTIONS.each do |section, label| %>
+    <%= render "staff/test_cases/bank_section", job: job, bank: bank, section: section, label: label, editable: drafting && bank.present? %>
+  <% end %>
+  <% if drafting %>
+    <%= render "staff/test_cases/bank_question_form", job: job, bank: bank, question: nil, ai: local_assigns[:ai_question] %>
+  <% end %>
+</section>

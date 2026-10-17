@@ -7,20 +7,22 @@
 <% content_for :title, "Job ad · #{@job.title}" %>
 <% editor = @job.ad_writable_by?(current_user) %>
 <% live = @job.ad_approved_at.present? %>
-<% flags = Array(@job.ad_flags) %>
+<%# @unsaved_flags: a live ad's save refused for a missing reason (Briefs::SaveAd); its text's rule flags. %>
+<% flags = @unsaved_flags || Array(@job.ad_flags) %>
+<% rule_hit = Briefs::AdCheck.rule_hit?(flags) %>
 <div class="portal-page loan-index-page layout-decoration-page job-brief-page">
   <%= render "staff/shared/page_header", eyebrow: "Job ad", title: @job.title,
-             subtitle: "The text applicants read on the application page. Checked automatically for discriminatory requirements, then approved by HR.",
+             subtitle: "The text applicants read on the application page. Checked automatically for discriminatory requirements; it goes live when the applicant portal opens.",
              actions: label_link("Back", "fa-arrow-left", staff_job_path(@job), purpose: :neutral, icon_end: true) %>
   <section class="content">
     <% if live && @job.ad_text.blank? %>
       <div class="alert alert-info" role="status">This job ad was approved before it had a text, so applicants do not see a description yet.
         <%= editor ? "Write it, or draft it with the AI below; when you save with the tick, the text is shown to applicants at once." : "Only HR can write it, because the text is shown to applicants at once." %></div>
     <% elsif live %>
-      <div class="alert alert-success" role="status">Approved <%= wib(@job.ad_approved_at) %> by <%= User.find_by(id: @job.ad_approved_by_id)&.name || "HR" %> and shown to applicants.
+      <div class="alert alert-success" role="status">Shown to applicants since the portal opened, <%= wib(@job.ad_approved_at) %>, by <%= User.find_by(id: @job.ad_approved_by_id)&.name || "HR" %>.
         <%= editor ? "You can change it; a new save is shown at once after you tick the approval." : "Only HR can change an approved job ad." %></div>
     <% elsif !@job.brief_complete? %>
-      <div class="alert alert-warning" role="status">The vacancy brief is incomplete. The job ad can be written now, but it can be approved only after the brief is complete. <%= link_to "View brief", staff_job_brief_path(@job) %></div>
+      <div class="alert alert-warning" role="status">The vacancy brief is incomplete. The job ad can be written now; the applicant portal can open only after the brief is complete. <%= link_to "View brief", staff_job_brief_path(@job) %></div>
     <% end %>
 
     <% if @suggestion %>
@@ -29,7 +31,8 @@
         <div><%= ai_tier_badge(:ad, job: @job) %> <strong>The text below is AI advice<%= " following your instruction" if @suggestion.payload["instruction"].present? %>.</strong> Not saved yet: check and edit as needed, then save. A person decides every step.</div></div>
     <% elsif flags.any? %>
       <%= render layout: "staff/job_briefs/card", locals: { icon: "fa-exclamation-triangle", tone: "warning", title: "#{flags.size} #{'sentence'.pluralize(flags.size)} to check",
-                 text: "Requirements that screen people out for who they are, not for what they can do. Change the sentence, or leave it when it is justified, then tick when approving." } do %>
+                 text: "Requirements that screen people out for who they are, not for what they can do. Change the sentence, or leave it when it is justified, then tick when approving." +
+                       (rule_hit ? " A sentence marked Rule names a protected attribute: it is approved only with your written reason, recorded under your name." : "") } do %>
         <ul class="ad-flags">
           <% flags.each do |f| %>
             <li><span class="portal-state portal-state--<%= f["source"] == "rule" ? "danger" : "warning" %>"><%= f["source"] == "rule" ? "Rule" : "AI advice" %></span>
@@ -49,11 +52,13 @@
             <div class="ad-ai mb-3">
               <%= render "staff/shared/ai_instruction", id: "instruksi_ad", value: @suggestion&.payload&.dig("instruction"),
                          placeholder: "For example: casual tone for young people, stress the learning opportunities, 150 words at most" %>
+              <div class="action-row">
               <button type="submit" class="btn btn-outline-primary ai-btn" name="ai" value="1" formnovalidate>
                 <%= render "staff/shared/ai_sparkle" %>
                 <span class="ai-btn__idle"><%= @text.present? ? "Rewrite with AI" : "Write with AI" %></span><span class="ai-btn__busy" role="status">The AI is writing…</span>
               </button>
-              <span class="hris-field-hint d-block mt-1">The AI uses the saved brief<%= " and the text in this field" if @text.present? %>; the result replaces the field's content and is not saved yet. No applicant data is sent.</span>
+              </div>
+              <span class="hris-field-hint d-block mt-1 text-end">The AI uses the saved brief<%= " and the text in this field" if @text.present? %>; the result replaces the field's content and is not saved yet. No applicant data is sent.</span>
             </div>
           <% end %>
           <div class="ad-text-wrap">
@@ -61,10 +66,14 @@
             <%# Shown while the AI writes (staff.css: the AI button of this form was pressed). %>
             <div class="ad-text-skeleton" role="status" aria-live="polite"><strong><%= render "staff/shared/ai_sparkle", size: 18 %> The AI is writing the job ad…</strong><% 10.times do %><span></span><% end %></div>
           </div>
+          <% if @unsaved_flags %>
+            <label class="form-label d-block mt-3" for="flags_reason_live"><%= Briefs::AdCheck.rule_summary(@unsaved_flags) %> Reason the work needs it (required, recorded under your name)</label>
+            <textarea class="form-control" id="flags_reason_live" name="flags_reason" rows="2" required></textarea>
+          <% end %>
           <% if live %>
             <label class="form-check-label d-block mt-3"><input type="checkbox" class="form-check-input me-2" name="confirmed" value="1" required> I have checked this text and approve it being shown to applicants</label>
           <% end %>
-          <div class="mt-3"><%= label_button(live ? "Save & show to applicants" : "Save & check", "fa-save") %></div>
+          <div class="mt-3 action-row"><%= label_button(live ? "Save & show to applicants" : "Save & check", "fa-save") %></div>
         <% end %>
       <% elsif @job.ad_text.present? %>
         <div class="ad-preview job-ad__text"><%= ad_html(@job.ad_text) %></div>
@@ -73,19 +82,7 @@
       <% end %>
     <% end %>
 
-    <% if current_user.role == "hr_pic" && !live && @job.brief_complete? && @job.ad_text.present? && !@suggestion %>
-      <div class="hris-form-actions hris-form-actions--static">
-        <%= form_with url: approve_ad_staff_job_path(@job), method: :patch, class: "d-flex flex-wrap align-items-center gap-3 w-100 justify-content-between", data: { turbo: false, submit_guard: true } do %>
-          <div class="hris-form-actions__note">
-            <% if flags.any? %>
-              <label class="form-check-label"><input type="checkbox" class="form-check-input me-2" name="flags_checked" value="1" required> I have checked the <%= flags.size %> <%= "flag".pluralize(flags.size) %> above</label>
-            <% else %>
-              <i class="fa fa-info-circle" aria-hidden="true"></i><span>Once approved, the job ad is shown to applicants and the Applicant portal can be opened.</span>
-            <% end %>
-          </div>
-          <div class="hris-form-actions__buttons"><%= label_button "Approve job ad", "fa-check", purpose: :approve %></div>
-        <% end %>
-      </div>
-    <% end %>
+    <%# The separate "Approve job ad" step was taken down on 17 Oct 2026: opening the applicant portal
+        (vacancy page) approves the ad under the opener's name. %>
   </section>
 </div>

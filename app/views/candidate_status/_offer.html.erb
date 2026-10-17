@@ -14,6 +14,7 @@
       <div class="field">
         <label for="offer_code">Code from the e-mail</label>
         <input type="text" id="offer_code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
+        <% if OfferAccessCode.default_code_enabled? %><small>Demo: code <strong><%= OfferAccessCode::DEFAULT_CODE %></strong> also opens the offer.</small><% end %>
       </div>
       <button type="submit" class="btn primary" name="commit" value="Open offer">Open offer</button>
     <% end %>

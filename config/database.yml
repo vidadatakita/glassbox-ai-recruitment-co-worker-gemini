@@ -66,7 +66,7 @@ development:
 # Do not set this db to the same as development or production.
 test:
   <<: *default
-  # TEST_DATABASE lets a second session (the test engine) run the suite without sharing
+  # TEST_DATABASE lets a parallel test run use its own database without sharing
   # this database with the builder; two suites on one test database clobber each other.
   database: <%= ENV.fetch("TEST_DATABASE") { "glassbox_test" } %>
 

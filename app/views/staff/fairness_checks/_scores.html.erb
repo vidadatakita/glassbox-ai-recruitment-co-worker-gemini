@@ -1,6 +1,6 @@
 <%# Section 2: the per-requirement judgements side by side. A swap column that differs from the base
     is marked in red (never colour alone: the cell also says "differs"). The control column is
-    expected to differ. %>
+    expected to differ. A variant asked once with another (same bytes) shows that one answer. %>
 <% rubric = Screening::Rubric.for(job) %>
 <% base = result.base %>
 <div class="card custom-card fairness-check__scores">
@@ -40,5 +40,12 @@
         </tr>
       </tbody>
     </table>
+    <% groups = result.variants.values.select(&:answer_from).group_by(&:answer_from) %>
+    <% if groups.any? %>
+      <p class="small text-muted px-3 py-2 mb-0 fairness-check__shared">
+        <% groups.each do |from, group| %><%= group.map(&:label).to_sentence %> reached the AI as the same bytes as <%= result.variants.fetch(from).label %>, so they share its one answer.<% end %>
+        <%= pluralize(result.calls, "AI call") %> for <%= pluralize(result.variants.size, "variant") %> in this run.
+      </p>
+    <% end %>
   </div>
 </div>

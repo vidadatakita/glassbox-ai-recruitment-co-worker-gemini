@@ -32,7 +32,7 @@ module ScreeningReportHelper
   def report_test_score(cell)
     return content_tag(:strong, ScreeningReport::Text.score(cell.score), class: "report-score") if cell.state == :scored
 
-    tone = { expired: "danger", gate_eliminated: "muted", none: "muted" }.fetch(cell.state, "info")
+    tone = { expired: "muted", gate_eliminated: "muted", none: "muted" }.fetch(cell.state, "info")
     report_state(cell.label, tone)
   end
 

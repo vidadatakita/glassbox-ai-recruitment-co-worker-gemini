@@ -32,18 +32,20 @@ class Engine07BlindViewAndScreensTest < ActionDispatch::IntegrationTest
   end
 
   # ---- blind view -----------------------------------------------------------------------------
-  test "control: DataKita staff see the names in the gate box" do
+  # Three roles (17 Oct 2026): only the superadmin sees names before the gate decision is confirmed;
+  # the consultant is an hr_admin now and is as blind as the HR PIC.
+  test "control: the superadmin sees the names in the gate box" do
     gate_with_people
-    sign_in_as staff_user("consultant")
+    sign_in_as staff_user("admin")
     get staff_job_path(@job)
     box = css_select("#gerbang-seleksi").first.to_html
     NAMES.each { |n| assert_includes box, n }
-    assert_house_rules("job show (consultant)")
+    assert_house_rules("job show (superadmin)")
   end
 
-  test "HR PIC and owner: the gate box numbers candidates and never names them" do
+  test "hr_admin (consultant, HR PIC) and hr_manager (owner): the gate box numbers candidates and never names them" do
     gate_with_people
-    %w[hr_pic owner].each do |role|
+    %w[consultant hr_pic owner].each do |role|
       sign_in_as staff_user(role)
       get staff_job_path(@job)
       box = css_select("#gerbang-seleksi").first.to_html
@@ -140,8 +142,11 @@ class Engine07BlindViewAndScreensTest < ActionDispatch::IntegrationTest
   # Maker-checker (load-bearing-tests rule 19): HR PIC approves what HR PIC reviewed. The approve
   # form carries only the version id; a draft is edited IN PLACE (B-2), so the consultant can change
   # the instructions, rubric or case file between HR's review and HR's click.
+  # The job has its consultant assigned, so the HR PIC (also an hr_admin) is not the editor and is
+  # shown the read-only version with the approve form (an editor is shown the edit form instead).
   test "FINDING: HR approves a draft the consultant changed after HR opened it (no fingerprint on the approve form)" do
     job = e7_brief
+    job.update_columns(consultant_id: staff_user("consultant").id)
     e7_save(job, instructions: "Versi yang dibaca HR")
     sign_in_as staff_user("hr_pic")
     get staff_job_test_case_step_path(job)

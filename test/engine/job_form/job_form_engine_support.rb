@@ -21,7 +21,7 @@ module JobFormEngineSupport
 
   # Blueprint §7.1 "Recommended package": "2 Saring or 3 Seleksi" / "3 Seleksi" /
   # "4 Seleksi Lengkap" / "4 or 5 Tuntas".
-  SPEC_PACKAGES = { 1 => [2, 3], 2 => [2, 3], 3 => [3], 4 => [4], 5 => [4], 6 => [4, 5], 7 => [4, 5], 8 => [4, 5] }.freeze
+  SPEC_PACKAGES = { 1 => [2, 3], 2 => [2, 3], 3 => [3], 4 => [3], 5 => [3], 6 => [3], 7 => [3], 8 => [3] }.freeze
 
   # Concept brief §3 ladder (scored stages) plus the reference check for packages 4-5 (§3.4).
   SPEC_STAGES = {

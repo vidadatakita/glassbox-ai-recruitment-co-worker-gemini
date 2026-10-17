@@ -65,7 +65,7 @@ module Progression
 
     def draft(application:, actor:, instruction: nil)
       kind = kind_for(application) or raise Refused, "There is no letter for this candidate yet."
-      raise Refused, "Only the HR owner drafts letters." unless actor&.role == CHOOSER
+      raise Refused, "Only the HR Admin drafts letters." unless Progression.chooser?(actor)
       raise Refused, "The AI drafter is off." unless Screening::Config.enabled?
 
       job = application.job
@@ -96,7 +96,7 @@ module Progression
     # Sends the text the HR PIC approved, with the name filled in, and records it.
     def send!(application:, actor:, subject:, body:)
       kind = kind_for(application) or raise Refused, "There is no letter for this candidate yet."
-      raise Refused, "Only the HR owner sends letters." unless actor&.role == CHOOSER
+      raise Refused, "Only the HR Admin sends letters." unless Progression.chooser?(actor)
       raise Refused, "The applicant has withdrawn consent to the use of their data." if application.consent_withdrawn_at
 
       subject = subject.to_s.strip

@@ -5,14 +5,17 @@ module Staff
   #
   # Roles (blueprint §1.2):
   #   start          consultant (runs the job)
+  #   retry_failed   HR owner and reviewer: failed AI screenings only, no decision written (the
+  #                  public demo opens no consultant door; end-to-end test, 16 Oct 2026)
   #   review         reviewer only (screen 8); create_review: reviewer, never the job's consultant
   #   calibration    consultant judges; reviewer may read (§1.2 "take part in calibration")
   #   cv_text        consultant pastes the text of an unreadable CV (§4.3)
   class ScreeningsController < BaseController
-    before_action :load_job, only: %i[start review calibration]
-    before_action -> { require_role!(:consultant) }, only: %i[start judge cv_text save_cv_text]
-    before_action -> { require_role!(:reviewer) }, only: %i[review create_review]
-    before_action -> { require_role!(:consultant, :reviewer) }, only: :calibration
+    before_action :load_job, only: %i[start retry_failed review calibration]
+    before_action -> { require_role!(:hr_admin) }, only: %i[start judge cv_text save_cv_text]
+    before_action -> { require_role!(:hr_admin, :hr_manager) }, only: :retry_failed
+    before_action -> { require_role!(:hr_manager) }, only: %i[review create_review]
+    before_action -> { require_role!(:hr_admin, :hr_manager) }, only: :calibration
 
     def start
       unless Screening::Config.enabled?
@@ -22,6 +25,16 @@ module Staff
       counts = Screening::Start.call(@job)
       redirect_to staff_job_path(@job, anchor: "screening"),
                   notice: "#{counts[:queued]} application(s) queued for screening. #{counts[:decided]} pass decision(s) recorded."
+    end
+
+    def retry_failed
+      unless Screening::Config.enabled?
+        return redirect_to(staff_job_path(@job), alert: ScreeningBoard::OFF_MESSAGE)
+      end
+
+      queued = Screening::Start.retry_failed(@job)
+      redirect_to staff_job_path(@job, anchor: "screening"),
+                  notice: "#{queued} failed screening(s) queued again. The result appears here when the AI has answered."
     end
 
     def review

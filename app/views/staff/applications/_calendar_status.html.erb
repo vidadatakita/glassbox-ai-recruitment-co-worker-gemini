@@ -19,7 +19,7 @@
       <span><i class="fa fa-exclamation-triangle me-1" aria-hidden="true"></i><strong>The calendar invitation could not be sent</strong> · <%= wib(appointment.calendar_synced_at) %>.
         The appointment is saved; the applicant still sees it on the status page.</span>
     <% end %>
-    <% if current_user.role == "consultant" %>
+    <% if current_user.role.in?(%w[hr_admin superadmin]) %>
       <%= button_to withdrawn ? "Cancel invitation" : "Resend invitation", calendar_staff_appointment_path(appointment), method: :post,
                     class: "btn btn-sm btn-warning ms-auto", form: { data: { turbo: false, submit_guard: true } } %>
     <% end %>

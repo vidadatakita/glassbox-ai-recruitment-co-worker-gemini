@@ -62,7 +62,10 @@
 .job-brief-total { display: inline-block; padding: .3rem .6rem; border-radius: .25rem; font-size: .8125rem; white-space: nowrap; }
 .job-brief-total--ok { background: rgba(var(--success-rgb), .1); color: #146c43; }
 .job-brief-total--off { background: rgba(var(--warning-rgb), .14); color: #7a4800; }
-.job-brief-packages { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .65rem; }
+/* Three packages are offered (step 4: [1, 2, 3] plus a legacy choice). The cards share the full
+   card width and wrap by themselves (3 across on desktop, fewer on narrower screens, 1 on a
+   phone), instead of filling three of five fixed columns. */
+.job-brief-packages { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: .75rem; }
 .job-brief-package { display: flex; gap: .5rem; align-items: flex-start; padding: .75rem; border: 1px solid var(--default-border); border-radius: .5rem; cursor: pointer; }
 .job-brief-package:has(input:checked) { border-color: var(--primary-color); box-shadow: inset 0 0 0 1px var(--primary-color); }
 .job-brief-package input { margin-top: .2rem; }
@@ -103,7 +106,6 @@
 .job-brief-columns > div > .hris-form-card { height: calc(100% - 1.25rem); }
 @media (max-width: 991.98px) {
   .job-brief-stepper ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .job-brief-packages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .job-brief-coverage { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .job-brief-facts--inline { grid-template-columns: auto 1fr; }
 }
@@ -132,14 +134,14 @@
 form[data-submitted="true"][data-submitter="ai"] .ai-btn {
   pointer-events: none; cursor: progress; overflow: visible !important;
   background: #fff !important; color: #3c4a63 !important; border-color: transparent !important;
-  box-shadow: 0 0 18px rgba(37, 99, 235, .3) !important;
+  box-shadow: 0 0 18px rgba(232, 119, 34, .3) !important;
 }
 form[data-submitted="true"][data-submitter="ai"] .ai-btn .ai-btn__idle { display: none; }
 form[data-submitted="true"][data-submitter="ai"] .ai-btn .ai-btn__busy { display: inline; }
-form[data-submitted="true"][data-submitter="ai"] .ai-btn .ai-sparkle { color: #2563eb; animation: ai-pulse 1.2s ease-in-out infinite; }
+form[data-submitted="true"][data-submitter="ai"] .ai-btn .ai-sparkle { color: #E87722; animation: ai-pulse 1.2s ease-in-out infinite; }
 form[data-submitted="true"][data-submitter="ai"] .ai-btn::before {
   content: ""; position: absolute; inset: -2px; z-index: -1; border-radius: inherit; padding: 2px;
-  background: conic-gradient(from var(--ai-angle), #082147, #2563eb, #38bdf8, #6366f1, #082147);
+  background: conic-gradient(from var(--ai-angle), #041E42, #1D428A, #E87722, #EDA04F, #041E42);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude;
   animation: ai-spin 1.6s linear infinite !important;
@@ -153,7 +155,7 @@ form[data-submitted="true"][data-submitter="ai"] .ai-btn::before {
   form[data-submitted="true"][data-submitter="ai"] .ai-btn .ai-sparkle { animation: none; }
 }
 /* The AI mark in a card header takes the brand blue, like the other card icons' tones. */
-.hris-form-card__icon .ai-sparkle, .job-brief-notice .ai-sparkle { color: #2563eb; flex: none; }
+.hris-form-card__icon .ai-sparkle, .job-brief-notice .ai-sparkle { color: #E87722; flex: none; }
 
 /* Brief wizard: "*" on the fields Briefs::BriefCheck needs before completion (JobBriefHelper#required_mark). */
 .brief-required { color: #dc2626; font-weight: 700; margin-left: .15rem; }
@@ -164,7 +166,7 @@ form[data-submitted="true"][data-submitter="ai"] .ai-btn::before {
 /* "Nilai dengan AI": the exact text the reviewer releases, and the AI's reason per criterion. */
 .test-ai-preview { max-height: 28rem; overflow: auto; white-space: pre-wrap; background: #f6f8fb; border: 1px solid #dde3ee; border-radius: .5rem; padding: .75rem 1rem; font-size: .8rem; }
 .test-ai-reason { margin-top: .4rem; font-size: .8rem; color: #3c4a63; background: #eef4ff; border-radius: .4rem; padding: .35rem .5rem; }
-.test-ai-reason .ai-sparkle { color: #2563eb; vertical-align: -2px; }
+.test-ai-reason .ai-sparkle { color: #E87722; vertical-align: -2px; }
 /* A second action bar that must not stick (step 5 "Selesaikan brief" under the test form's bar). */
 .hris-form-actions.hris-form-actions--static { position: static; margin-top: 1.5rem; }
 
@@ -174,7 +176,7 @@ form[data-submitted="true"][data-submitter="ai"] .ai-btn::before {
 .ai-flow__step { display: inline-flex; align-items: center; gap: .35rem; font-size: .8rem; padding: .25rem .65rem .25rem .3rem; border-radius: 999px; background: #f1f4f9; color: #5a6780; }
 .ai-flow__num { display: inline-grid; place-items: center; width: 1.3rem; height: 1.3rem; border-radius: 50%; background: #dde3ee; font-size: .7rem; font-weight: 700; }
 .ai-flow__step--done { background: #e3f4ea; color: #1f7a4d; } .ai-flow__step--done .ai-flow__num { background: #1f7a4d; color: #fff; }
-.ai-flow__step--current { background: #e5efff; color: #1d4ed8; font-weight: 600; } .ai-flow__step--current .ai-flow__num { background: #2563eb; color: #fff; }
+.ai-flow__step--current { background: #fdf0e6; color: #A9431E; font-weight: 600; } .ai-flow__step--current .ai-flow__num { background: #E87722; color: #fff; }
 .ai-flow__step--failed { background: #fde8e8; color: #b42318; } .ai-flow__step--failed .ai-flow__num { background: #dc2626; color: #fff; }
 .ai-flow__now { background: #f8fafc; border: 1px solid #e3e8f0; border-radius: .5rem; padding: .6rem .8rem; font-size: .88rem; }
 
@@ -197,8 +199,8 @@ form[data-submitted="true"][data-submitter="ai"] .ai-btn::before {
 .progression-rating__pick input { position: absolute; opacity: 0; }
 .progression-rating__pick span { display: inline-flex; width: 2.25rem; height: 2.25rem; align-items: center; justify-content: center;
   border: 1px solid #cfd6e2; border-radius: .4rem; cursor: pointer; font-weight: 600; }
-.progression-rating__pick input:checked + span { background: var(--primary-color, #2f5bea); border-color: transparent; color: #fff; }
-.progression-rating__pick input:focus-visible + span { outline: 2px solid #2f5bea; outline-offset: 2px; }
+.progression-rating__pick input:checked + span { background: var(--primary-color, #041E42); border-color: transparent; color: #fff; }
+.progression-rating__pick input:focus-visible + span { outline: 2px solid #E87722; outline-offset: 2px; }
 /* A required field left empty on submit (browser validation, note_required.js) shows red at once. */
 .form-control:user-invalid, .form-control:user-invalid:focus, .form-select:user-invalid, .form-select:user-invalid:focus { border-color: #dc3545 !important; box-shadow: 0 0 0 .2rem rgba(220, 53, 69, .2) !important; }
 /* A stage opened by its #stage-N link is not hidden under the sticky header. */
@@ -209,22 +211,70 @@ form[data-submitted="true"][data-submitter="ai"] .ai-btn::before {
 .salary-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .75rem; }
 .salary-facts span { display: block; font-size: .78rem; color: #4b5563; }
 .salary-facts small { display: block; color: #6b7280; }
-.salary-band { position: relative; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #dbe4f5, #2f5bea); margin: .5rem 0 .25rem; }
+.salary-band { position: relative; height: 8px; border-radius: 4px; background: linear-gradient(90deg, #d9d9d6, #041E42); margin: .5rem 0 .25rem; }
 .salary-band__mark { position: absolute; top: -5px; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; background: #fff; border: 3px solid #0b2a55; }
 /* AI Builder Cup: Ringkasan Dampak. */
-.impact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
-.impact-card { background: #fff; border: 1px solid #e3e8f0; border-radius: .75rem; padding: 1.25rem; display: grid; gap: .75rem; }
-.impact-card h3 { font-size: 1rem; margin: 0; }
-.impact-card p { font-size: .85rem; color: #4b5563; margin: 0; }
-.impact-pair { display: flex; gap: 1.5rem; flex-wrap: wrap; }
-.impact-pair span { display: block; font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; }
-.impact-pair strong { font-size: 1.5rem; color: #0b2a55; }
-.impact-pair div + div strong { color: #146c43; }
+/* Impact page (staff/impacts): before / after matrix. Before is muted Cool Gray, With AiCoHire is
+   the brand navy, the change chip is success green or accent-text orange (docs/brand-palette.md). */
+.impact-headline .loan-index-metric small { white-space: normal; }
+.impact-matrix { overflow: hidden; border-radius: .75rem; }
+.impact-matrix__header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; }
+.impact-matrix__header .card-title { font-size: 1.05rem; font-weight: 700; }
+.impact-legend { display: flex; gap: 1rem; margin: 0; padding: 0; list-style: none; font-size: .78rem; color: #63666A; }
+.impact-legend li { display: inline-flex; align-items: center; gap: .4rem; }
+.impact-legend__swatch { width: .8rem; height: .8rem; border-radius: .2rem; }
+.impact-legend__swatch--before { background: #B1B3B3; }
+.impact-legend__swatch--after { background: #041E42; }
+.impact-matrix__head, .impact-row__summary { display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, .9fr) 1.25rem; gap: 1rem; align-items: center; padding: .9rem 1.25rem; }
+.impact-matrix__head { background: #f6f7f9; border-bottom: 1px solid #D9D9D6; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #63666A; }
+.impact-row { border-bottom: 1px solid #ececea; }
+.impact-row:last-child { border-bottom: 0; }
+.impact-row__summary { cursor: pointer; list-style: none; transition: background-color .15s; }
+.impact-row__summary::-webkit-details-marker { display: none; }
+.impact-row__summary:hover, .impact-row[open] > .impact-row__summary { background: rgba(4, 30, 66, .035); }
+.impact-row__summary:focus-visible { outline: 2px solid #E87722; outline-offset: -2px; }
+.impact-row__measure { display: flex; gap: .85rem; align-items: flex-start; min-width: 0; }
+.impact-row__measure strong { display: block; color: #041E42; font-size: .95rem; }
+.impact-row__measure small { display: block; color: #63666A; font-size: .78rem; line-height: 1.4; }
+.impact-row__icon { flex: 0 0 2.25rem; height: 2.25rem; display: inline-flex; align-items: center; justify-content: center; border-radius: .6rem; background: rgba(232, 119, 34, .12); color: #A9431E; }
+.impact-row__side { display: grid; gap: .3rem; min-width: 0; }
+.impact-row__side strong { font-size: 1.2rem; line-height: 1.2; }
+.impact-row__side--before strong { color: #63666A; }
+.impact-row__side--after strong { color: #041E42; }
+.impact-row__label { display: none; font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: #63666A; }
+.impact-bar { display: block; height: .4rem; border-radius: 1rem; background: #ececea; overflow: hidden; }
+.impact-bar > span { display: block; height: 100%; border-radius: 1rem; }
+.impact-row__side--before .impact-bar > span { background: #B1B3B3; }
+.impact-row__side--after .impact-bar > span { background: #041E42; }
+.impact-chip { display: inline-block; padding: .3rem .65rem; border-radius: 1rem; font-size: .8rem; font-weight: 700; white-space: nowrap; }
+.impact-chip--good { background: #44883E; color: #fff; }
+.impact-chip--bad { background: rgba(169, 67, 30, .1); color: #A9431E; }
+.impact-chip--neutral { background: #f1f1ef; color: #53565A; }
+.impact-row__toggle { color: #63666A; transition: transform .2s; }
+.impact-row[open] .impact-row__toggle { transform: rotate(180deg); }
+.impact-row__body { padding: .25rem 1.25rem 1.1rem 4.35rem; }
+.impact-sources th { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: #63666A; font-weight: 700; }
+.impact-sources td { vertical-align: middle; color: #53565A; }
+.impact-row__before-source { margin: .6rem 0 0; font-size: .8rem; color: #63666A; }
+.impact-safeguards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-top: 1.25rem; }
+.impact-safeguard { display: flex; gap: .85rem; align-items: flex-start; padding: 1rem 1.1rem; border-radius: .75rem; background: #041E42; color: #fff; }
+.impact-safeguard > i { flex: 0 0 auto; margin-top: .15rem; color: #EDA04F; font-size: 1.1rem; }
+.impact-safeguard strong { display: block; margin-bottom: .2rem; }
+.impact-safeguard span { display: block; font-size: .82rem; color: rgba(255, 255, 255, .82); }
+@media (max-width: 767.98px) {
+  .impact-matrix__head { display: none; }
+  .impact-row__summary { grid-template-columns: 1fr 1fr; gap: .75rem 1rem; }
+  .impact-row__measure { grid-column: 1 / -1; }
+  .impact-row__label { display: block; }
+  .impact-row__change { grid-column: 1; }
+  .impact-row__toggle { grid-column: 2; justify-self: end; }
+  .impact-row__body { padding: .25rem 1rem 1rem; overflow-x: auto; }
+}
 /* "Tanya Data": the chat button at the bottom right and its window, on every staff page. */
 .data-chat__fab { position: fixed; right: 24px; bottom: 24px; z-index: 1060; height: 52px; padding: 0 22px 0 18px; border: 0; border-radius: 999px;
   color: #fff; font-weight: 600; font-size: .95rem; display: inline-flex; align-items: center; isolation: isolate;
-  background: #2563eb; box-shadow: 0 8px 24px rgba(37, 99, 235, .35); transition: transform .15s ease, box-shadow .15s ease, background .15s ease; }
-.data-chat__fab:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 12px 30px rgba(37, 99, 235, .45); }
+  background: #041E42; box-shadow: 0 8px 24px rgba(232, 119, 34, .35); transition: transform .15s ease, box-shadow .15s ease, background .15s ease; }
+.data-chat__fab:hover { background: #1D428A; transform: translateY(-2px); box-shadow: 0 12px 30px rgba(232, 119, 34, .45); }
 .data-chat__fab:focus-visible { outline: 3px solid #f5a10f; outline-offset: 3px; }
 .data-chat__fab-open { display: inline-flex; align-items: center; gap: .55rem; }
 .data-chat__fab-open .ai-sparkle { color: #fff; }
@@ -241,7 +291,7 @@ form[data-submitted="true"][data-submitter="ai"] .ai-btn::before {
 .data-chat__log { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; background: #f6f8fb; }
 .data-chat__msg { max-width: 88%; padding: 8px 12px; border-radius: 12px; font-size: .88rem; line-height: 1.45; }
 .data-chat__msg p { margin: 0; white-space: pre-wrap; }
-.data-chat__msg--me { align-self: flex-end; background: #2f5bea; color: #fff; border-bottom-right-radius: 4px; }
+.data-chat__msg--me { align-self: flex-end; background: #041E42; color: #fff; border-bottom-right-radius: 4px; }
 .data-chat__msg--bot { align-self: flex-start; background: #fff; border: 1px solid #e3e8f0; border-bottom-left-radius: 4px; }
 .data-chat__msg--warn { align-self: flex-start; background: #fff7e6; border: 1px solid #f5d38f; border-bottom-left-radius: 4px; }
 .data-chat__msg--waiting p { color: #6b7280; font-style: italic; }
@@ -251,19 +301,19 @@ form[data-submitted="true"][data-submitter="ai"] .ai-btn::before {
 .data-chat__links a { font-size: .78rem; padding: 2px 8px; border-radius: 999px; background: #eef2fa; text-decoration: none; }
 .data-chat__chips { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
 .data-chat__chip { text-align: left; font-size: .8rem; border: 1px solid #cfd6e2; background: #fff; border-radius: 10px; padding: 6px 10px; }
-.data-chat__chip:hover { border-color: #2f5bea; }
+.data-chat__chip:hover { border-color: #041E42; }
 .data-chat__form { position: relative; display: flex; gap: 8px; padding: 10px; border-top: 1px solid #e3e8f0; }
 /* The log's scrollbar stays visible (macOS hides overlay bars until you scroll). */
 .data-chat__log { scrollbar-width: thin; scrollbar-color: #b8c2d3 transparent; }
 .data-chat__log::-webkit-scrollbar { width: 8px; }
 .data-chat__log::-webkit-scrollbar-thumb { background: #b8c2d3; border-radius: 4px; }
 /* "Ke pesan terbaru": floats over the end of the log while the reader is scrolled up. */
-.data-chat__to-end { position: absolute; top: -48px; right: 22px; width: 36px; height: 36px; border: 1px solid #cfd6e2; border-radius: 50%; background: #fff; color: #2f5bea; box-shadow: 0 2px 8px rgba(15, 23, 42, .15); }
+.data-chat__to-end { position: absolute; top: -48px; right: 22px; width: 36px; height: 36px; border: 1px solid #cfd6e2; border-radius: 50%; background: #fff; color: #041E42; box-shadow: 0 2px 8px rgba(15, 23, 42, .15); }
 .data-chat__to-end[hidden] { display: none; }
 /* Grows with the question up to six lines, then scrolls (field-sizing; data_chat.js sizes it where
    the browser lacks it). */
 .data-chat__form textarea { flex: 1; resize: none; border: 1px solid #cfd6e2; border-radius: 10px; padding: 8px 10px; font-size: .88rem; field-sizing: content; max-height: 150px; overflow-y: auto; }
-.data-chat__send { width: 40px; border: 0; border-radius: 10px; background: #2f5bea; color: #fff; }
+.data-chat__send { width: 40px; border: 0; border-radius: 10px; background: #041E42; color: #fff; }
 @media (max-width: 575px) { .data-chat__panel { right: 16px; bottom: 84px; } .data-chat__fab { right: 16px; bottom: 16px; } }
 @media (prefers-reduced-motion: reduce) { .data-chat__fab { transition: none; } .data-chat__fab:hover { transform: none; } }
 .data-chat__table { width: 100%; margin-top: 8px; font-size: .78rem; border-collapse: collapse; }
@@ -292,13 +342,13 @@ form[data-submitted="true"][data-submitter="ai"] .ai-btn::before {
 form[data-submitted="true"] .form-control:user-invalid { border-color: #cfd6e2 !important; box-shadow: none !important; }
 .ad-text-wrap { position: relative; }
 .ad-text-skeleton { display: none; position: absolute; inset: 0; isolation: isolate; border-radius: .6rem; background: #fff;
-  padding: 1.25rem; gap: .75rem; flex-direction: column; box-shadow: 0 0 24px rgba(37, 99, 235, .25); }
+  padding: 1.25rem; gap: .75rem; flex-direction: column; box-shadow: 0 0 24px rgba(232, 119, 34, .25); }
 .ad-text-skeleton::before { content: ""; position: absolute; inset: -2px; z-index: -1; border-radius: inherit; padding: 2px;
-  background: conic-gradient(from var(--ai-angle), #082147, #2563eb, #38bdf8, #6366f1, #082147);
+  background: conic-gradient(from var(--ai-angle), #041E42, #1D428A, #E87722, #EDA04F, #041E42);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
   animation: ai-spin 1.6s linear infinite; }
 .ad-text-skeleton strong { display: flex; align-items: center; gap: .5rem; font-size: .9rem; color: #1e3a8a; font-weight: 600; margin-bottom: .25rem; }
-.ad-text-skeleton strong .ai-sparkle { color: #2563eb; animation: ai-pulse 1.2s ease-in-out infinite; }
+.ad-text-skeleton strong .ai-sparkle { color: #E87722; animation: ai-pulse 1.2s ease-in-out infinite; }
 .ad-text-skeleton span { height: .8rem; border-radius: .4rem; background: linear-gradient(90deg, #eef2ff 20%, #c7d7fe 40%, #e0e7ff 60%, #eef2ff 80%);
   background-size: 300% 100%; animation: ad-skeleton 1.6s ease-in-out infinite; }
 .ad-text-skeleton span:nth-of-type(3n) { width: 58%; } .ad-text-skeleton span:nth-of-type(3n+1) { width: 94%; } .ad-text-skeleton span:nth-of-type(3n+2) { width: 80%; }
@@ -316,3 +366,89 @@ form[data-submitted="true"][data-submitter="ai"] .ad-text-skeleton,
 
 /* Where a page lands after the AI answered (#hasil-ai), clear of the sticky header. */
 .scroll-anchor { display: block; scroll-margin-top: 180px; }
+
+/* Card headers on phones (demo preparation, 17 Oct 2026): the action (a count, a button) wraps onto its
+   own line under the title instead of squeezing the title into a one-word column. */
+@media (max-width: 575.98px) {
+  .hris-form-card__header { flex-wrap: wrap; }
+  .hris-form-card__header > div:not(.hris-form-card__icon):not(.hris-form-card__action) { flex: 1 1 calc(100% - 4rem); min-width: 0; }
+  .hris-form-card__action { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: flex-start; margin-left: 0; }
+}
+
+/* Brief change history modal (staff/job_briefs/_history_modal): navy header, a timeline of
+   change cards, each field as before -> after chips (docs/brand-palette.md). */
+.brief-history-modal__header { background: #041E42; color: #fff; align-items: flex-start; }
+.brief-history-modal__header .modal-title { font-size: 1.15rem; font-weight: 700; color: #fff; }
+.brief-history-modal__header .modal-title .fa { color: #EDA04F; }
+.brief-history-modal__sub { margin-top: .25rem; font-size: .82rem; color: rgba(255, 255, 255, .8); }
+.brief-history-modal .modal-body { background: #f6f7f9; }
+.brief-history { position: relative; margin: 0; padding: 0 0 0 2.6rem; list-style: none; }
+.brief-history::before { content: ""; position: absolute; top: .5rem; bottom: .5rem; left: .95rem; width: 2px; background: #D9D9D6; }
+.brief-history__item { position: relative; margin-bottom: 1rem; }
+.brief-history__item:last-child { margin-bottom: 0; }
+.brief-history__dot { position: absolute; left: -2.6rem; top: .9rem; width: 1.9rem; height: 1.9rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: #041E42; color: #fff; font-size: .75rem; box-shadow: 0 0 0 3px #f6f7f9; }
+.brief-history__card { background: #fff; border: 1px solid #D9D9D6; border-radius: .6rem; padding: .9rem 1.1rem; }
+.brief-history__meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .35rem 1rem; font-size: .85rem; color: #53565A; }
+.brief-history__actor { color: #1D428A; font-weight: 600; }
+.brief-history__actor small { color: #63666A; font-weight: 400; }
+.brief-history__step { display: inline-block; margin: .55rem 0 .4rem; padding: .2rem .6rem; border-radius: .35rem; background: rgba(232, 119, 34, .12); color: #A9431E; font-size: .72rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.brief-history__fields { margin: 0; padding: 0; list-style: none; display: grid; gap: .35rem; }
+.brief-history__fields li { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem; font-size: .85rem; }
+.brief-history__field { min-width: 9rem; color: #53565A; font-weight: 600; }
+.brief-history__chip { padding: .15rem .55rem; border-radius: .35rem; font-size: .78rem; overflow-wrap: anywhere; }
+.brief-history__chip--before { background: #ececea; color: #53565A; }
+.brief-history__chip--after { background: rgba(4, 30, 66, .08); color: #041E42; font-weight: 600; }
+@media (max-width: 575.98px) {
+  .brief-history { padding-left: 2.2rem; }
+  .brief-history::before { left: .75rem; }
+  .brief-history__dot { left: -2.2rem; width: 1.6rem; height: 1.6rem; }
+  .brief-history__field { min-width: 0; width: 100%; }
+}
+/* The Ask AI button floats above every modal (z-index 1060 > Bootstrap's 1055) and covered the
+   change-history modal's footer; while a modal is open the backdrop blocks the page anyway.
+   !important because workflow.css (phone round button) sets display: grid !important. */
+body.modal-open .data-chat__fab { display: none !important; }
+/* Room under the last card so the floating Ask AI button (52px, 24px from the bottom) never sits
+   on the page's last line when scrolled to the end. Measured 17 Oct 2026 in a 900px viewport: it
+   covered "0 vacancies" (My vacancies, phone) and the closing note of the Impact page. */
+.main-content.app-content { padding-bottom: 5.5rem; }
+/* Impact page: a missing figure reads as a gap, not as data (muted, normal weight, italic). */
+.impact-row__side strong.impact-empty, .impact-row__change .impact-empty { font-size: .85rem; font-weight: 400; font-style: italic; color: #63666A; }
+.impact-note { display: flex; gap: .6rem; align-items: flex-start; margin-bottom: 1rem; padding: .7rem 1rem; border-radius: .6rem; background: rgba(29, 66, 138, .06); border: 1px solid rgba(29, 66, 138, .18); color: #1D428A; font-size: .86rem; }
+.impact-note .fa { margin-top: .15rem; }
+/* AI release page: the Send and Not-sent cards sit side by side; equal height, no white gap. */
+.ai-release-choices > [class*="col-"] > .card { height: calc(100% - 1.25rem); }
+
+/* Page header (staff/shared/_page_header), every staff page. The legacy .content-header wraps, so a
+   long subtitle pushed the actions (Back, Edit) onto a row of their own on desktop, and on phones the
+   template made every header button a full-width bar (~60px above all content). Desktop: title block
+   and actions share one row. Phone: buttons keep their own width and wrap as a group. */
+@media (min-width: 992px) {
+  .layout-decoration-header.content-header { flex-wrap: nowrap; }
+  .layout-decoration-header.content-header > div:first-child { flex: 1 1 auto; min-width: 0; }
+  .layout-decoration-header.content-header > .layout-decoration-actions { flex: 0 0 auto; justify-content: flex-end; }
+}
+@media (max-width: 991.98px) {
+  .layout-decoration-header .layout-decoration-actions .btn { flex: 0 0 auto; width: auto; }
+}
+
+/* KPI tiles on a phone: two per row instead of one (a set of four took ~450px). The coloured icon
+   strip is decorative and is dropped below 576px so the value and its caption keep the width. */
+@media (max-width: 575.98px) {
+  .row > [class*="col-sm-6"]:has(> .loan-index-metric) { flex: 0 0 50%; max-width: 50%; padding-left: .3rem; padding-right: .3rem; }
+  .row:has(> [class*="col-sm-6"] > .loan-index-metric) { margin-left: -.3rem; margin-right: -.3rem; }
+  .row > [class*="col-sm-6"] > .loan-index-metric .loan-index-metric__icon { display: none !important; }
+  .row > [class*="col-sm-6"] > .loan-index-metric strong { font-size: 1.2rem !important; white-space: normal; }
+  .row > [class*="col-sm-6"] > .loan-index-metric small { white-space: normal; line-height: 1.3; }
+}
+/* My vacancies: "How it works" is a <details>; its header is the summary. Empty portal states fold. */
+.jobs-guide > summary { cursor: pointer; list-style: none; }
+.jobs-guide > summary::-webkit-details-marker { display: none; }
+.jobs-guide > summary > div { flex: 1 1 auto; }
+.jobs-guide__toggle { color: #63666A; transition: transform .2s; }
+.jobs-guide[open] .jobs-guide__toggle { transform: rotate(180deg); }
+.jobs-guide:not([open]) > summary { margin-bottom: 0; }
+.jobs-status-empty > summary { cursor: pointer; padding: .45rem 0; font-size: .82rem; color: #63666A; }
+/* A closed guide keeps its own height instead of stretching to the Portal status card beside it. */
+.loan-index-bottom-cards > div:has(> .jobs-guide:not([open])) { align-self: flex-start; }
+.loan-index-bottom-cards .jobs-guide:not([open]) { height: auto !important; min-height: 0 !important; }

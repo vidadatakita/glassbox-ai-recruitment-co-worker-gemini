@@ -13,7 +13,7 @@
     <% if row.confirmation %>
       <p class="text-muted small">Confirmed by <%= row.confirmation.reviewer.name %> · <%= wib(row.confirmation.created_at) %><%= " · #{row.confirmation.note}" if row.confirmation.note.present? %><%= " · last position G#{row.confirmation.last_role_golongan}" if row.confirmation.last_role_golongan %></p>
     <% end %>
-    <% if result && current_user.role == "reviewer" && job.consultant_id != current_user.id %>
+    <% if result && current_user.role.in?(%w[hr_manager superadmin]) && job.consultant_id != current_user.id %>
       <%= form_with url: staff_job_screening_report_label_path(job, row.application.id), method: :post, class: "report-label-form", data: { turbo: false, submit_guard: true } do %>
         <fieldset class="mb-2">
           <legend class="form-label fs-14">Label</legend>
@@ -41,7 +41,7 @@
             <% if note_error %><div class="invalid-feedback d-block"><%= flash[:alert] %></div><% end %>
           </div>
         </div>
-        <%= label_button "Save label", "fa-save" %>
+        <div class="action-row mt-2"><%= label_button "Save label", "fa-save" %></div>
       <% end %>
     <% elsif result.nil? %>
       <p class="text-muted mb-0">The label is available once the AI has assessed the CV.</p>

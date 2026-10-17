@@ -10,11 +10,30 @@
   <section class="content salary-schema-page">
     <%= render "staff/job_briefs/stepper", job: @job, step: "5", check: @check %>
     <%= render "staff/job_briefs/errors", errors: @errors %>
+    <%= render "staff/test_cases/bank", job: @job, bank: @bank, current_bank: @current_bank, proposal: @bank_proposal, bank_errors: @bank_errors || [], ai_question: @ai_question %>
+    <h2 class="question-bank-divider" id="case-document"><i class="fa fa-file-text-o" aria-hidden="true"></i> Case document <small class="text-muted">uploaded case study, taken after CV screening</small></h2>
     <%= render "staff/test_cases/status", job: @job, current: @current, latest: @latest %>
     <%= render "staff/test_cases/versions", job: @job, versions: @versions, current: @current %>
-    <% if editor %>
+    <%# An approved (or started) newest version is shown read-only: the editor and its sticky Save stay
+        behind "Create a new version" (?new_version=1), so nobody starts version n + 1 by accident (Vida,
+        17 Oct 2026: Save on an approved case asked for a new-version reason she never meant to give).
+        A draft keeps the editor. A refused save, an AI proposal or the link opens the editor. %>
+    <% locked = @latest && !@latest.editable? %>
+    <% opening = params[:new_version].present? || @errors.any? || @suggestion || @case_proposal %>
+    <% if editor && locked && !opening %>
+      <%= render "staff/test_cases/version_detail", job: @job, test_case: @latest, current: @current %>
+      <div class="question-bank-action" id="case-editor">
+        <div class="question-bank-action__note"><strong>Version <%= @latest.version %> is final.</strong> Applicants may already be working on it, so it never changes. To change the case, create version <%= @latest.version + 1 %>: it starts as a copy, needs a reason, and HR approves it before applicants use it.</div>
+        <div class="hris-form-actions__buttons">
+          <%= label_link "Create a new version", "fa-code-fork", staff_job_test_case_step_path(@job, new_version: 1, anchor: "case-editor") %>
+        </div>
+      </div>
+    <% elsif editor %>
+      <% if @latest %><%= render "staff/test_cases/approve_form", job: @job, test_case: @latest %><% end %>
+      <%= render "staff/test_cases/ai_case_file", job: @job, proposal: @case_proposal %>
       <%= render "staff/job_briefs/ai_suggest", job: @job, step: "5", suggestion: @suggestion, allowed: true %>
-      <%= render "staff/test_cases/form", job: @job, form: @form %>
+      <span id="case-editor"></span>
+      <%= render "staff/test_cases/form", job: @job, form: @form, case_proposal: @case_proposal %>
     <% else %>
       <%= render "staff/test_cases/version_detail", job: @job, test_case: @latest, current: @current %>
     <% end %>

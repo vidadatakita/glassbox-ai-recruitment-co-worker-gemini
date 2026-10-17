@@ -4,10 +4,17 @@ module PortalFactory
 
   def company = default_company
 
+  # Three roles since 17 Oct 2026. The old role names still work here and keep meaning one PERSON each
+  # (consultant@ and hr_pic@ are two people, both hr_admin), so a test about "the reviewer is not the
+  # vacancy's consultant" still has two people; the role they get is the new one.
+  OLD_ROLE = { "hr_pic" => "hr_admin", "consultant" => "hr_admin", "reviewer" => "hr_manager",
+               "owner" => "hr_manager", "admin" => "superadmin" }.freeze
+
   def staff_user(role, email: "#{role}@uji.example")
+    new_role = OLD_ROLE.fetch(role.to_s, role.to_s)
     User.find_by(email_address: email) ||
-      User.create!(email_address: email, password: "rahasia-uji-123", name: "Uji #{role}", role:,
-                   client_company: (%w[hr_pic owner admin].include?(role) ? company : nil))
+      User.create!(email_address: email, password: "rahasia-uji-123", name: "Uji #{role}", role: new_role,
+                   client_company: (new_role == "superadmin" ? nil : company))
   end
 
   def set_retention(days = 30)

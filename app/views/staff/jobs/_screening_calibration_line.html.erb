@@ -2,16 +2,21 @@
 <% cal = board.calibration %>
 <% size = Screening::Calibration::SIZE %>
 <% limit = Screening::Calibration::MAX_DISAGREEMENT_PERCENT %>
-<p class="mb-2 screening-calibration-line">
-  <strong>Calibration:</strong>
+<% judged_pct = (100.0 * [cal.judged_count, size].min / size).round %>
+<div class="screening-callout screening-callout--<%= cal.status == :passed ? "ok" : (cal.status == :failed ? "bad" : "todo") %>">
+<div class="screening-callout__head"><strong>Calibration</strong> <%= calibration_badge(cal) %>
+  <span class="screening-callout__meta"><%= cal.judged_count %> of <%= size %> judged</span></div>
+<span class="screening-tiles__bar" aria-hidden="true"><span style="width: <%= judged_pct %>%"></span></span>
+<p class="mb-0 screening-calibration-line">
   <% if cal.status == :passed %>
-    passed. <%= cal.disagreements %> of <%= size %> CVs differed (limit <%= limit %>%). AI advice may become a decision under the review rules.
+    Passed: <%= cal.disagreements %> of <%= size %> CVs differed (limit <%= limit %>%).
   <% elsif cal.status == :failed %>
-    not calibrated. The consultant and the AI differed on <%= cal.disagreements %> CVs, more than the <%= limit %>% limit. The rubric needs fixing before the AI runs on its own.
+    The AI differed on <%= cal.disagreements %> CVs (limit <%= limit %>%); fix the rubric first.
   <% else %>
-    not calibrated. <%= cal.judged_count %> of the first <%= size %> CVs scored by the consultant, <%= cal.pairs.size %> scored by both. AI advice is not a decision yet.
+    The consultant scores the first <%= size %> CVs alone; until then the AI only advises.
   <% end %>
 </p>
+</div>
 <% if board.stale.any? %>
   <p class="text-muted mb-2"><%= board.stale.size %> AI <%= "result".pluralize(board.stale.size) %> were made with an old rubric. Run the screening again so they are scored with the current rubric.</p>
 <% end %>

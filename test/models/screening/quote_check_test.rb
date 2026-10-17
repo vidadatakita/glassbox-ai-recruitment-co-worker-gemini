@@ -33,4 +33,31 @@ class Screening::QuoteCheckTest < ActiveSupport::TestCase
     assert verified?("PT Logistik Makmur [REDACTED]")
     refute verified?("PT Logistik Makmur [REDACTED] tambahan")
   end
+
+  # Prompt s1-2026-10-16.4: one to three passages per criterion, each checked on its own, stored
+  # joined in the one "quote" field.
+  def check(entry, judgement: "3") = Screening::QuoteCheck.check(entry, judgement:, extracted: EXTRACTED, redacted: REDACTED)
+
+  test "several passages are verified only when every one is found, and are stored joined in order" do
+    both = check({ "quotes" => ["Admin Gudang di", "PT Logistik Makmur"] })
+    assert both["verified"]
+    assert_equal "Admin Gudang di … PT Logistik Makmur", both["quote"]
+    assert_equal ["Admin Gudang di", "PT Logistik Makmur"], Screening::QuoteCheck.passages(both["quote"])
+    refute check({ "quotes" => ["Admin Gudang di", "PT Sentosa Abadi"] })["verified"], "one invented passage is enough"
+    refute check({ "quotes" => ["Tidak pernah bekerja di gudang"] }, judgement: "0")["verified"], "an invented passage is a defect whatever it supports"
+  end
+
+  test "empty passages and repeats carry nothing; a positive judgement needs one passage with evidence" do
+    assert_equal ["PT Logistik Makmur"], Screening::QuoteCheck.passages_of({ "quotes" => ["", " PT Logistik Makmur ", "PT Logistik Makmur"] })
+    refute check({ "quotes" => [] }, judgement: "met")["verified"]
+    refute check({ "quotes" => ["[REDACTED]"] }, judgement: "2")["verified"], "the marker alone is not evidence (F-03)"
+    assert check({ "quotes" => ["PT Logistik Makmur", "[REDACTED]"] })["verified"], "beside a real passage the marker adds nothing and hides nothing"
+    assert_equal({ "quote" => "", "verified" => true }, check({ "quotes" => [] }, judgement: "0"))
+  end
+
+  test "the one-quote shape of prompts up to .3 is read the same way; an erased quote shows no passage" do
+    assert check({ "quote" => "2017 - 2024 Admin Gudang di PT Logistik Makmur" })["verified"]
+    refute check({ "quote" => "Admin Gudang di PT Sentosa Abadi" })["verified"]
+    assert_empty Screening::QuoteCheck.passages(nil)
+  end
 end

@@ -16,7 +16,10 @@ module ScreeningReport
 
     def confirmed? = @confirmed.nil? ? (@confirmed = CandidateIdentity.screening_confirmed?(@job)) : @confirmed
     def names? = @names.nil? ? (@names = CandidateIdentity.visible_to?(@user, JobApplication.new(job: @job))) : @names
-    def contacts? = @user.role == "consultant" || (@user.role == "hr_pic" && confirmed?)
+    # Three roles (17 Oct 2026): the superadmin always; the HR Admin (who decides) only once the screening
+    # decision is confirmed, like names; the HR Manager (who releases and scores) never, as the reviewer
+    # never did. Two branches on purpose: merging them leaks contacts into the blind export (test engine).
+    def contacts? = @user.role == "superadmin" || (@user.role == "hr_admin" && confirmed?)
     def blind? = !names?
     # One row: the job-wide answer, or this candidate decided at the gate (CandidateIdentity).
     def name_for?(application) = names? || CandidateIdentity.visible_to?(@user, application)

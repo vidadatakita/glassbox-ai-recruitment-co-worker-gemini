@@ -5,7 +5,7 @@
 <% invites = participation.interviewer_invites.order(:id).to_a %>
 <% entries = participation.score_entries.current.order(:id).to_a %>
 <% pending = invites.reject(&:submitted?) %>
-<% hr = current_user.role == Progression::CHOOSER %>
+<% hr = Progression.chooser?(current_user) %>
 <% open_stage = stage.status != "closed" && participation.progression_choice.nil? %>
 <div class="progression-interviewers">
   <h5 class="fs-14 mb-2">Interview assessors</h5>
@@ -51,7 +51,7 @@
     </div>
   <% end %>
 
-  <% if hr && open_stage %>
+  <% if Progression.inviter?(current_user) && open_stage %>
     <%= form_with url: staff_participation_interviewer_path(participation), method: :post, class: "d-flex flex-wrap gap-2 align-items-end", data: { turbo: false, submit_guard: true } do %>
       <div class="flex-grow-1">
         <label class="form-label" for="interviewer-<%= participation.id %>">Invite an assessor by link</label>

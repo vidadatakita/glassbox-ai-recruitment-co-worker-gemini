@@ -14,7 +14,7 @@
       <div class="border-bottom pb-3 mb-3" id="stage-<%= participation.id %>">
         <h4 class="fs-14"><%= CandidateStatus::STAGE_LABELS.fetch(stage.code) %>
           <span class="text-muted fw-normal">· stage <%= { "draft" => "draft", "open" => "open", "closed" => "closed" }.fetch(stage.status) %>
-          · result: <%= decision ? { "pass" => "passed", "eliminate" => "not passed", "review" => "needs review" }.fetch(decision.outcome) : "none yet" %></span></h4>
+          · result: <%= decision && !(stage.code == "S1" && ai_result_blinded?(participation)) ? { "pass" => "passed", "eliminate" => "not passed", "review" => "needs review" }.fetch(decision.outcome) : "none yet" %></span></h4>
         <%= render "staff/applications/ai_screening", participation:, job: stage.job if stage.code == "S1" && stage.score_source == "ai" %>
         <%# AI Builder Cup step 06: the AI advice and the HR PIC's choice (the gate's on its S1 row). %>
         <%= render "staff/applications/progression", participation: participation if stage.code != "RC" && Progression.step?(participation) %>
@@ -25,7 +25,7 @@
             <% if appointment.reschedule_reason.present? %>(<%= appointment.reschedule_reason %>)<% end %></p>
           <%= render "staff/applications/calendar_status", appointment: appointment unless demo_mode? %>
         <% end %>
-        <% if current_user.role == "consultant" && stage.code != "S1" && stage.status != "closed" %>
+        <% if current_user.role.in?(%w[hr_admin superadmin]) && stage.code != "S1" && stage.status != "closed" %>
           <%# Calendar appointments are outside the twelve demo steps; their routes are not drawn in demo mode. %>
           <%= render "staff/applications/appointment_form", participation: participation, appointment: appointment unless demo_mode? %>
         <% end %>

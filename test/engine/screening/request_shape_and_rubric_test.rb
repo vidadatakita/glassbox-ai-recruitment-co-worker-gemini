@@ -54,14 +54,14 @@ class EngineScreeningRequestShapeTest < ActiveSupport::TestCase
   test "request shape is one the Gemini generateContent API accepts: JSON answer under the shared schema, no sampling knobs" do
     body = first_body
     request = @fake.requests.first
-    assert_match %r{/v1beta/models/gemini-3\.8-pro:generateContent\z}, request[:url].to_s, "the HIGH tier's model is in the URL"
+    assert_match %r{/v1beta/models/gemini-3\.8-flash:generateContent\z}, request[:url].to_s, "the HIGH tier's model is in the URL"
     assert_equal FAKE_KEY, request[:headers]["x-goog-api-key"], "the key travels in the header, never in the URL or body"
     assert_equal "application/json", request[:headers]["Content-Type"]
     config = body.fetch("generationConfig")
     assert_equal "application/json", config["responseMimeType"]
     assert_kind_of Integer, config["maxOutputTokens"]
     assert_operator config["maxOutputTokens"], :<=, 16_000, "non-streaming request: keep the output cap at or under ~16000"
-    assert_equal({ "thinkingLevel" => "high" }, config["thinkingConfig"], "the HIGH tier thinks at level high (FLOW §9)")
+    assert_equal({ "thinkingLevel" => "medium" }, config["thinkingConfig"], "the HIGH tier thinks at level medium by default (FLOW §9; high timed out, 16 Oct 2026)")
     %w[temperature topP topK candidateCount stopSequences tools toolConfig].each do |forbidden|
       refute body.key?(forbidden) || config.key?(forbidden), "#{forbidden} is not part of the screening request"
     end
@@ -86,9 +86,9 @@ class EngineScreeningRequestShapeTest < ActiveSupport::TestCase
       Screening::GeminiClient.new.count_tokens(redacted_cv: Screening::Sample.redacted_cv, rubric_payload: Screening::Sample.rubric.payload)
     end
     body = JSON.parse(fake.bodies.first)
-    assert_match %r{/models/gemini-3\.8-pro:countTokens\z}, fake.requests.first[:url].to_s
+    assert_match %r{/models/gemini-3\.8-flash:countTokens\z}, fake.requests.first[:url].to_s
     inner = body.fetch("generateContentRequest")
-    assert_equal "models/gemini-3.8-pro", inner["model"]
+    assert_equal "models/gemini-3.8-flash", inner["model"]
     assert_equal Screening::AiClient::SYSTEM_PROMPT, request_system_text(inner)
     refute inner.key?("generationConfig"), "countTokens takes no generation config"
   end

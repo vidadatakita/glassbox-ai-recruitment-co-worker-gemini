@@ -1,9 +1,11 @@
 module Staff
-  # Screen 2 "Buat Lowongan" (blueprint §3.1): a four-step wizard, each step saved as a draft with
-  # "Save" and then the next step. D49 (5): HR PIC and consultant both fill in and edit; owner,
-  # reviewer and admin see the brief read-only (show). Every save is recorded by Briefs::SaveStep.
+  # Screen 2 "New vacancy" (blueprint §3.1): a four-step wizard, each step saved as a draft with
+  # "Save" and then the next step. Three roles (17 Oct 2026): the HR Admin and the superadmin fill in
+  # and edit; the HR Manager sees the brief read-only (show). Every save is recorded by Briefs::SaveStep.
   class JobBriefsController < BaseController
-    EDITORS = %i[hr_pic consultant].freeze
+    # The superadmin is listed, not only let through by require_role!: the screens read this list to
+    # decide whether to show the edit and complete actions.
+    EDITORS = %i[hr_admin superadmin].freeze
     STEP_TITLES = JobBriefChange::STEP_LABELS.slice("1", "2", "3", "4").freeze
 
     before_action -> { require_role!(*EDITORS) }, except: :show
@@ -56,7 +58,7 @@ module Staff
     # to save there; a refusal lists what is missing on the brief page, each with a link to its step.
     def complete
       result = Briefs::Complete.call(job: @job, actor: current_user)
-      return redirect_to(staff_job_brief_path(@job), notice: "Brief completed. HR can approve the job ad.") if result.ok?
+      return redirect_to(staff_job_brief_path(@job), notice: "Brief completed. Write the job ad, then open the applicant portal.") if result.ok?
 
       redirect_to staff_job_brief_path(@job), alert: "The brief cannot be completed yet. Complete the parts marked below; each line links to its step."
     end
@@ -69,7 +71,7 @@ module Staff
     # a refused completion keeps what was typed and lists what is missing, step by step.
     def finish
       result = Briefs::Complete.call(job: @job.reload, actor: current_user)
-      return redirect_to(staff_job_brief_path(@job), notice: "Brief completed. HR can approve the job ad.") if result.ok?
+      return redirect_to(staff_job_brief_path(@job), notice: "Brief completed. Write the job ad, then open the applicant portal.") if result.ok?
 
       flash.now[:alert] = "Draft saved, but the brief cannot be completed yet. Complete the parts listed below."
       @finish_refused = true
@@ -81,6 +83,9 @@ module Staff
     def render_step(step, errors: [], status: :ok, suggestion: nil)
       @step = step
       @suggestion = suggestion
+      # A save refused because a COMPLETE brief would stop being complete: the gaps are usually in
+      # other steps, so the page also shows the open-problems card, each step with its link.
+      @finish_refused ||= errors.first.to_s.start_with?("This brief is complete")
       @checking = @finish_refused || params[:periksa].present?
       @errors = errors
       # A refused save rolled back in the database but may leave built rows and assigned values on

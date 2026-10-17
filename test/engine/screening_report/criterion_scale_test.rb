@@ -40,8 +40,9 @@ class Engine08CriterionScaleTest < ActionDispatch::IntegrationTest
       _a, p1, _p2 = e8_applicant(@job, @s1, @s2, name:)
       e8_result(p1, score: name == "Ani Uji" ? 80 : 30, judgements: judgements(wajib: w, sebaiknya: s, nilai: n))
     end
-    sign_in_as staff_user("consultant")
-    board = e8_board(@job, staff_user("consultant"))
+    # Superadmin: the only role that sees names before the gate (three-role model, 17 Oct 2026).
+    sign_in_as staff_user("superadmin")
+    board = e8_board(@job, staff_user("superadmin"))
     screen = board.rows.flat_map do |row|
       get staff_job_screening_report_candidate_path(@job, row.application.id)
       css_select("table.report-criteria tbody tr").map { |tr| [row.candidate.name, tr.css("td")[0].text.strip, tr.at("td.report-criteria__score").text.strip.to_i] }
@@ -54,7 +55,7 @@ class Engine08CriterionScaleTest < ActionDispatch::IntegrationTest
     assert_equal screen, data.map { [it[1], it[2], it[4].to_i] }, "xlsx criteria sheet differs from the screen"
     assert_equal ["'=1+1 kutipan"], data.map { it[6] }.uniq & ["'=1+1 kutipan"], "quote escaped once"
     sign_out
-    sign_in_as staff_user("hr_pic")
+    sign_in_as staff_user("hr_admin")
     get staff_job_screening_report_export_path(@job)
     blind = criteria_sheet(response.body)
     refute blind.flatten.compact.any? { it.include?("Ani Uji") || it.include?("Budi Uji") }, "name on the blind criteria sheet"

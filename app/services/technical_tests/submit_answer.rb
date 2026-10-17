@@ -84,7 +84,7 @@ module TechnicalTests
     end
 
     # Answers are opened by staff on their own computers, so content that ACTS when opened is refused
-    # on top of the shared inspection (engine-07 probe, relayed by the slice 1-2 fix lane 18:1x):
+    # on top of the shared inspection (engine-07 probe, relayed by the slice 1-2 fix work 18:1x):
     #   - PDF: JavaScript, actions run on open, launch, embedded files. A plain-text scan of the raw
     #     bytes; a name written in hex escapes (/J#61vaScript) or inside a compressed object stream is
     #     NOT caught (recorded as an open item; a real PDF parser or the antivirus adapter closes it).

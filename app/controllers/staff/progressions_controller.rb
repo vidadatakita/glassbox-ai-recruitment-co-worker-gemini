@@ -1,9 +1,11 @@
 module Staff
-  # AI Builder Cup step 06 on the applicant page: the HR PIC scores Interview 1, asks the AI for its
-  # recommendation, and chooses Lanjut / Rekomendasi AI / Tidak Lanjut. Rules live in
+  # AI Builder Cup step 06 on the applicant page: the HR Admin scores the interview, asks the AI for its
+  # recommendation, and chooses Continue / Follow AI advice / Do not continue. Rules live in
   # app/services/progression/*; this controller checks the role, calls, and says what happened.
+  # Every role may create an interviewer's link (Progression::INVITER_ROLES, 17 Oct 2026).
   class ProgressionsController < BaseController
-    before_action -> { require_role!(:hr_pic) }
+    before_action -> { require_role!(:hr_admin) }, except: :invite
+    before_action -> { require_role!(*Progression::INVITER_ROLES) }, only: :invite
     before_action :load_participation
 
     def interview

@@ -2,18 +2,28 @@
 <%= render "candidate_shared/job_top", job: @job %>
 <%= render "lamar/aside", job: @job %>
 <%# Card head: progress, title and the one-line instruction read as one group, set apart from
-    the questions by a rule (proximity, info-display §2.2 rule 2). %>
+    the questions by a rule (proximity, info-display §2.2 rule 2). The heading names the step: the
+    job title is already the line above the card (candidate_shared/job_top), so repeating it read as
+    the same title twice. It stays in the heading for screen readers, which navigate by headings and
+    would otherwise meet a heading with no vacancy in it. %>
 <div class="cand-head">
   <%= render "lamar/stepper", step: 1 %>
-  <h1>Apply for <%= @job.title %></h1>
+  <h1>Step 1 · Requirements<span class="visually-hidden">: <%= @job.title %></span></h1>
   <p class="small">Step 1 of 2. Answer the requirement questions first. No personal data is asked for in this step.</p>
 </div>
-<%# AI Builder Cup step 02: the job ad HR approved (Briefs::SaveAd), before the questions. Folded on a
-    phone by the browser's own details element; open by default. %>
-<% if @job.ad_approved_at && @job.ad_text.present? %>
+<%# AI Builder Cup step 02: the job ad HR approved (Briefs::SaveAd), before the questions. Open by
+    default, so a desktop reader sees it whole. On a phone the full text pushed the first question
+    about 1500px down, so below 768px layout_apply.css clips the text to its first lines and the
+    inner "Show more" details lifts the clip (CSS :has, no script). The clip is visual only: the
+    whole text stays in the page, so a screen reader and find-in-page still reach every word. The
+    inner details holds no content of its own, only the toggle; it is hidden on desktop. %>
+<% if @job.ad_text.present? %>
   <details class="job-ad" open>
     <summary>About this vacancy</summary>
     <div class="job-ad__text"><%= ad_html(@job.ad_text) %></div>
+    <details class="job-ad__more">
+      <summary><span class="job-ad__more-open">Show the full vacancy text</span><span class="job-ad__more-close">Show less</span></summary>
+    </details>
   </details>
 <% end %>
 <%= render "candidate_shared/errors", errors: @errors %>

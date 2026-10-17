@@ -1,8 +1,9 @@
 # Demo data for feature 07 slices 3-5, the technical test in the apply flow (D60; GlassBox Team D52, 18:0x:
-# "buat seeder untuk data contohnya semua").
+# "build a seeder for all the sample data"). All text is English (owner's rule, 17 Oct 2026).
 #
-# EVERYTHING HERE IS INVENTED: two jobs, the candidates ("Peserta Tes Contoh 01" ...), their e-mail
-# addresses (@contoh.example), the case and answer workbooks. No real candidate data.
+# EVERYTHING HERE IS INVENTED: two jobs, the candidates ("Test Participant 01" ...), their e-mail
+# addresses (@contoh.example, a reserved invented domain kept as a name), the case and answer
+# workbooks. No real candidate data.
 #
 # One row per technical-test state, so every screen has something to show:
 #   OPEN gate   01 not started, inside 48 h (the 24-hour reminder recorded)
@@ -31,8 +32,8 @@ require_relative "demo_test_cases"
 
 module DemoTechnicalTest
   TITLES = {
-    open: "Staf Admin Gudang (Demo Tes Teknis, gerbang terbuka)",
-    closed: "Staf Admin Gudang (Demo Tes Teknis, gerbang ditutup)"
+    open: "Warehouse Admin Staff (Technical test demo, gate open)",
+    closed: "Warehouse Admin Staff (Technical test demo, gate closed)"
   }.freeze
   PDF = "%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n".freeze
 
@@ -55,9 +56,9 @@ module DemoTechnicalTest
 
   def base(title, company:, hr:, consultant:, now:)
     job = Job.create!(title:, golongan: 3, client_company: company, location: "Cikarang", consultant:, package: 3,
-                      brief_status: "complete", ad_approved_at: now - 4.days, ad_approved_by_id: hr.id)
-    [["Mencatat barang masuk dan keluar", "Kartu stok akurat", 50], ["Stock opname bulanan", "Selisih stok terjelaskan", 30],
-     ["Menyusun laporan stok mingguan", "Laporan tepat waktu", 20]].each_with_index do |(d, o, s), i|
+                      brief_status: "complete", brief_completed_at: now - 5.days, ad_approved_at: now - 4.days, ad_approved_by_id: hr.id)
+    [["Record goods in and out", "Accurate stock cards", 50], ["Monthly stock count", "Stock differences explained", 30],
+     ["Prepare the weekly stock report", "Report on time", 20]].each_with_index do |(d, o, s), i|
       job.activities.create!(position: i + 1, description: d, output: o, share_percent: s)
     end
     job.stages.create!(code: "S1", score_source: "ai", weight: 10, threshold: 60, gate: "screening")
@@ -69,15 +70,15 @@ module DemoTechnicalTest
   end
 
   def approved_test(job, consultant:, hr:)
-    rows = [["Kode", "Nama barang", "Stok sistem", "Stok fisik"], ["BRG-01", "Palet kayu", 120, 112], ["BRG-02", "Stretch film", 40, 44]]
+    rows = [["Code", "Item name", "System stock", "Physical stock"], ["BRG-01", "Wooden pallet", 120, 112], ["BRG-02", "Stretch film", 40, 44]]
     activities = job.activities.order(:position).to_a
-    params = { instructions: "Lembar Data berisi kartu stok satu bulan dengan beberapa selisih (data fiktif). Temukan selisihnya dan tulis koreksinya di lembar Jawaban.",
+    params = { instructions: "The Data sheet holds one month of stock cards with several differences (invented data). Find the differences and write the corrections on the Answers sheet.",
                time_limit_minutes: "35", answer_types_submitted: "1", answer_types: %w[xlsx],
-               case_file: DemoTestCases::SeedUpload.new(DemoTestCases.workbook("Kasus kartu stok (data fiktif).", rows), "kasus-stok.xlsx"),
-               criteria: [[0, "Menemukan selisih stok", 50], [1, "Koreksi yang benar", 30], [2, "Penjelasan untuk atasan", 20]]
+               case_file: DemoTestCases::SeedUpload.new(DemoTestCases.workbook("Stock card case (invented data).", rows), "stock-case.xlsx"),
+               criteria: [[0, "Finds the stock differences", 50], [1, "Correct corrections", 30], [2, "Explanation for the supervisor", 20]]
                  .each_with_index.to_h do |(a, name, w), i|
-                 [i.to_s, { activity_id: activities[a].id.to_s, name:, weight: w.to_s, anchor_1: "Selisih tidak ditemukan",
-                            anchor_3: "Sebagian selisih ditemukan", anchor_5: "Semua selisih ditemukan dan dijelaskan" }]
+                 [i.to_s, { activity_id: activities[a].id.to_s, name:, weight: w.to_s, anchor_1: "No difference found",
+                            anchor_3: "Some differences found", anchor_5: "Every difference found and explained" }]
                end }
     saved = TestCases::SaveVersion.call(job:, actor: consultant, params:)
     raise "demo test refused: #{saved.errors.join(' | ')}" unless saved.ok?
@@ -116,12 +117,12 @@ module DemoTechnicalTest
   # then the submit notice exactly as Lamar sends it.
   def applicant(job, number, applied)
     label = format("%02d", number)
-    candidate = Candidate.create!(name: "Peserta Tes Contoh #{label}", email: "peserta.tes.#{label}.#{job.id}@contoh.example",
+    candidate = Candidate.create!(name: "Test Participant #{label}", email: "test.participant.#{label}.#{job.id}@contoh.example",
                                   phone: format("0812-0000-%04d", job.id * 100 + number))
-    consent = ConsentTemplate.in_force or raise "no consent text in force: publish one on Pengaturan Sistem first"
+    consent = ConsentTemplate.in_force or raise "no consent text in force: publish one on System settings first"
     application = JobApplication.create!(job:, candidate:, consent_at: applied, consent_template: consent,
                                          consent_retention_days: SystemSetting.retention_days || 30, created_at: applied)
-    application.cv.attach(io: StringIO.new(PDF), filename: "cv-contoh.pdf", content_type: "application/pdf")
+    application.cv.attach(io: StringIO.new(PDF), filename: "sample-cv.pdf", content_type: "application/pdf")
     job.stages.where(gate: "screening").order(:code).each do |stage|
       Participation.create!(job_application: application, stage:, attendance: "pending")
     end
@@ -134,8 +135,8 @@ module DemoTechnicalTest
 
   def answer(application, started)
     start(application, started)
-    file = DemoTestCases::SeedUpload.new(DemoTestCases.workbook("Jawaban (data fiktif).", [["Kode", "Koreksi"], ["BRG-01", -8], ["BRG-02", 4]]),
-                                         "jawaban.xlsx")
+    file = DemoTestCases::SeedUpload.new(DemoTestCases.workbook("Answer (invented data).", [["Code", "Correction"], ["BRG-01", -8], ["BRG-02", 4]]),
+                                         "answer.xlsx")
     attempt = TechnicalTests::SubmitAnswer.call(application:, file:, now: started + 28.minutes)
     TechnicalTests::Notices.receipt(application)
     attempt
@@ -143,7 +144,7 @@ module DemoTechnicalTest
 
   def score(attempt, ratings, reviewer:, now:)
     by_id = attempt.test_case.criteria.zip(ratings).to_h { |criterion, value| [criterion.id.to_s, value.to_s] }
-    TechnicalTests::ScoreAnswer.call(attempt:, reviewer:, ratings: by_id, note: "Data contoh: penilaian rubrik.", now:)
+    TechnicalTests::ScoreAnswer.call(attempt:, reviewer:, ratings: by_id, note: "Sample data: rubric scoring.", now:)
   end
 
   # S1 decided by a named person (a manual decision with a note), not by an invented AI score: an
@@ -152,7 +153,7 @@ module DemoTechnicalTest
   def s1_decision(application, value, reviewer:)
     s1 = application.participations.joins(:stage).find_by!(stages: { code: "S1" })
     Decision.create!(participation: s1, outcome: value >= s1.stage.threshold ? "pass" : "eliminate", basis: "manual",
-                     reason_code: "demo_manual", note: "Data contoh: keputusan Seleksi CV oleh reviewer (nilai #{value}).",
+                     reason_code: "demo_manual", note: "Sample data: CV screening decision by the reviewer (score #{value}).",
                      decided_by_id: reviewer.id, decided_at: Time.current)
   end
 end

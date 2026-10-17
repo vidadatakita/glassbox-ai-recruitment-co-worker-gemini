@@ -2,7 +2,7 @@ module Staff
   # AI Builder Cup step 09 on the applicant page: the HR PIC asks the AI for a draft of the
   # rejection notice or the offer letter, edits it, and sends it. Rules in Progression::Letters.
   class LettersController < BaseController
-    before_action -> { require_role!(:hr_pic) }
+    before_action -> { require_role!(:hr_admin) }
     before_action { @application = org_find(JobApplication, params[:application_id]) }
 
     # From the page's script (ai_fill.js, JSON) the draft fills the subject and body in place.

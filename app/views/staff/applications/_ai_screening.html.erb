@@ -35,7 +35,7 @@
       <p class="mb-1"><strong>Waiting for the reviewer.</strong> The CV text has been extracted and its personal data redacted. The AI has received nothing yet:
         <%= Screening::Config.review_before_ai? ? "for every CV," : "this CV is held because personal data was still detected after redaction, so" %>
         a <strong>reviewer</strong> (not this vacancy's consultant) checks the text and then presses "Send to Gemini".</p>
-      <% if current_user.role == "reviewer" && job.consultant_id != current_user.id && release&.pending? %>
+      <% if current_user.role.in?(%w[hr_manager superadmin]) && job.consultant_id != current_user.id && release&.pending? %>
         <%= label_link "Check the text & send to Gemini", "fa-shield", staff_ai_release_path(release) %>
       <% else %>
         <span class="text-muted small">Sign in as a reviewer to check it, on the vacancy page → "Review before AI".</span>
@@ -52,7 +52,7 @@
           <% if result.unverified_count.to_i.positive? %> · <span class="text-warning"><%= result.unverified_count %> quote(s) not found in the CV, checked by the reviewer</span><% end %></p>
         <% if result.label_reason.present? %><p class="text-muted mb-1"><%= result.label_reason %></p><% end %>
       <% end %>
-      <%= link_to "View the full screening report", staff_job_screening_report_candidate_path(job, application_id: participation.job_application_id) if current_user.role.in?(%w[hr_pic consultant reviewer owner]) %>
+      <%= link_to "View the full screening report", staff_job_screening_report_candidate_path(job, application_id: participation.job_application_id) if current_user.role.in?(%w[hr_admin hr_manager superadmin]) %>
     <% when "not_sent" %>
       <p class="mb-0"><strong>Not sent to the AI.</strong> The reviewer decided this CV is scored manually.</p>
     <% else %>

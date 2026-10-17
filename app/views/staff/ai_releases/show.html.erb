@@ -24,7 +24,7 @@
     <%= render "staff/ai_releases/rubric", release: @release %>
     <%= render "staff/ai_releases/payload", release: @release, spans: spans, can_act: can_act %>
     <% if can_act %>
-      <div class="row">
+      <div class="row ai-release-choices">
         <div class="col-lg-6"><%= render "staff/ai_releases/release_form", release: @release %></div>
         <div class="col-lg-6"><%= render "staff/ai_releases/decline_form", release: @release %></div>
       </div>

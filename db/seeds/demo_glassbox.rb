@@ -62,9 +62,11 @@ module DemoGlassbox
       title: "Accounting Supervisor", tier: "T2", golongan: 4, package: 3, threshold: 65, headcount: 1,
       employment_type: "tetap_pkwtt", salary: [8_000_000, 11_000_000],
       success_90d: "Monthly close delivered by working day 5 with reconciled bank and cash accounts.",
-      activities: [["Prepare monthly journals and financial statements", "Financial statements on time", 50],
-                   ["Reconcile bank and cash accounts", "Every difference explained", 30],
-                   ["Lead and review the work of the accounting staff", "Fewer staff errors", 20]],
+      activities: [["Prepare monthly journals and financial statements", "Financial statements on time", 35],
+                   ["Reconcile bank and cash accounts", "Every difference explained", 25],
+                   ["Lead and review the work of the accounting staff", "Fewer staff errors", 15],
+                   ["Prepare monthly tax payments and filings", "Taxes paid and filed on time", 15],
+                   ["Answer auditors' and management's questions on the figures", "Questions answered within two days", 10]],
       requirements: [["M1", "wajib", "At least a D3 (associate) degree in Accounting", "Accounting diploma or degree in the CV", nil],
                      ["S1", "sebaiknya", "Experience preparing journals and bank reconciliations", "Journals or reconciliations in the work history", 60],
                      ["S2", "sebaiknya", "Advanced Microsoft Excel", "Excel skills named", 40],
@@ -91,35 +93,91 @@ module DemoGlassbox
                      ["S3", "I", "Integrity of financial data", "Hides a difference", "Reports a difference to the manager",
                       "Traces, explains and prevents repeat differences", "What do you do when you find a cash difference?"],
                      ["S5", "L5", "Coaches accounting staff", "Does the staff's work alone", "Checks and corrects",
-                      "Trains staff until errors fall", "How do you make a new staff member independent within a month?"]]
+                      "Trains staff until errors fall", "How do you make a new staff member independent within a month?"],
+                     ["S5", "L1", "Knows the accounting standards", "Cannot name the rule behind an entry", "Names the rule for common entries",
+                      "Explains the rule and its exceptions for any entry", "Which standard governs revenue recognition, and how do you apply it?"],
+                     ["S5", "L2", "Understands the business behind the figures", "Reads figures without context", "Links figures to sales and costs",
+                      "Explains every movement from the business events", "Our margin fell two points last month. Where would you look first?"],
+                     ["S5", "L3", "Judges when to escalate", "Escalates nothing or everything", "Escalates the large differences",
+                      "Escalates by materiality and risk, with a proposal", "Tell us about a difference you decided not to escalate, and why."]]
     },
     adm: {
-      title: "Admin Staff", tier: "T4", golongan: 2, package: 2, threshold: 60, headcount: 2,
+      # Package 3 (17 Oct 2026): the seed builds S1, S2, S3 and S5 for every vacancy, which is package 3's
+      # ladder (Briefs::StagePlan). Seeded as package 2 it showed a technical-test gate whose pages answer
+      # 404, because those pages follow the package. Package 3 is a recommended package for grade 2.
+      title: "Admin Staff", tier: "T4", golongan: 2, package: 3, threshold: 60, headcount: 2,
       employment_type: "kontrak_pkwt", salary: [UMK_2026, 6_200_000],
       success_90d: "Daily document log complete and every incoming letter filed within one working day.",
-      activities: [["Record incoming and outgoing documents", "Complete daily log", 40],
-                   ["Prepare purchase orders and delivery notes in Excel", "Documents without errors", 40],
-                   ["Support the team with scheduling and filing", "Files found within one minute", 20]],
+      activities: [["Record incoming and outgoing documents", "Complete daily log", 30],
+                   ["Prepare purchase orders and delivery notes in Excel", "Documents without errors", 30],
+                   ["Support the team with scheduling and filing", "Files found within one minute", 15],
+                   ["Answer the office phone and direct visitors", "Every caller directed the same day", 15],
+                   ["Keep the office supplies stocked", "No supply runs out", 10]],
       requirements: [["M1", "wajib", "At least a senior high school (SMA/SMK) diploma", "SMA, SMK or higher in the CV", nil],
                      ["S1", "sebaiknya", "Experience with office administration", "Administrative work in the work history", 50],
                      ["S2", "sebaiknya", "Microsoft Excel and Word", "Excel or Word named", 50],
                      ["N1", "nilai_tambah", "Experience with purchase orders or delivery notes", "Purchase orders or delivery notes named", nil]],
       knockouts: ["Willing to work on site in Kota Tangerang?", "Available to start within one month?"],
-      competencies: []
+      # Step 5 (17 Oct 2026): a vacancy with a technical-test stage opens only with an approved test
+      # (Portal::WindowChange, TestCases::Readiness), so every demo vacancy carries one.
+      test_case: {
+        file: "document-log-case.xlsx", time_limit_minutes: 25,
+        instructions: "The Data sheet is one week of the incoming document log and two purchase orders with THREE planted errors: one letter logged twice, one purchase order whose total does not match its lines, and one delivery note filed under the wrong supplier. Find each error, correct it on the Answers sheet, and write one sentence per correction.",
+        rows: [["Date", "Document", "Supplier", "Amount"],
+               ["05-10-2026", "Incoming letter 041", "PT Sinar Kertas", nil], ["05-10-2026", "Incoming letter 041", "PT Sinar Kertas", nil],
+               ["06-10-2026", "Purchase order PO-118 line 1", "CV Mitra Office", 1_200_000], ["06-10-2026", "Purchase order PO-118 line 2", "CV Mitra Office", 800_000],
+               ["06-10-2026", "Purchase order PO-118 total", "CV Mitra Office", 2_100_000],
+               ["08-10-2026", "Delivery note DN-77", "PT Sinar Kertas", nil], ["08-10-2026", "Purchase order PO-119 total", "PT Prima Toner", 950_000]],
+        criteria: [[0, "Keeps the document log clean", 40, "Duplicate not noticed", "Duplicate noticed, not removed", "Duplicate removed and the log renumbered"],
+                   [1, "Checks purchase order figures", 40, "Total not checked", "Wrong total found, not corrected", "Total corrected to 2,000,000 with the lines shown"],
+                   [2, "Files and explains each correction", 20, "No explanation", "Correction without the reason", "Each correction explained in one plain sentence"]]
+      },
+      competencies: [["S3", "L1", "Knows document and filing rules", "Files without a system", "Follows the filing system",
+                      "Improves the filing system and explains it", "How do you file a letter that fits two folders?"],
+                     ["S3", "L4", "Works accurately in Excel", "Many typing errors", "Few errors, checks totals",
+                      "No errors, uses formulas to check", "Show us how you would check a purchase order total."],
+                     ["S5", "I", "Handles documents with integrity", "Changes a document without telling", "Reports a wrong document",
+                      "Reports, corrects and records the change", "What do you do when a supplier asks you to change a date?"]]
     },
     area: {
       title: "Area Supervisor", tier: "T2", golongan: 4, package: 3, threshold: 65, headcount: 1,
       employment_type: "tetap_pkwtt", salary: [7_500_000, 10_000_000],
       success_90d: "Visits every outlet in the area twice a month with a written visit report each time.",
-      activities: [["Visit and audit the outlets in the area", "Visit report per outlet", 50],
-                   ["Coach outlet leaders on sales and stock routines", "Routines followed", 30],
-                   ["Report area sales and stock figures weekly", "Weekly report on time", 20]],
-      requirements: [["M1", "wajib", "Holds a driving licence and is willing to travel across the area", "Driving licence and travel willingness in the CV", nil],
+      activities: [["Visit and audit the outlets in the area", "Visit report per outlet", 35],
+                   ["Coach outlet leaders on sales and stock routines", "Routines followed", 25],
+                   ["Report area sales and stock figures weekly", "Weekly report on time", 15],
+                   ["Handle customer complaints escalated by the outlets", "Every complaint closed within a week", 15],
+                   ["Plan the outlet staffing roster with the leaders", "No outlet understaffed", 10]],
+      # M1 asks only what a CV can show (16 Oct agreement check: the compound "licence and willing to
+      # travel" was judged not met on 6 of 7 CVs that name a licence, because no CV states the
+      # willingness). The willingness is the first knockout question, answered by the applicant.
+      requirements: [["M1", "wajib", "Holds a driving licence", "A driving licence (SIM A, B or C) named in the CV", nil],
                      ["S1", "sebaiknya", "Experience supervising several outlets or branches", "Multi-outlet supervision in the work history", 60],
                      ["S2", "sebaiknya", "Experience with stock counts and sales reporting", "Stock counts or sales reports named", 40],
                      ["N1", "nilai_tambah", "Experience coaching outlet leaders", "Coaching or training outlet leaders named", nil]],
       knockouts: ["Willing to travel across Tangerang and Serang every week?", "Holds a valid driving licence?"],
-      competencies: []
+      test_case: {
+        file: "outlet-visit-case.xlsx", time_limit_minutes: 30,
+        instructions: "The Data sheet is one week of visit and stock figures from four outlets with THREE planted problems: one outlet whose closing stock does not follow from opening stock and sales, one outlet not visited this week, and one sales figure entered in the wrong week. Find each problem, write the corrected figures on the Answers sheet, and add one coaching action per outlet.",
+        rows: [["Outlet", "Visited", "Opening stock", "Sales", "Closing stock"],
+               ["Outlet Cikokol", "Yes", 420, 130, 290], ["Outlet Karawaci", "Yes", 380, 95, 305],
+               ["Outlet Serpong", "No", 510, 160, 350], ["Outlet Ciledug", "Yes", 300, 410, 290]],
+        criteria: [[0, "Audits the outlet figures", 40, "No problem found", "One or two problems found", "All three problems found with the correct figures"],
+                   [1, "Plans the coaching per outlet", 30, "No action", "Generic action for all outlets", "One concrete action per outlet tied to its figures"],
+                   [2, "Reports the area clearly", 30, "No summary", "Summary without figures", "Weekly summary with the corrected figures and the missed visit"]]
+      },
+      competencies: [["S3", "L1", "Knows retail stock routines", "Cannot describe a stock count", "Describes the stock count steps",
+                      "Explains the routines and why each step matters", "Walk us through a stock count at an outlet."],
+                     ["S3", "L2", "Understands outlet performance", "Reads sales without context", "Links sales to stock and staffing",
+                      "Explains each outlet's figures from its situation", "One outlet's sales fell 20%. What do you check?"],
+                     ["S3", "L3", "Judges priorities across outlets", "Visits in a fixed order only", "Visits the weakest outlets first",
+                      "Plans visits by risk and opportunity each week", "You have three urgent outlets and one day. How do you plan it?"],
+                     ["S3", "L4", "Audits an outlet", "No written findings", "Written findings for each visit",
+                      "Findings with figures and an agreed action", "What goes into your visit report?"],
+                     ["S5", "L5", "Coaches outlet leaders", "Gives orders only", "Shows the routine once",
+                      "Coaches until the leader runs it alone", "How do you make an outlet leader run the stock count alone?"],
+                     ["S5", "I", "Reports honestly", "Hides a bad result", "Reports the bad result",
+                      "Reports, explains and proposes a fix", "Tell us about a time you reported a bad figure to your manager."]]
     }
   }.freeze
 
@@ -310,7 +368,7 @@ module DemoGlassbox
               "S2" => ["3", "Microsoft Excel and Word"], "N1" => ["3", "Raises purchase orders in the ERP and follows up supplier confirmations"] },
       state: :screened, step9: ["lanjut", 90, "ikut_ai", nil] },
     { job: :adm, key: "ADM-08", name: "Rizky Firmansyah", gender: "Male", city: "Kota Tangerang",
-      years: "2024 - present", role: "Intern", employer: "Kantor Notaris Tangerang Kota",
+      years: "2024 - present", role: "Intern", employer: "Tangerang City Notary Office",
       line1: "Scans and files deeds and prepares the daily list of documents received",
       line2: "Helps with typing cover letters in Word",
       education: "Currently in the final year of a Diploma (D3) in Office Administration, Politeknik Tangerang Raya",
@@ -392,11 +450,12 @@ module DemoGlassbox
 
   module_function
 
-  # Runs the whole demo. hr: the HR owner (role hr_pic); consultant: the vacancy's consultant;
-  # reviewer: a reviewer who is not the consultant. Returns the three jobs.
+  # Runs the whole demo. hr: the HR Admin who decides (role hr_admin, three roles since 17 Oct 2026);
+  # consultant: the vacancy's consultant; reviewer: the HR Manager who releases and is not the
+  # consultant. Returns the three jobs.
   def run(hr:, consultant:, reviewer:, company: nil, now: Time.current)
     company ||= company!
-    raise ArgumentError, "hr must have the hr_pic role (got #{hr.role})" unless hr.role == "hr_pic"
+    raise ArgumentError, "hr must have the hr_admin role (got #{hr.role})" unless hr.role == "hr_admin"
     raise ArgumentError, "reviewer must not be the consultant" if reviewer.id == consultant.id
 
     links = {}
@@ -413,6 +472,13 @@ module DemoGlassbox
       end
       job
     end
+    # The competency question bank (17 Oct 2026) on Admin Staff only: its apply link opens the
+    # three-step form (details, CV, test); the other two vacancies keep the two-step form, so the
+    # demo shows both. Built through the bank services (the consultant submits, the HR Manager
+    # approves); idempotent.
+    require_relative "demo_question_bank"
+    admin_staff = jobs.find { |job| job.title == JOBS[:adm][:title] }
+    DemoQuestionBank.seed!(job: admin_staff, admin: consultant, manager: reviewer) if admin_staff
     report(jobs, links)
     jobs
   end
@@ -436,14 +502,32 @@ module DemoGlassbox
   # DEMO_MODE; a production install sets them on the settings page first), and the demo consent
   # text takes effect one day before the seed runs. A refusal there is the right outcome, not
   # something to rescue.
+  # The job ad applicants read on /apply (17 Oct 2026: the seed approved the ads without a text, so the
+  # public demo showed no description). Built from the brief, neutral words only, so the ad scan finds
+  # nothing to flag.
+  def ad_text(spec)
+    duties = spec[:activities].map { |(description, _output, _share)| "- #{description}" }
+    needs = spec[:requirements].map { |(_code, tier, text, _evidence, _weight)| "- #{text}#{' (an advantage)' if tier == 'nilai_tambah'}" }
+    ["About this role", "PT Terang Nusantara is hiring a #{spec[:title]} in #{COMPANY[:city]}. #{spec[:success_90d]}", "",
+     "What you will do", *duties, "", "What we look for", *needs, "",
+     "How we select", "Every application is read against the same requirements. A person on our team decides every step, " \
+                      "and you can follow your application with the status link we email you."].join("\n")
+  end
+
   def vacancy(key, spec, company:, hr:, consultant:, now:)
     job = Job.create!(
       title: spec[:title], golongan: spec[:golongan], package: spec[:package], client_company: company,
       location: COMPANY[:city], placements: [COMPANY[:city]], headcount: spec[:headcount],
       employment_type: spec[:employment_type], work_arrangement: "onsite", relocation: "tidak_perlu",
       salary_min: spec[:salary].first, salary_max: spec[:salary].last, show_salary: true,
-      success_90d: spec[:success_90d], consultant:, brief_status: "complete",
-      ad_approved_at: now - 6.days, ad_approved_by_id: hr.id
+      success_90d: spec[:success_90d], consultant:, brief_status: "complete", brief_completed_at: now - 7.days,
+      package_override_reason: spec[:package_override_reason],
+      # The brief's own record of the stage weights and pass scores (Briefs::BriefCheck reads stage_plan),
+      # the same figures as the stages created below. A complete brief must pass BriefCheck, or no brief
+      # step can be saved again (17 Oct 2026: "Save & next does not work" on every Cup vacancy).
+      stage_plan: { "S1" => { "weight" => 20, "threshold" => spec[:threshold] }, "S2" => { "weight" => 30, "threshold" => 60 },
+                    "S3" => { "weight" => 20, "threshold" => 65 }, "S5" => { "weight" => 30, "threshold" => 70 } },
+      ad_approved_at: now - 6.days, ad_approved_by_id: hr.id, ad_text: ad_text(spec), ad_flags: []
     )
     raise "#{spec[:title]}: salary floor #{job.salary_min} is below the 2026 minimum wage #{UMK_2026}" if job.salary_min < UMK_2026
 
@@ -462,6 +546,9 @@ module DemoGlassbox
     job.stages.create!(code: "S3", score_source: "scorecard", weight: 20, threshold: 65)
     job.stages.create!(code: "S5", score_source: "scorecard", weight: 30, threshold: 70)
     test_case(job, spec[:test_case], consultant:, hr:) if spec[:test_case]
+    # The discrimination test (Appendix D) on the requirements, run for real: the seed has the AI off,
+    # so this is the rule-table pass, and each line says the AI did not run (Briefs::DiscriminationCheck).
+    Briefs::RequirementCheck.run!(job:, actor: hr, now: now - 7.days, record: false)
     Gates::Open.call(stage: s1, now: now - 5.days)
     job
   end

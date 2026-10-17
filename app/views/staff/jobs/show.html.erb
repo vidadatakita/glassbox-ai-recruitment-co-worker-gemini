@@ -5,9 +5,17 @@
              subtitle: [(placement_summary(@job) unless placement_summary(@job) == "-"), (@job.confidential? ? "Confidential vacancy" : nil)].compact_blank.join(" · ").presence || "Vacancy",
              actions: label_link("Back", "fa-arrow-left", staff_jobs_path, purpose: :neutral, icon_end: true) %>
   <section class="content">
+    <%# Order (Vida, 17 Oct 2026): the figures first, then the workflow, then the work. %>
     <%= render "staff/jobs/metrics", board: @board %>
+    <% progress = HiringProgress.new(@job) %>
+    <%= render "staff/jobs/hiring_progress", progress: progress %>
+    <div class="vacancy-layout">
+      <div class="vacancy-layout__main">
     <%= render "staff/jobs/brief_box", job: @job %>
     <%= render "staff/jobs/portal_box", job: @job, board: @board %>
+      </div>
+      <aside class="vacancy-layout__side"><%= render "staff/jobs/approval_chain", progress: progress %></aside>
+    </div>
     <%= render "staff/jobs/screening_box", job: @job %>
     <%= render "staff/jobs/gate_box", job: @job %>
     <%= render "staff/jobs/report_link", job: @job %>

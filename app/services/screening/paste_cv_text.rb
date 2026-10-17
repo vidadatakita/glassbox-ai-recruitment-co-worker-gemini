@@ -15,7 +15,7 @@ module Screening
     end
 
     def call
-      refuse!("Only a consultant can paste CV text.") unless @user.role == "consultant"
+      refuse!("Only a consultant can paste CV text.") unless @user.role.in?(%w[hr_admin superadmin])
       # Also for "Perlu cek manual" (ADR 0004): the consultant pastes a text without the personal data
       # the check found.
       pasteable = @participation.screening_state == "cv_unreadable" ||

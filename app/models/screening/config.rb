@@ -31,23 +31,32 @@ module Screening
     # thinking level, set in configuration (AI_MODEL_<TIER>, AI_THINKING_<TIER>), never in code and
     # never by the AI; the values below are the defaults a plain install runs with. A task names its
     # tier in TASK_TIERS, so moving a task between tiers is one line here.
+    # HIGH defaults to gemini-3.8-flash at thinking "medium", the same as MEDIUM, after the end-to-end
+    # test of 16 Oct 2026: gemini-3.8-pro does not exist on Vertex AI (HTTP 404 in global, us-central1
+    # and asia-southeast1; not on the Gemini pricing page), so every screening failed; and thinking
+    # "high" spent 15K thinking tokens and 267 s on one CV, and one call hit the 300 s timeout. A
+    # stronger HIGH model is one setting (AI_MODEL_HIGH), once its id is confirmed (KNOWN_MODELS).
     TIERS = {
-      high: { model_key: "AI_MODEL_HIGH", thinking_key: "AI_THINKING_HIGH", model: "gemini-3.8-pro", thinking: "high" },
+      high: { model_key: "AI_MODEL_HIGH", thinking_key: "AI_THINKING_HIGH", model: "gemini-3.8-flash", thinking: "medium" },
       medium: { model_key: "AI_MODEL_MEDIUM", thinking_key: "AI_THINKING_MEDIUM", model: "gemini-3.8-flash", thinking: "medium" },
       low: { model_key: "AI_MODEL_LOW", thinking_key: "AI_THINKING_LOW", model: "gemini-3.5-flash-lite", thinking: "low" }
     }.freeze
     # HIGH: a judgement a person acts on. MEDIUM: structured drafting a person edits. LOW: short text
     # and simple classification. The fairness check runs on the screening tier or its comparison is void.
+    # test_bank: competency questions drafted in brief step 5; the HR Admin edits them and the HR
+    # Manager approves the bank, so it is drafting (MEDIUM), not a judgement.
     TASK_TIERS = {
       screening: :high, test_scoring: :high, stage_advice: :high, salary: :high, fairness: :high,
-      brief: :medium, discrimination_check: :medium, red_flags: :medium,
+      brief: :medium, discrimination_check: :medium, red_flags: :medium, test_bank: :medium,
       ad: :low, ad_scan: :low, letter: :low, chat: :low, status_text: :low
     }.freeze
     # Rule 6: model ids are defaults, not facts. This is the allowlist the team confirmed in the Google
     # Cloud project (glassbox:ai:smoke TIER=high|medium|low at deploy; results in docs/BUILD-LOG.md). A
     # configured id outside it stops the boot (validate_models!), never a silent fallback. Confirmed
-    # ids are appended here at deploy; the list is the record.
-    KNOWN_MODELS = %w[gemini-3.8-pro gemini-3.8-flash gemini-3.5-flash-lite].freeze
+    # ids are appended here at deploy; the list is the record. gemini-3.8-pro was removed on 16 Oct
+    # 2026: Vertex AI answers 404 for it, so a server configured with it now stops at boot instead of
+    # failing every screening.
+    KNOWN_MODELS = %w[gemini-3.8-flash gemini-3.5-flash-lite gemini-4-argon].freeze
 
     module_function
 
@@ -64,7 +73,7 @@ module Screening
     def thinking(task = :screening, job: nil) = locked(job, tier(task), "thinking") || thinking_for_tier(tier(task))
     def model_for_tier(tier) = env(TIERS.fetch(tier)[:model_key]) || env("AI_MODEL") || TIERS.fetch(tier)[:model]
     def thinking_for_tier(tier) = env(TIERS.fetch(tier)[:thinking_key]) || env("AI_THINKING") || TIERS.fetch(tier)[:thinking]
-    # "Tier HIGH · gemini-3.8-pro": printed beside every AI result (rule 3), so a judge sees which model
+    # "Tier HIGH · gemini-3.8-flash": printed beside every AI result (rule 3), so a judge sees which model
     # produced which evidence. Shown on purpose despite the general rule that users see no model names.
     def tier_label(task, job: nil) = "Tier #{tier(task).to_s.upcase} · #{model(task, job:)}"
     # The tier → model mapping in force now, stored on the vacancy when its portal opens (rule 2).

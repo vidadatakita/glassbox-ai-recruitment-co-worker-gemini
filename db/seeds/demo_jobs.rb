@@ -7,10 +7,17 @@
 # exists in the spec). Packages follow blueprint §7.1; stage weights are the concept-brief §4.1
 # defaults re-normalised (Briefs::StagePlan.default_weights).
 #
+# All human-readable text is English (owner's rule, 17 Oct 2026: every piece of demo data is in
+# English). The Indonesian words that remain are stored codes the app matches on, not text: the
+# requirement tiers (wajib / sebaiknya / nilai_tambah, also used as the hash keys below), the
+# employment types and relocation values (Job::RELOCATIONS keys), and the Indonesian place names.
+#
 # Each job is written through the same services as the screens (Briefs::SaveStep, Briefs::Complete),
 # so a seed that breaks a brief rule fails loudly instead of planting an invalid demo job.
-# Idempotent: a job that already exists with a complete brief is left alone. The two older demo
-# jobs ("Staf Admin Gudang", "Staf Gudang Shift Malam") are never read or written here.
+# Idempotent: a job that already exists with a complete brief is left alone. Jobs are found by
+# title, so a database seeded before the English titles keeps its old jobs and gets these six new
+# ones beside them. The older demo jobs (the legacy "Warehouse Admin Staff" job in db/seeds.rb and
+# the jobs of db/seeds/demo_technical_test.rb) are never read or written here.
 require_relative "demo_test_cases"
 
 module DemoJobs
@@ -19,212 +26,212 @@ module DemoJobs
 
   JOBS = [
     {
-      title: "Operator Produksi", golongan: 2, headcount: 6, employment_type: "kontrak_pkwt", package: 3,
+      title: "Production Operator", golongan: 2, headcount: 6, employment_type: "kontrak_pkwt", package: 3,
       salary: [5_300_000, 5_900_000], show_salary: true, placements: %w[Bekasi Karawang], relocation: "diutamakan", work_arrangement: "onsite",
-      success_90d: "Menjalankan satu lini mesin pengemasan secara mandiri selama satu shift penuh, dengan tingkat reject di bawah 2% dan tanpa insiden keselamatan.",
+      success_90d: "Runs one packaging machine line independently for a full shift, with a reject rate below 2% and no safety incidents.",
       activities: [
-        ["Menyiapkan mesin dan bahan sebelum shift dimulai", "Checklist persiapan mesin terisi dan ditandatangani", 15],
-        ["Mengoperasikan mesin pengemasan sesuai instruksi kerja", "Jumlah kemasan sesuai target per jam", 40],
-        ["Memeriksa mutu hasil kemasan secara berkala", "Catatan pemeriksaan mutu setiap 30 menit", 15],
-        ["Mencatat hasil produksi dan waktu henti mesin", "Laporan produksi akhir shift", 10],
-        ["Membersihkan area dan mesin sesuai standar 5R", "Area kerja lolos pemeriksaan 5R", 10],
-        ["Melaporkan kerusakan atau kekurangan bahan kepada kepala regu", "Laporan kendala tercatat di buku shift", 10]
+        ["Prepare the machine and materials before the shift starts", "Machine preparation checklist completed and signed", 15],
+        ["Operate the packaging machine according to the work instructions", "Number of packs meets the hourly target", 40],
+        ["Check the quality of the packed output at regular intervals", "Quality check record every 30 minutes", 15],
+        ["Record production output and machine downtime", "End-of-shift production report", 10],
+        ["Clean the area and the machine to the 5S standard", "Work area passes the 5S inspection", 10],
+        ["Report breakdowns or material shortages to the team leader", "Issue report logged in the shift book", 10]
       ],
       wajib: [
-        ["Pendidikan minimal SMA/SMK", "Ijazah SMA/SMK tercantum di CV", "Apakah Anda lulusan SMA/SMK atau sederajat?"],
-        ["Bersedia bekerja dalam tiga shift bergilir", "Pernyataan ketersediaan shift", "Apakah Anda bersedia bekerja shift bergilir, termasuk shift malam?"],
-        ["Pengalaman kerja di area produksi minimal 6 bulan", "Riwayat kerja di pabrik atau area produksi", nil]
+        ["Minimum education: senior high school or vocational high school", "Senior or vocational high school diploma listed in the CV", "Have you graduated from senior high school, vocational high school or equivalent?"],
+        ["Willing to work three rotating shifts", "Statement of shift availability", "Are you willing to work rotating shifts, including night shifts?"],
+        ["At least 6 months of work experience in a production area", "Work history in a factory or production area", nil]
       ],
       sebaiknya: [
-        ["Pengalaman mengoperasikan mesin pengemasan atau pengisian", "Nama mesin atau lini disebut di riwayat kerja", 50],
-        ["Memahami dasar 5R atau K3", "Pelatihan 5R/K3 tercantum di CV", 30],
-        ["Tinggal di sekitar Bekasi atau Karawang", "Alamat domisili di CV", 20]
+        ["Experience operating a packaging or filling machine", "Machine or line named in the work history", 50],
+        ["Understands the basics of 5S or occupational health and safety", "5S or OHS training listed in the CV", 30],
+        ["Lives near Bekasi or Karawang", "Home address in the CV", 20]
       ],
-      nilai_tambah: [["Sertifikat operator dari BNSP", "Nomor sertifikat di CV"]],
+      nilai_tambah: [["Operator certificate from BNSP", "Certificate number in the CV"]],
       competencies: [
-        ["Pengetahuan instruksi kerja mesin", "L1", "S2", "Salah menjawab urutan langkah pengoperasian dasar", "Menjawab urutan langkah dengan benar", "Menjawab benar dan menjelaskan titik periksa keselamatan tiap langkah", nil],
-        ["Mengoperasikan mesin sesuai standar", "L4", "S2", "Hasil kerja sampel perlu diulang", "Hasil kerja sampel sesuai standar", "Hasil sesuai standar sejak pertama dan lebih cepat dari waktu baku", nil],
-        ["Kejujuran melaporkan selisih bahan dan kesalahan sendiri", "I", "S3", "Contoh yang diceritakan menunjukkan selisih disembunyikan", "Melaporkan selisih ketika ditanya atasan", "Melaporkan selisih tanpa diminta, segera, dan ikut memperbaiki cara kerja",
-         "Ceritakan saat Anda menemukan bahan lebih atau kurang dari catatan. Apa yang Anda lakukan, dan kapan Anda melaporkannya?"],
-        ["Membaca masalah mesin sederhana", "L2", "S3", "Hanya menyebut mesin berhenti tanpa penyebab", "Menemukan penyebab dengan bantuan pertanyaan", "Menemukan penyebab sendiri dan menyebut dampaknya ke lini lain",
-         "Ceritakan satu kali mesin Anda berhenti mendadak. Apa penyebabnya dan bagaimana Anda tahu?"],
-        ["Kesiapan bekerja dalam tim shift", "L4", "S5", "Tidak dapat memberi contoh kerja sama serah terima shift", "Memberi contoh serah terima shift yang rapi", "Memberi contoh serah terima yang mencegah masalah di shift berikutnya",
-         "Bagaimana Anda menyerahkan pekerjaan ke shift berikutnya? Berikan contoh."]
+        ["Knowledge of the machine work instructions", "L1", "S2", "Gives the wrong order of the basic operating steps", "Gives the correct order of steps", "Answers correctly and explains the safety checkpoint of each step", nil],
+        ["Operating the machine to standard", "L4", "S2", "The sample work has to be redone", "The sample work meets the standard", "The output meets the standard first time and is faster than the standard time", nil],
+        ["Honesty in reporting material discrepancies and own mistakes", "I", "S3", "The example told shows a discrepancy was hidden", "Reports the discrepancy when the supervisor asks", "Reports the discrepancy unprompted, immediately, and helps improve the way of working",
+         "Tell us about a time you found more or less material than the records showed. What did you do, and when did you report it?"],
+        ["Reading simple machine problems", "L2", "S3", "Only says the machine stopped, without a cause", "Finds the cause with the help of questions", "Finds the cause unaided and names its effect on other lines",
+         "Tell us about one time your machine stopped suddenly. What was the cause and how did you know?"],
+        ["Readiness to work in a shift team", "L4", "S5", "Cannot give an example of teamwork at shift handover", "Gives an example of a tidy shift handover", "Gives an example of a handover that prevented a problem on the next shift",
+         "How do you hand over your work to the next shift? Give an example."]
       ]
     },
     {
-      title: "Team Leader Gudang", golongan: 3, headcount: 2, employment_type: "tetap_pkwtt", package: 3,
+      title: "Warehouse Team Leader", golongan: 3, headcount: 2, employment_type: "tetap_pkwtt", package: 3,
       salary: [6_800_000, 8_200_000], show_salary: true, placements: %w[Cikarang], relocation: "tidak_perlu", work_arrangement: "onsite",
-      success_90d: "Memimpin regu gudang 8 orang pada satu shift dengan akurasi stok hasil cycle count minimal 99% dan pengiriman tepat waktu minimal 97%.",
+      success_90d: "Leads a warehouse team of 8 people on one shift, with cycle count stock accuracy of at least 99% and on-time delivery of at least 97%.",
       activities: [
-        ["Membagi tugas regu pada awal shift", "Daftar pembagian tugas harian", 15],
-        ["Mengawasi penerimaan dan penyimpanan barang", "Dokumen penerimaan cocok dengan fisik", 25],
-        ["Mengawasi pengambilan dan pengiriman pesanan", "Pesanan terkirim sesuai jadwal", 25],
-        ["Menjalankan cycle count harian", "Laporan selisih stok harian", 15],
-        ["Melatih anggota regu baru", "Anggota baru bekerja mandiri dalam dua minggu", 10],
-        ["Melaporkan kinerja regu kepada penyelia", "Laporan mingguan kinerja regu", 10]
+        ["Assign the team's tasks at the start of the shift", "Daily task assignment list", 15],
+        ["Supervise the receiving and storage of goods", "Receiving documents match the physical goods", 25],
+        ["Supervise order picking and dispatch", "Orders dispatched on schedule", 25],
+        ["Run the daily cycle count", "Daily stock discrepancy report", 15],
+        ["Train new team members", "New members work independently within two weeks", 10],
+        ["Report team performance to the supervisor", "Weekly team performance report", 10]
       ],
       wajib: [
-        ["Pengalaman di gudang minimal 2 tahun", "Riwayat kerja gudang dengan masa kerja", "Apakah Anda memiliki pengalaman kerja di gudang minimal 2 tahun?"],
-        ["Pernah memimpin regu atau menjadi koordinator", "Jabatan koordinator atau kepala regu di CV", "Apakah Anda pernah memimpin regu kerja, minimal 3 orang?"],
-        ["Terbiasa dengan sistem stok berbasis komputer", "Nama sistem WMS/ERP di CV", nil]
+        ["At least 2 years of warehouse experience", "Warehouse work history with length of service", "Do you have at least 2 years of warehouse work experience?"],
+        ["Has led a team or worked as a coordinator", "Coordinator or team leader position in the CV", "Have you ever led a work team of at least 3 people?"],
+        ["Used to computer-based stock systems", "Name of the WMS/ERP system in the CV", nil]
       ],
       sebaiknya: [
-        ["Pengalaman cycle count atau stock opname", "Kegiatan stock opname disebut di CV", 40],
-        ["Pendidikan D3 atau lebih tinggi", "Ijazah D3/S1 di CV", 20],
-        ["Memiliki SIO forklift", "Nomor SIO di CV", 40]
+        ["Experience with cycle counts or stock takes", "Stock-take work mentioned in the CV", 40],
+        ["Diploma (D3) or higher education", "D3 or bachelor's diploma in the CV", 20],
+        ["Holds a forklift operating licence (SIO)", "SIO number in the CV", 40]
       ],
-      nilai_tambah: [["Pengalaman gudang FMCG", "Nama perusahaan FMCG di riwayat kerja"]],
+      nilai_tambah: [["FMCG warehouse experience", "Name of an FMCG company in the work history"]],
       competencies: [
-        ["Pengetahuan alur FIFO/FEFO dan dokumen gudang", "L1", "S2", "Tidak dapat menjelaskan FIFO/FEFO", "Menjelaskan FIFO/FEFO dengan benar", "Menjelaskan dan memberi contoh kapan FEFO harus didahulukan", nil],
-        ["Menemukan penyebab selisih stok", "L2", "S3", "Menyebut selisih tanpa penyebab", "Menemukan penyebab dengan bantuan pertanyaan", "Menemukan penyebab sendiri dan menyebut proses lain yang terdampak",
-         "Ceritakan selisih stok terbesar yang pernah Anda temukan. Bagaimana Anda menelusuri penyebabnya?"],
-        ["Menyusun rencana kerja regu", "L4", "S2", "Rencana kerja sampel tidak memenuhi target", "Rencana memenuhi target dan jumlah orang", "Rencana memenuhi target dengan cadangan orang untuk lonjakan pesanan", nil],
-        ["Melatih anggota regu", "L5", "S5", "Belum pernah melatih orang lain", "Pernah menunjukkan cara kerja kepada anggota baru", "Dapat menyebut anggota yang kini bekerja mandiri berkat pelatihannya",
-         "Siapa yang pernah Anda latih, dan apa yang sekarang dapat ia kerjakan sendiri?"],
-        ["Kejujuran atas selisih stok", "I", "S3", "Contoh menunjukkan selisih ditutupi", "Melaporkan selisih ketika diminta", "Melaporkan selisih segera tanpa diminta dan mengusulkan perbaikan",
-         "Ceritakan saat stok fisik lebih banyak dari catatan. Apa yang Anda lakukan?"]
+        ["Knowledge of the FIFO/FEFO flow and warehouse documents", "L1", "S2", "Cannot explain FIFO/FEFO", "Explains FIFO/FEFO correctly", "Explains and gives an example of when FEFO must take priority", nil],
+        ["Finding the cause of stock discrepancies", "L2", "S3", "Names the discrepancy without a cause", "Finds the cause with the help of questions", "Finds the cause unaided and names the other processes affected",
+         "Tell us about the largest stock discrepancy you have found. How did you trace its cause?"],
+        ["Drawing up the team's work plan", "L4", "S2", "The sample work plan does not meet the target", "The plan meets the target and the headcount", "The plan meets the target with spare people for order peaks", nil],
+        ["Training team members", "L5", "S5", "Has never trained anyone", "Has shown a new member how the work is done", "Can name a member who now works independently thanks to their training",
+         "Who have you trained, and what can they now do on their own?"],
+        ["Honesty about stock discrepancies", "I", "S3", "The example shows a discrepancy was covered up", "Reports the discrepancy when asked", "Reports the discrepancy immediately without being asked and proposes an improvement",
+         "Tell us about a time the physical stock was higher than the records. What did you do?"]
       ]
     },
     {
-      title: "Supervisor Produksi", golongan: 4, headcount: 1, employment_type: "tetap_pkwtt", package: 4,
+      title: "Production Supervisor", golongan: 4, headcount: 1, employment_type: "tetap_pkwtt", package: 3,
       salary: [9_500_000, 12_500_000], show_salary: false, placements: %w[Karawang], relocation: "wajib", work_arrangement: "onsite",
-      success_90d: "Menjalankan dua lini produksi dengan OEE minimal 75%, rencana produksi mingguan tercapai minimal 95%, dan tanpa kecelakaan kerja hilang waktu.",
+      success_90d: "Runs two production lines with an OEE of at least 75%, meets at least 95% of the weekly production plan, and has no lost-time work accidents.",
       activities: [
-        ["Menyusun jadwal produksi harian dari rencana mingguan", "Jadwal produksi harian disetujui", 15],
-        ["Mengawasi jalannya dua lini produksi", "Target output per shift tercapai", 30],
-        ["Memimpin rapat awal shift dan menyelesaikan kendala", "Notulen kendala dan tindak lanjut", 15],
-        ["Menganalisis waktu henti dan reject", "Laporan analisis penyebab mingguan", 15],
-        ["Melatih dan menilai kepala regu", "Penilaian kepala regu per bulan", 10],
-        ["Memastikan penerapan K3 di area produksi", "Temuan K3 ditutup tepat waktu", 15]
+        ["Draw up the daily production schedule from the weekly plan", "Daily production schedule approved", 15],
+        ["Supervise the running of two production lines", "Output target per shift met", 30],
+        ["Lead the start-of-shift meeting and resolve issues", "Minutes of issues and follow-up actions", 15],
+        ["Analyse downtime and rejects", "Weekly root-cause analysis report", 15],
+        ["Train and assess the team leaders", "Monthly team leader assessment", 10],
+        ["Ensure occupational health and safety is applied in the production area", "Safety findings closed on time", 15]
       ],
       wajib: [
-        ["Pendidikan minimal D3 teknik atau manajemen industri", "Ijazah D3/S1 jurusan terkait", "Apakah Anda lulusan minimal D3 teknik atau manajemen industri?"],
-        ["Pengalaman sebagai supervisor produksi minimal 2 tahun", "Jabatan supervisor dan masa kerja di CV", "Apakah Anda memiliki pengalaman sebagai supervisor produksi minimal 2 tahun?"],
-        ["Memahami perhitungan OEE", "Proyek atau pencapaian OEE disebut di CV", nil]
+        ["Minimum education: diploma (D3) in engineering or industrial management", "D3 or bachelor's diploma in a relevant field", "Do you hold at least a D3 diploma in engineering or industrial management?"],
+        ["At least 2 years of experience as a production supervisor", "Supervisor position and length of service in the CV", "Do you have at least 2 years of experience as a production supervisor?"],
+        ["Understands how OEE is calculated", "OEE project or achievement mentioned in the CV", nil]
       ],
       sebaiknya: [
-        ["Pengalaman menerapkan lean atau kaizen", "Proyek kaizen dengan hasil di CV", 40],
-        ["Sertifikat Ahli K3 Umum", "Nomor sertifikat K3 di CV", 30],
-        ["Pengalaman di industri pengemasan atau makanan", "Nama perusahaan sejenis di CV", 30]
+        ["Experience applying lean or kaizen", "Kaizen project with results in the CV", 40],
+        ["General OHS Expert (Ahli K3 Umum) certificate", "OHS certificate number in the CV", 30],
+        ["Experience in the packaging or food industry", "Name of a similar company in the CV", 30]
       ],
-      nilai_tambah: [["Menguasai analisis data dengan spreadsheet tingkat lanjut", "Pelatihan atau proyek analisis data"]],
+      nilai_tambah: [["Skilled in data analysis with advanced spreadsheets", "Data analysis training or project"]],
       competencies: [
-        ["Pengetahuan standar produksi dan K3", "L1", "S2", "Salah menjawab standar dasar K3", "Menjawab standar dengan benar", "Menjawab benar dan mengaitkan standar dengan risiko di lini", nil],
-        ["Analisis penyebab waktu henti", "L2", "S3", "Menyebut gejala tanpa penyebab", "Menemukan penyebab dengan bantuan", "Menemukan penyebab akar sendiri dan menyebut proses lain yang terdampak",
-         "Ceritakan masalah waktu henti yang Anda telusuri sampai akar penyebabnya. Apa hasilnya?"],
-        ["Menolak instruksi yang membahayakan mutu atau keselamatan", "L3", "S5", "Mengikuti instruksi tanpa menilai akibatnya", "Menyampaikan keberatan saat masalah sudah jelas", "Melihat masalah lebih awal, menyampaikan dengan data, lalu menerima keputusan akhir",
-         "Ceritakan saat Anda tidak setuju dengan instruksi atasan tentang produksi. Apa yang Anda lakukan dan apa hasilnya?"],
-        ["Menyusun jadwal produksi", "L4", "S2", "Jadwal sampel tidak memenuhi kapasitas", "Jadwal memenuhi kapasitas dan pesanan", "Jadwal memenuhi kapasitas dan menyisakan waktu perawatan terencana", nil],
-        ["Mengembangkan kepala regu", "L5", "S5", "Belum pernah membina bawahan", "Pernah membimbing kepala regu pada satu tugas", "Dapat menyebut kepala regu yang kini memimpin shift sendiri berkat bimbingannya",
-         "Siapa yang pernah Anda kembangkan menjadi pemimpin regu, dan apa yang kini ia kerjakan sendiri?"],
-        ["Kejujuran atas angka produksi", "I", "S3", "Contoh menunjukkan angka disesuaikan agar target terlihat tercapai", "Melaporkan angka apa adanya ketika diminta", "Melaporkan kekurangan target lebih awal tanpa diminta dan mengusulkan perbaikan",
-         "Ceritakan saat target produksi tidak tercapai. Bagaimana Anda melaporkannya?"]
+        ["Knowledge of production and safety standards", "L1", "S2", "Gives wrong answers on basic safety standards", "Answers the standards correctly", "Answers correctly and links the standards to the risks on the line", nil],
+        ["Root-cause analysis of downtime", "L2", "S3", "Names symptoms without a cause", "Finds the cause with help", "Finds the root cause unaided and names the other processes affected",
+         "Tell us about a downtime problem you traced to its root cause. What was the result?"],
+        ["Refusing instructions that endanger quality or safety", "L3", "S5", "Follows instructions without weighing the consequences", "Raises an objection once the problem is obvious", "Sees the problem early, raises it with data, then accepts the final decision",
+         "Tell us about a time you disagreed with your manager's instruction about production. What did you do and what was the result?"],
+        ["Drawing up the production schedule", "L4", "S2", "The sample schedule does not fit the capacity", "The schedule fits the capacity and the orders", "The schedule fits the capacity and leaves time for planned maintenance", nil],
+        ["Developing team leaders", "L5", "S5", "Has never coached a subordinate", "Has coached a team leader on one task", "Can name a team leader who now leads a shift alone thanks to their coaching",
+         "Who have you developed into a team leader, and what do they now do on their own?"],
+        ["Honesty about production figures", "I", "S3", "The example shows figures were adjusted so the target looked met", "Reports the figures as they are when asked", "Reports a target shortfall early without being asked and proposes an improvement",
+         "Tell us about a time the production target was not met. How did you report it?"]
       ]
     },
     {
-      title: "Manager HR", golongan: 6, headcount: 1, employment_type: "tetap_pkwtt", package: 4,
+      title: "HR Manager", golongan: 6, headcount: 1, employment_type: "tetap_pkwtt", package: 3,
       salary: [18_000_000, 25_000_000], show_salary: false, placements: %w[Bekasi], relocation: "tidak_perlu", work_arrangement: "hybrid",
-      success_90d: "Menyelesaikan peta jabatan dan Golongan untuk seluruh karyawan, menurunkan waktu pengisian lowongan staf menjadi di bawah 30 hari, dan menjalankan penggajian tanpa koreksi.",
+      success_90d: "Completes the position and grade map for every employee, cuts the time to fill staff vacancies to under 30 days, and runs payroll without corrections.",
       activities: [
-        ["Menyusun dan menjalankan rencana kebutuhan tenaga kerja", "Rencana tenaga kerja tahunan disetujui direksi", 20],
-        ["Mengelola rekrutmen dan seleksi", "Lowongan terisi sesuai target waktu", 20],
-        ["Mengelola penggajian dan kepatuhan ketenagakerjaan", "Penggajian tepat waktu tanpa temuan kepatuhan", 20],
-        ["Menangani hubungan industrial dan serikat pekerja", "Perselisihan selesai secara bipartit", 15],
-        ["Mengembangkan dan melatih tim HR", "Rencana pengembangan tim HR berjalan", 15],
-        ["Melaporkan indikator SDM kepada direksi", "Laporan bulanan indikator SDM", 10]
+        ["Draw up and run the workforce plan", "Annual workforce plan approved by the board of directors", 20],
+        ["Manage recruitment and selection", "Vacancies filled within the target time", 20],
+        ["Manage payroll and employment compliance", "Payroll on time with no compliance findings", 20],
+        ["Handle industrial relations and the trade union", "Disputes settled bipartitely", 15],
+        ["Develop and train the HR team", "HR team development plan on track", 15],
+        ["Report HR indicators to the board of directors", "Monthly HR indicator report", 10]
       ],
       wajib: [
-        ["Pendidikan minimal S1 psikologi, hukum, atau manajemen", "Ijazah S1 jurusan terkait", "Apakah Anda lulusan minimal S1 psikologi, hukum, atau manajemen?"],
-        ["Pengalaman sebagai manajer HR minimal 3 tahun", "Jabatan manajer HR dan masa kerja di CV", "Apakah Anda memiliki pengalaman sebagai manajer HR minimal 3 tahun?"],
-        ["Memahami UU Ketenagakerjaan dan aturan turunannya", "Pengalaman menyusun peraturan perusahaan atau PKB", "Apakah Anda pernah menyusun peraturan perusahaan atau PKB?"]
+        ["Minimum education: bachelor's degree in psychology, law or management", "Bachelor's diploma in a relevant field", "Do you hold at least a bachelor's degree in psychology, law or management?"],
+        ["At least 3 years of experience as an HR manager", "HR manager position and length of service in the CV", "Do you have at least 3 years of experience as an HR manager?"],
+        ["Understands the Manpower Law and its implementing regulations", "Experience drafting company regulations or a collective labour agreement (PKB)", "Have you ever drafted company regulations or a collective labour agreement (PKB)?"]
       ],
       sebaiknya: [
-        ["Pengalaman di perusahaan manufaktur dengan lebih dari 300 karyawan", "Jumlah karyawan perusahaan di CV", 40],
-        ["Pengalaman menyusun struktur Golongan dan skala upah", "Proyek struktur dan skala upah di CV", 35],
-        ["Sertifikasi profesi SDM dari BNSP", "Nomor sertifikat di CV", 25]
+        ["Experience in a manufacturing company with more than 300 employees", "Company headcount in the CV", 40],
+        ["Experience designing a grade structure and wage scale", "Wage structure and scale project in the CV", 35],
+        ["HR professional certification from BNSP", "Certificate number in the CV", 25]
       ],
-      nilai_tambah: [["Pengalaman memimpin implementasi sistem HRIS", "Nama proyek HRIS di CV"]],
+      nilai_tambah: [["Experience leading an HRIS implementation", "Name of the HRIS project in the CV"]],
       competencies: [
-        ["Memahami hubungan kebijakan SDM dengan biaya dan produktivitas", "L2", "S3", "Menjelaskan kebijakan tanpa dampaknya", "Menjelaskan dampak dengan bantuan pertanyaan", "Menjelaskan dampak ke biaya dan produktivitas dengan angka tanpa diminta",
-         "Ceritakan kebijakan SDM yang Anda ubah. Apa dampaknya terhadap biaya dan produktivitas?"],
-        ["Menilai dan menolak keputusan SDM yang berisiko hukum", "L3", "S5", "Menjalankan permintaan tanpa menilai risiko", "Mengingatkan risiko ketika sudah jelas", "Melihat risiko lebih awal, menyampaikan dengan dasar hukum, dan menawarkan jalan lain",
-         "Ceritakan saat Anda menolak atau mengubah permintaan direksi tentang karyawan. Apa dasarnya dan apa hasilnya?"],
-        ["Mengembangkan tim HR", "L5", "S5", "Belum pernah mengembangkan bawahan", "Pernah membimbing staf pada satu tugas", "Dapat menyebut staf yang kini memegang fungsi sendiri berkat bimbingannya",
-         "Siapa di tim Anda yang kini memegang fungsi sendiri karena Anda kembangkan? Apa yang dulu belum dapat ia lakukan?"],
-        ["Kejujuran atas data SDM dan anggaran", "I", "S3", "Contoh menunjukkan data disesuaikan agar terlihat baik", "Melaporkan data apa adanya ketika diminta", "Melaporkan kesalahan sendiri lebih awal tanpa diminta dan memperbaiki prosesnya",
-         "Ceritakan kesalahan dalam penggajian atau data karyawan yang pernah terjadi di bawah Anda. Bagaimana Anda menanganinya?"],
-        ["Pengetahuan regulasi ketenagakerjaan", "L1", "S2", "Salah menjawab ketentuan dasar PKWT", "Menjawab ketentuan dengan benar", "Menjawab benar dan menunjuk pasal serta perubahannya", nil]
+        ["Understanding how HR policy links to cost and productivity", "L2", "S3", "Explains policies without their effect", "Explains the effect with the help of questions", "Explains the effect on cost and productivity with figures, unprompted",
+         "Tell us about an HR policy you changed. What was its effect on cost and productivity?"],
+        ["Assessing and refusing HR decisions with legal risk", "L3", "S5", "Carries out requests without weighing the risk", "Warns about the risk once it is obvious", "Sees the risk early, raises it with the legal basis, and offers another route",
+         "Tell us about a time you refused or changed a request from the board of directors about an employee. What was your basis and what was the result?"],
+        ["Developing the HR team", "L5", "S5", "Has never developed a subordinate", "Has coached a staff member on one task", "Can name staff who now own a function alone thanks to their coaching",
+         "Who in your team now owns a function on their own because you developed them? What could they not do before?"],
+        ["Honesty about HR data and budget", "I", "S3", "The example shows data was adjusted to look good", "Reports the data as it is when asked", "Reports own mistakes early without being asked and fixes the process",
+         "Tell us about a payroll or employee data error that happened under you. How did you handle it?"],
+        ["Knowledge of employment regulations", "L1", "S2", "Gives wrong answers on the basic fixed-term contract (PKWT) rules", "Answers the rules correctly", "Answers correctly and points to the article and its amendments", nil]
       ]
     },
     {
-      title: "General Manager Operasional", golongan: 7, headcount: 1, employment_type: "tetap_pkwtt", package: 5,
+      title: "General Manager, Operations", golongan: 7, headcount: 1, employment_type: "tetap_pkwtt", package: 3,
       salary: [35_000_000, 45_000_000], show_salary: false, placements: %w[Karawang Bekasi], relocation: "wajib", work_arrangement: "onsite",
-      success_90d: "Menyusun rencana operasional tahunan yang disetujui direksi, menurunkan biaya produksi per unit 3%, dan menetapkan ritme rapat kinerja mingguan di seluruh fungsi operasional.",
+      success_90d: "Draws up an annual operations plan approved by the board of directors, lowers the production cost per unit by 3%, and sets a weekly performance meeting rhythm across every operations function.",
       activities: [
-        ["Menyusun rencana dan anggaran operasional", "Rencana dan anggaran tahunan disetujui direksi", 20],
-        ["Memimpin manajer produksi, gudang, dan pemeliharaan", "Sasaran setiap fungsi tercapai", 25],
-        ["Mengendalikan biaya produksi dan logistik", "Biaya per unit sesuai anggaran", 20],
-        ["Memimpin program perbaikan berkelanjutan", "Proyek perbaikan dengan penghematan terukur", 15],
-        ["Mengembangkan calon pengganti manajer", "Calon pengganti untuk setiap fungsi", 10],
-        ["Melaporkan kinerja operasional kepada direksi", "Laporan kinerja bulanan", 10]
+        ["Draw up the operations plan and budget", "Annual plan and budget approved by the board of directors", 20],
+        ["Lead the production, warehouse and maintenance managers", "Every function's objectives met", 25],
+        ["Control production and logistics costs", "Cost per unit within budget", 20],
+        ["Lead the continuous improvement programme", "Improvement projects with measured savings", 15],
+        ["Develop successors for the managers", "A successor candidate for every function", 10],
+        ["Report operations performance to the board of directors", "Monthly performance report", 10]
       ],
       wajib: [
-        ["Pendidikan minimal S1 teknik atau manajemen", "Ijazah S1 jurusan terkait", "Apakah Anda lulusan minimal S1 teknik atau manajemen?"],
-        ["Pengalaman memimpin beberapa fungsi operasional minimal 5 tahun", "Jabatan kepala divisi atau GM di CV", "Apakah Anda pernah memimpin beberapa fungsi operasional sekaligus minimal 5 tahun?"],
-        ["Pengalaman mengelola anggaran operasional", "Besaran anggaran yang dikelola di CV", nil]
+        ["Minimum education: bachelor's degree in engineering or management", "Bachelor's diploma in a relevant field", "Do you hold at least a bachelor's degree in engineering or management?"],
+        ["At least 5 years of experience leading several operations functions", "Division head or GM position in the CV", "Have you led several operations functions at once for at least 5 years?"],
+        ["Experience managing an operations budget", "Size of the budget managed, in the CV", nil]
       ],
       sebaiknya: [
-        ["Pengalaman di industri manufaktur barang konsumsi", "Nama perusahaan sejenis di CV", 40],
-        ["Pengalaman memimpin program lean di tingkat pabrik", "Hasil program lean di CV", 35],
-        ["Pendidikan S2", "Ijazah S2 di CV", 25]
+        ["Experience in consumer goods manufacturing", "Name of a similar company in the CV", 40],
+        ["Experience leading a plant-wide lean programme", "Results of the lean programme in the CV", 35],
+        ["Master's degree", "Master's diploma in the CV", 25]
       ],
-      nilai_tambah: [["Pengalaman membuka pabrik atau lini baru", "Proyek pembukaan pabrik di CV"]],
+      nilai_tambah: [["Experience opening a new plant or line", "Plant opening project in the CV"]],
       competencies: [
-        ["Memahami keterkaitan produksi, gudang, dan biaya", "L2", "S3", "Melihat masalah per fungsi saja", "Menghubungkan fungsi dengan bantuan pertanyaan", "Menghubungkan fungsi dan biaya sendiri dengan contoh angka",
-         "Ceritakan keputusan di satu fungsi yang berdampak ke fungsi lain. Bagaimana Anda melihatnya?"],
-        ["Menilai rencana dan menolak target yang tidak masuk akal", "L3", "S5", "Menerima target tanpa menilai", "Menyampaikan keberatan ketika masalah sudah jelas", "Melihat masalah lebih awal, berargumen dengan data, dan menerima keputusan akhir",
-         "Ceritakan saat Anda menolak target atau rencana dari direksi. Apa data Anda dan apa hasilnya?"],
-        ["Mengembangkan calon pengganti", "L5", "S5", "Belum menyiapkan pengganti", "Pernah menyiapkan satu pengganti", "Dapat menyebut beberapa manajer yang kini memimpin fungsi berkat pembinaannya",
-         "Siapa yang Anda siapkan sebagai pengganti, dan jabatan apa yang kini ia pegang?"],
-        ["Kejujuran atas kinerja dan anggaran", "I", "S3", "Contoh menunjukkan angka disesuaikan", "Melaporkan apa adanya ketika diminta", "Melaporkan penyimpangan anggaran lebih awal tanpa diminta dan memperbaiki prosesnya",
-         "Ceritakan saat anggaran Anda melampaui rencana. Bagaimana dan kapan Anda melaporkannya?"],
-        ["Merancang sistem kerja operasional", "L4", "S5", "Tidak dapat memberi contoh sistem yang dirancang", "Pernah merancang satu prosedur yang berjalan", "Merancang sistem yang berjalan tanpa dirinya dan memberi hasil terukur",
-         "Ceritakan sistem kerja yang Anda rancang dan masih berjalan setelah Anda pindah."]
+        ["Understanding how production, warehouse and cost connect", "L2", "S3", "Sees problems one function at a time", "Connects the functions with the help of questions", "Connects the functions and the cost unaided, with example figures",
+         "Tell us about a decision in one function that affected another function. How did you see it?"],
+        ["Assessing plans and refusing unreasonable targets", "L3", "S5", "Accepts targets without assessing them", "Raises an objection once the problem is obvious", "Sees the problem early, argues with data, and accepts the final decision",
+         "Tell us about a time you refused a target or plan from the board of directors. What was your data and what was the result?"],
+        ["Developing successors", "L5", "S5", "Has not prepared a successor", "Has prepared one successor", "Can name several managers who now lead a function thanks to their development",
+         "Who did you prepare as your successor, and what position do they hold now?"],
+        ["Honesty about performance and budget", "I", "S3", "The example shows figures were adjusted", "Reports things as they are when asked", "Reports budget deviations early without being asked and fixes the process",
+         "Tell us about a time your budget went over plan. How and when did you report it?"],
+        ["Designing operations work systems", "L4", "S5", "Cannot give an example of a system they designed", "Has designed one procedure that is in use", "Designs systems that run without them and deliver measured results",
+         "Tell us about a work system you designed that is still running after you moved on."]
       ]
     },
     {
-      title: "Direktur Operasional", golongan: 8, headcount: 1, employment_type: "tetap_pkwtt", package: 5,
+      title: "Operations Director", golongan: 8, headcount: 1, employment_type: "tetap_pkwtt", package: 3,
       salary: [60_000_000, 80_000_000], show_salary: false, placements: %w[Jakarta], relocation: "tidak_perlu", work_arrangement: "hybrid",
-      success_90d: "Menetapkan strategi operasional tiga tahun yang disetujui pemegang saham, dengan sasaran biaya, mutu, dan keselamatan yang diturunkan ke setiap fungsi.",
+      success_90d: "Sets a three-year operations strategy approved by the shareholders, with cost, quality and safety objectives cascaded to every function.",
       activities: [
-        ["Menetapkan strategi dan sasaran operasional", "Strategi tiga tahun disetujui pemegang saham", 25],
-        ["Memimpin GM dan kepala divisi operasional", "Sasaran divisi tercapai", 20],
-        ["Mengambil keputusan investasi mesin dan fasilitas", "Keputusan investasi dengan kajian kelayakan", 20],
-        ["Mengelola risiko operasional dan kepatuhan", "Daftar risiko diperbarui setiap kuartal", 15],
-        ["Membangun budaya keselamatan dan mutu", "Indikator keselamatan dan mutu membaik", 10],
-        ["Melaporkan kepada direksi dan pemegang saham", "Laporan kuartalan", 10]
+        ["Set the operations strategy and objectives", "Three-year strategy approved by the shareholders", 25],
+        ["Lead the GMs and operations division heads", "Division objectives met", 20],
+        ["Decide on machine and facility investments", "Investment decisions backed by a feasibility study", 20],
+        ["Manage operational and compliance risk", "Risk register updated every quarter", 15],
+        ["Build a culture of safety and quality", "Safety and quality indicators improving", 10],
+        ["Report to the board of directors and the shareholders", "Quarterly report", 10]
       ],
       wajib: [
-        ["Pengalaman sebagai direktur atau GM operasional minimal 8 tahun", "Jabatan dan masa kerja di CV", "Apakah Anda memiliki pengalaman sebagai direktur atau GM operasional minimal 8 tahun?"],
-        ["Pengalaman memimpin organisasi lebih dari 500 orang", "Jumlah bawahan di CV", "Apakah Anda pernah memimpin organisasi lebih dari 500 orang?"],
-        ["Pendidikan minimal S1", "Ijazah S1 di CV", nil]
+        ["At least 8 years of experience as an operations director or GM", "Position and length of service in the CV", "Do you have at least 8 years of experience as an operations director or GM?"],
+        ["Experience leading an organisation of more than 500 people", "Number of reports in the CV", "Have you ever led an organisation of more than 500 people?"],
+        ["Minimum education: bachelor's degree", "Bachelor's diploma in the CV", nil]
       ],
       sebaiknya: [
-        ["Pengalaman di perusahaan manufaktur multi-pabrik", "Jumlah pabrik di CV", 50],
-        ["Pengalaman memimpin transformasi operasional", "Hasil transformasi di CV", 30],
-        ["Pendidikan S2 manajemen atau teknik", "Ijazah S2 di CV", 20]
+        ["Experience in a multi-plant manufacturing company", "Number of plants in the CV", 50],
+        ["Experience leading an operations transformation", "Results of the transformation in the CV", 30],
+        ["Master's degree in management or engineering", "Master's diploma in the CV", 20]
       ],
-      nilai_tambah: [["Pengalaman sebagai anggota direksi perusahaan terbuka", "Jabatan direksi di CV"]],
+      nilai_tambah: [["Experience as a board member of a listed company", "Board position in the CV"]],
       competencies: [
-        ["Memahami rantai nilai operasional dan dampaknya ke laba", "L2", "S3", "Menjelaskan operasi tanpa kaitan dengan laba", "Mengaitkan operasi dengan laba dengan bantuan", "Mengaitkan sendiri setiap keputusan operasional dengan laba dan risiko",
-         "Ceritakan keputusan operasional yang paling besar dampaknya ke laba. Bagaimana Anda menghitungnya?"],
-        ["Menilai dan menolak keputusan strategis yang keliru", "L3", "S5", "Tidak memberi contoh keputusan yang ditolak", "Menyampaikan keberatan ketika masalah sudah jelas", "Melihat masalah lebih awal, berargumen dengan data, dan menerima keputusan akhir",
-         "Ceritakan saat Anda tidak setuju dengan keputusan pemegang saham atau dewan. Apa yang Anda lakukan?"],
-        ["Membangun pemimpin di bawahnya", "L5", "S5", "Belum menyiapkan pemimpin pengganti", "Pernah menyiapkan satu pengganti", "Dapat menyebut beberapa pemimpin yang kini memimpin divisi berkat pembinaannya",
-         "Siapa pemimpin yang Anda bangun, dan apa yang kini mereka pimpin sendiri?"],
-        ["Kejujuran atas kinerja dan risiko perusahaan", "I", "S3", "Contoh menunjukkan risiko ditutupi dari dewan", "Melaporkan risiko ketika diminta", "Melaporkan risiko dan kesalahan sendiri lebih awal tanpa diminta",
-         "Ceritakan risiko besar yang Anda laporkan ke dewan sebelum diminta. Apa yang terjadi kemudian?"]
+        ["Understanding the operations value chain and its effect on profit", "L2", "S3", "Explains operations with no link to profit", "Links operations to profit with help", "Links every operations decision to profit and risk unaided",
+         "Tell us about the operations decision with the largest effect on profit. How did you calculate it?"],
+        ["Assessing and refusing wrong strategic decisions", "L3", "S5", "Gives no example of a decision they refused", "Raises an objection once the problem is obvious", "Sees the problem early, argues with data, and accepts the final decision",
+         "Tell us about a time you disagreed with a decision of the shareholders or the board. What did you do?"],
+        ["Building the leaders below them", "L5", "S5", "Has not prepared a replacement leader", "Has prepared one successor", "Can name several leaders who now lead a division thanks to their development",
+         "Which leaders have you built, and what do they now lead on their own?"],
+        ["Honesty about company performance and risk", "I", "S3", "The example shows risks were hidden from the board", "Reports risks when asked", "Reports risks and own mistakes early without being asked",
+         "Tell us about a major risk you reported to the board before being asked. What happened next?"]
       ]
     }
   ].freeze

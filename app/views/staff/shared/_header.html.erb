@@ -12,11 +12,13 @@
     </div>
     <ul class="header-content-right">
       <li class="header-element d-flex align-items-center me-2">
-        <span class="text-muted"><i class="fa fa-user-o me-1"></i><%= current_user.name %> · <%= User::ROLE_LABELS.fetch(current_user.role) %></span>
+        <%# Phones show the icon only (the name and role stay in the title and for screen readers), so the
+            header never wraps onto the logo (17 Oct 2026). %>
+        <span class="text-muted header-user" title="<%= current_user.name %> · <%= User::ROLE_LABELS.fetch(current_user.role) %>"><i class="fa fa-user-o me-1" aria-hidden="true"></i><span class="header-user__text"><%= current_user.name %> · <%= User::ROLE_LABELS.fetch(current_user.role) %></span></span>
       </li>
       <li class="header-element d-flex align-items-center">
         <%= button_to session_path, method: :delete, class: "btn btn-light btn-sm", form: { data: { turbo: false } } do %>
-          <i class="fa fa-sign-out"></i> Sign out
+          <i class="fa fa-sign-out" aria-hidden="true"></i><span class="header-signout__text"> Sign out</span>
         <% end %>
       </li>
     </ul>

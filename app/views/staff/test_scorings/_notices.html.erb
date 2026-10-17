@@ -1,7 +1,7 @@
 <%# Why this screen may not accept a score right now, said before anything else. %>
 <% if consultant_blocked %>
   <div class="alert alert-warning" role="status"><i class="fa fa-lock me-2" aria-hidden="true"></i>You are the consultant of this vacancy. The technical test is scored by another reviewer.</div>
-<% elsif current_user.role != "reviewer" %>
+<% elsif !current_user.role.in?(%w[hr_manager superadmin]) %>
   <div class="alert alert-info" role="status"><i class="fa fa-info-circle me-2" aria-hidden="true"></i>This page is read-only. Scores are recorded by the reviewer.</div>
 <% end %>
 <% if board.stage.status == "draft" %>

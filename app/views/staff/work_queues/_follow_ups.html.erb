@@ -12,7 +12,7 @@
             <td><%= offer.job_application.job.title %></td>
             <td><%= wib(offer.start_at) %></td>
             <td>
-              <% if current_user.role == "consultant" %>
+              <% if current_user.role.in?(%w[hr_admin superadmin]) %>
                 <%= form_with url: staff_offer_followed_up_path(offer), method: :post, data: { turbo: false, submit_guard: true } do %>
                   <%# The value only mirrors the label: no controller reads params[:commit]. %>
                   <button type="submit" class="btn btn-sm btn-success" name="commit" value="Contacted"><i class="fa fa-check"></i> Contacted</button>

@@ -87,7 +87,7 @@ module Progression
     # amount on screen; a newer AI recommendation than the one on screen is refused (stale).
     def agree(application:, actor:, amount:, note:, seen_recommendation_id:)
       job = application.job
-      raise Refused, "Only the owner sets the salary." unless actor&.role == "owner"
+      raise Refused, "Only the HR Manager or the Superadmin agrees the salary." unless actor&.role.in?(%w[hr_manager superadmin])
       raise Refused, "The candidate has not passed the last stage yet." unless ready?(application)
 
       agreed = amount.to_s.gsub(/[^\d]/, "").to_i

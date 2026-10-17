@@ -1,0 +1,20 @@
+<%# Competency test scoring (slice C). Orchestrates only: the figures that say how much is left, then
+    one card per applicant (provisional score against the vacancy average, what is needed next, the
+    written answers with the AI suggestion), each action its own form; none is nested. %>
+<% content_for :title, "Competency test scoring · #{@job.title}" %>
+<% rows = @board.rows %>
+<div class="portal-page loan-index-page layout-decoration-page test-scoring-page">
+  <%= render "staff/shared/page_header", eyebrow: "Competency test scoring", title: @job.title,
+             subtitle: "Applicants who took the competency test while applying. Multiple choice is scored by the answer key; written answers carry an AI suggestion. At or above the vacancy average the HR Manager confirms the written answers; below it the AI suggestion counts.",
+             actions: label_link("Back", "fa-arrow-left", staff_job_path(@job), purpose: :neutral, icon_end: true) %>
+  <section class="content">
+    <%= render "staff/job_briefs/errors", errors: @errors || [] %>
+    <%= render "staff/bank_scorings/metrics", board: @board, rows: rows %>
+    <% if rows.empty? %>
+      <div class="card custom-card"><div class="card-body"><p class="text-muted mb-0">No three-step applications yet. They appear here as applicants send them.</p></div></div>
+    <% end %>
+    <% rows.sort_by { |r| [r.recorded ? 1 : 0, -(r.score.value || -1)] }.each do |row| %>
+      <%= render "staff/bank_scorings/item", row: row, board: @board, can_score: @can_score %>
+    <% end %>
+  </section>
+</div>

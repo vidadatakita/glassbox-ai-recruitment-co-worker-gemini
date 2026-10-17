@@ -1,0 +1,19 @@
+<%# Four figures, each with what it means for the next step. %>
+<% average = board.average %>
+<% waiting_review = rows.count { |r| !r.recorded && r.needs_review } %>
+<% ai_ready = rows.count { |r| !r.recorded && !r.needs_review && r.score.complete? } %>
+<% failed = rows.count { |r| r.draft.ai_status == "failed" } %>
+<div class="test-case-status">
+  <div class="test-case-status__item"><span class="test-case-status__label">Applicants</span>
+    <span class="test-case-status__value"><%= rows.size %></span>
+    <span class="test-case-status__note"><%= rows.count(&:recorded) %> results recorded</span></div>
+  <div class="test-case-status__item"><span class="test-case-status__label">Vacancy average</span>
+    <span class="test-case-status__value"><%= average ? "#{average.round}/100" : "-" %></span>
+    <span class="test-case-status__note">The line between "HR confirms" and "AI counts"; moves as applications arrive.</span></div>
+  <div class="test-case-status__item"><span class="test-case-status__label">Need your confirmation</span>
+    <span class="test-case-status__value"><%= waiting_review %></span>
+    <span class="test-case-status__note">At or above the average, with written answers.</span></div>
+  <div class="test-case-status__item"><span class="test-case-status__label">AI suggestion counts</span>
+    <span class="test-case-status__value"><%= ai_ready %></span>
+    <span class="test-case-status__note"><%= failed.positive? ? "#{failed} AI runs failed; retry on the card." : "Below the average; record with one press." %></span></div>
+</div>

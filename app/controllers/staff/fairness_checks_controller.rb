@@ -10,7 +10,7 @@ module Staff
   # involved, but the screen explains redaction internals that belong to the people running the
   # process) and not the admin.
   class FairnessChecksController < BaseController
-    VIEWERS = %i[hr_pic consultant reviewer].freeze
+    VIEWERS = %i[hr_admin hr_manager superadmin].freeze
 
     before_action -> { require_role!(*VIEWERS) }
     before_action :load_job

@@ -25,6 +25,16 @@ Rails.application.routes.draw do
   get  "apply/:code",          to: "lamar#show",   as: :lamar
   post "apply/:code/check",    to: "lamar#check",  as: :lamar_check
   post "apply/:code",          to: "lamar#create"
+  # Three-step application with the competency test (17 Oct 2026), beside the two-step form: only a
+  # vacancy with an approved question bank. Steps 2-3 carry the draft's secret.
+  get  "apply/:code/start",                 to: "apply#new",          as: :apply_start
+  post "apply/:code/start",                 to: "apply#create"
+  get  "apply/:code/d/:secret/cv",          to: "apply#cv",           as: :apply_cv
+  post "apply/:code/d/:secret/cv",          to: "apply#save_cv"
+  get  "apply/:code/d/:secret/test",        to: "apply#test",         as: :apply_test
+  post "apply/:code/d/:secret/test/start",  to: "apply#start_test",   as: :apply_test_start
+  post "apply/:code/d/:secret/answers",     to: "apply#save_answers", as: :apply_answers
+  post "apply/:code/d/:secret/submit",      to: "apply#submit",       as: :apply_submit
 
   # AI Builder Cup step 07: an invited interviewer scores from a link (no account).
   get  "score/:token", to: "interviewer_scores#show",   as: :interviewer_score
@@ -67,7 +77,9 @@ Rails.application.routes.draw do
     get  "jobs/new", to: "job_briefs#new",    as: :new_job
     post "jobs",     to: "job_briefs#create", as: :create_job
     resources :jobs, only: %i[index show] do
-      patch :approve_ad, on: :member
+      # The separate "Approve job ad" step was taken down on 17 Oct 2026 (GlassBox Team): the ad is
+      # approved by the person who opens the applicant portal (Portal::WindowChange#open!). The
+      # action stays in JobsController; re-adding `patch :approve_ad, on: :member` restores the step.
       get   "brief",       to: "job_briefs#show",   as: :brief
       get   "brief/:step", to: "job_briefs#edit",   as: :brief_step, constraints: { step: /[1-4]/ }
       patch "brief/:step", to: "job_briefs#update", constraints: { step: /[1-4]/ }
@@ -89,13 +101,30 @@ Rails.application.routes.draw do
       post "test_cases",                    to: "test_cases#save",      as: :test_cases
       post "test_cases/:id/approve",        to: "test_cases#approve",   as: :test_case_approve
       get  "test_cases/:id/case_file",      to: "test_cases#case_file", as: :test_case_file
+      post "technical-test/ai-case",        to: "test_cases#ai_case",   as: :test_case_ai_case
+      get  "technical-test/ai-case/:suggestion_id/file", to: "test_cases#ai_case_file", as: :test_case_ai_case_file
+      # Competency test bank (FLOW §7, 17 Oct 2026), on the same step-5 page, beside the uploaded case.
+      post   "technical-test/bank/settings",                to: "question_banks#settings",        as: :question_bank_settings
+      post   "technical-test/bank/questions",               to: "question_banks#add_question",    as: :question_bank_questions
+      patch  "technical-test/bank/questions/:question_id",  to: "question_banks#update_question", as: :question_bank_question
+      delete "technical-test/bank/questions/:question_id",  to: "question_banks#remove_question"
+      post   "technical-test/bank/ai-draft",                to: "question_banks#ai_draft",        as: :question_bank_ai_draft
+      post   "technical-test/bank/ai-draft/:suggestion_id", to: "question_banks#accept_ai",       as: :question_bank_accept_ai
+      post   "technical-test/bank/:id/decision",            to: "question_banks#decide",          as: :question_bank_decision
+      get    "technical-test/bank/workbook",                to: "question_banks#workbook",        as: :question_bank_workbook
+      post   "technical-test/bank/import",                  to: "question_banks#import",          as: :question_bank_import
       # Feature 07 (D60 slice 5): the reviewer scores the technical-test answers on the rubric.
       get  "technical-test/scoring",        to: "test_scorings#index",  as: :test_scorings
+      # Competency test scoring (slice C, 17 Oct 2026): the three-step applicants' results.
+      get  "technical-test/bank-scoring",              to: "bank_scorings#index",    as: :bank_scorings
+      post "technical-test/bank-scoring/:id/record",   to: "bank_scorings#record",   as: :bank_scoring_record
+      post "technical-test/bank-scoring/:id/retry-ai", to: "bank_scorings#retry_ai", as: :bank_scoring_retry
       post "portal/open",   to: "portal_windows#open",   as: :portal_open
       post "portal/close",  to: "portal_windows#close",  as: :portal_close
       post "portal/reopen", to: "portal_windows#reopen", as: :portal_reopen
       # Feature 06, S1 AI screening (blueprint §3.1 screen 8, §4.1).
       post "screening/start",       to: "screenings#start",       as: :screening_start
+      post "screening/retry",       to: "screenings#retry_failed", as: :screening_retry
       get  "screening/review",      to: "screenings#review",      as: :screening_review
       get  "screening/calibration", to: "screenings#calibration", as: :screening_calibration
       # Feature 09 (D51 B): "Review before AI", the reviewer's release list for one job.
@@ -135,6 +164,8 @@ Rails.application.routes.draw do
         post "letter",         to: "letters#deliver",    as: :letter
       end
       resources :offers, only: :create
+      # AI advice in the Job offer section: drafts the first-day note from the brief (no money, no applicant data).
+      post "offer/ai-advice", to: "offers#advice", as: :offer_advice
     end
     resources :participations, only: [] do
       # Calendar appointments (Google Calendar) and the hand-entered psychological-test score are

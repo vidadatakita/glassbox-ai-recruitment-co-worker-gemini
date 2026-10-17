@@ -44,4 +44,32 @@ class ImpactTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "72 hours"
     assert_raises(Portal::UpdateSetting::Invalid) { Portal::UpdateSetting.call(key: "baseline_reasoned_pct", value: "120", actor: staff_user("admin")) }
   end
+
+  test "each matrix row opens to its vacancies, linking to the feature page that holds the records" do
+    sign_in_as @hr
+    get staff_impact_path
+    assert_select "details.impact-row", count: 5
+    assert_select "details#impact-hours a[href='#{staff_job_screening_report_path(@job)}']", text: /Screening report/
+    # The HR Admin cannot open the reviewer's screening review, so the who-read rows point to the report.
+    assert_select "details#impact-read a[href='#{staff_job_screening_review_path(@job)}']", count: 0
+    assert_select "details#impact-read a[href='#{staff_job_screening_report_path(@job)}']"
+    assert_select "details#impact-read td", text: @job.title
+
+    sign_in_as staff_user("reviewer")
+    get staff_impact_path
+    assert_select "details#impact-read a[href='#{staff_job_screening_review_path(@job)}']"
+  end
+
+  test "the change is computed only when both sides exist, and says which way it went" do
+    rec(s1_of(@a), "lanjut")
+    Progression::Choose.call(participation: s1_of(@a), actor: @hr, choice: "ikut_ai", seen_recommendation_id: StageRecommendation.last.id)
+    sign_in_as @hr
+    get staff_impact_path
+    assert_select "details#impact-hours .impact-row__change .impact-empty", text: "-"
+    assert_select "details#impact-hours .impact-chip", { count: 0 }, "no result chip while one side is missing"
+
+    Portal::UpdateSetting.call(key: "baseline_hours_to_answer", value: "72", actor: staff_user("admin"))
+    get staff_impact_path
+    assert_select "details#impact-hours .impact-chip--good", text: "96% faster" # 72 h before, 3 h measured
+  end
 end

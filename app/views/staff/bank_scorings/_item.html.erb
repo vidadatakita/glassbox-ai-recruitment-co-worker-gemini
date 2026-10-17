@@ -1,0 +1,55 @@
+<%# One applicant: score vs average, the next step, the written answers with the AI suggestion. %>
+<% d = row.draft %>
+<% score = row.score %>
+<% written = d.answers.select { |a| a.bank_question.written? } %>
+<% mc = d.answers.select { |a| a.bank_question.multiple_choice? } %>
+<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-user", title: candidate_label(d.job_application),
+           text: "Sent #{wib(d.submitted_at)} · multiple choice #{mc.count(&:correct)} of #{d.questions.count(&:multiple_choice?)} correct · #{written.size} written answers",
+           aside: content_tag(:span, score.value ? "#{score.value.round}/100" : "waiting for AI", class: "portal-state portal-state--#{row.recorded ? 'success' : (row.needs_review ? 'warning' : 'info')}") } do %>
+  <% if row.recorded %>
+    <p class="mb-0"><i class="fa fa-check-circle text-success" aria-hidden="true"></i> Result recorded; it is the technical-test result of this applicant.</p>
+  <% elsif d.ai_status == "failed" %>
+    <div class="alert alert-warning job-brief-notice" role="status"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i><div><%= d.ai_error %></div></div>
+    <% if can_score %>
+      <%= button_to "Ask the AI again", staff_job_bank_scoring_retry_path(job_id: d.job_id, id: d.id), method: :post, class: "btn btn-light label-btn",
+                    form: { data: { turbo: false, submit_guard: true } } %>
+    <% end %>
+  <% end %>
+  <% unless row.recorded %>
+    <%= form_with url: staff_job_bank_scoring_record_path(job_id: d.job_id, id: d.id), method: :post, class: "bank-scoring-form",
+                  data: { turbo: false, submit_guard: true } do %>
+      <input type="hidden" name="mode" value="<%= row.needs_review ? 'review' : 'ai' %>">
+      <% written.each do |a| %>
+        <% q = a.bank_question %>
+        <fieldset class="question-bank-item">
+          <legend class="question-bank-item__prompt"><%= q.prompt %></legend>
+          <p class="mb-1"><strong>Answer:</strong> <%= a.answer_text.presence || "(no answer: scores 0)" %></p>
+          <dl class="question-bank-anchors"><dt>Score 1</dt><dd><%= q.anchor_1 %></dd><dt>Score 3</dt><dd><%= q.anchor_3 %></dd><dt>Score 5</dt><dd><%= q.anchor_5 %></dd></dl>
+          <% if a.answer_text.present? && Screening::InjectionCheck.suspicious?(a.answer_text) %>
+            <p class="small text-danger mb-1"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> This answer tries to give the AI instructions. The AI rating does not count; rate it yourself.</p>
+          <% end %>
+          <% if a.ai_rating %>
+            <p class="small mb-1"><span class="portal-state portal-state--info">AI suggests <%= a.ai_rating %></span>
+              <%= a.ai_reason %> <% if a.ai_quote %><q><%= a.ai_quote %></q> <span class="text-<%= a.ai_quote_verified ? 'success' : 'danger' %>"><%= a.ai_quote_verified ? "quote found in the answer" : "quote NOT found in the answer: check it" %></span><% end %></p>
+          <% end %>
+          <% if row.needs_review && a.answer_text.present? && can_score %>
+            <label class="form-label" for="rating_<%= a.id %>">Your rating (1-5)</label>
+            <select class="form-select form-select-sm w-auto" id="rating_<%= a.id %>" name="ratings[<%= a.id %>]">
+              <option value="">Choose</option>
+              <% (1..5).each do |n| %><option value="<%= n %>" <%= "selected" if (a.review_rating || a.ai_rating) == n %>><%= n %></option><% end %>
+            </select>
+          <% end %>
+        </fieldset>
+      <% end %>
+      <% if can_score && score.complete? || can_score && row.needs_review %>
+        <% if row.needs_review %>
+          <label class="form-label" for="note_<%= d.id %>">Scoring note</label>
+          <textarea class="form-control mb-2" id="note_<%= d.id %>" name="note" rows="2"></textarea>
+        <% end %>
+        <div class="hris-form-actions__buttons">
+          <%= label_button row.needs_review ? "Confirm and record result" : "Record result (AI suggestion counts)", "fa-check", purpose: :approve %>
+        </div>
+      <% end %>
+    <% end %>
+  <% end %>
+<% end %>

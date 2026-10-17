@@ -3,8 +3,8 @@ require "test_helper"
 # AI_PROVIDER=gemini: request shape, reading the answer, and the same failure policy as
 # every provider (§4.3). Gemini is stubbed at the HTTP boundary with WebMock.
 class Screening::GeminiClientTest < ActiveSupport::TestCase
-  STUDIO_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-pro:generateContent".freeze
-  VERTEX_URL = "https://aiplatform.googleapis.com/v1/projects/glassbox-uji/locations/global/publishers/google/models/gemini-3.8-pro:generateContent".freeze
+  STUDIO_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent".freeze
+  VERTEX_URL = "https://aiplatform.googleapis.com/v1/projects/glassbox-uji/locations/global/publishers/google/models/gemini-3.8-flash:generateContent".freeze
   ANSWER = { "criteria" => [], "protected_attribute_seen" => false, "protected_attribute_categories" => [] }.freeze
 
   def gemini_env(**extra, &)
@@ -22,7 +22,7 @@ class Screening::GeminiClientTest < ActiveSupport::TestCase
   test "the provider setting picks the Gemini client and its default model" do
     gemini_env do
       assert_equal Screening::GeminiClient, Screening::Config.client_class
-      assert_equal "gemini-3.8-pro", Screening::Config.model
+      assert_equal "gemini-3.8-flash", Screening::Config.model
       assert Screening::Config.enabled?
       assert_equal "ENV AI_API_KEY", Screening::Config.key_source
     end
@@ -58,6 +58,23 @@ class Screening::GeminiClientTest < ActiveSupport::TestCase
     stub_request(:post, VERTEX_URL).with { |req| sent = req }.to_return(json_response(gemini_reply))
     gemini_env("AI_API_KEY" => nil, "GOOGLE_SERVICE_ACCOUNT_JSON" => fake_service_account_json) { judge_sample }
     assert_equal "Bearer uji-token", sent.headers["Authorization"]
+  end
+
+  test "a Vertex AI express-mode key goes to Vertex AI with the key in a header" do
+    sent = nil
+    stub_request(:post, VERTEX_URL).with { |req| sent = req }.to_return(json_response(gemini_reply))
+    gemini_env("AI_API_KEY_ENDPOINT" => "vertex", "GOOGLE_CLOUD_PROJECT" => "glassbox-uji") do
+      judge_sample
+      assert_equal "ENV AI_API_KEY, Vertex AI express mode", Screening::Config.key_source
+    end
+    assert_equal "uji-gemini-key", sent.headers["X-Goog-Api-Key"]
+    assert_nil sent.headers["Authorization"]
+
+    # Without a project, express mode lets Google pick the location.
+    express = "https://aiplatform.googleapis.com/v1/publishers/google/models/gemini-3.8-flash:generateContent"
+    stub_request(:post, express).to_return(json_response(gemini_reply))
+    gemini_env("AI_API_KEY_ENDPOINT" => "vertex", "GOOGLE_CLOUD_PROJECT" => nil) { judge_sample }
+    assert_requested :post, express
   end
 
   test "failure policy: 429/5xx retried, other 4xx and refusals final, cut-off answers malformed" do

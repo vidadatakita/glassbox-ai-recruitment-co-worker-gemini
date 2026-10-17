@@ -29,16 +29,17 @@ module TechnicalTests
     end
   end
 
-  # Who may download a candidate's answer file (B-12 widened 18:4x by the main seat, from the
-  # screening-report SPEC §2.4): reviewer and consultant always; HR PIC only once the screening is
-  # confirmed (gate closed, the same CandidateIdentity rule that reveals names and contacts); owner,
-  # admin and anyone else never. The answer is the candidate's own document and may carry their
+  # Who may download a candidate's answer file (B-12 widened 18:4x by the team lead, from the
+  # screening-report SPEC §2.4), as of the three roles below. The answer is the candidate's own document and may carry their
   # identity in its metadata. Every surface that offers the download (scoring screen, screening
   # report) asks this one predicate; the signed per-user key is checked separately by the controller.
   def answer_downloadable_by?(user, job)
+    # Three roles (17 Oct 2026): the HR Manager scores the test, so always; the superadmin always (team
+    # decision: the superadmin can do every step); the HR Admin decides blind, so only once the screening
+    # is confirmed. Nobody else.
     case user&.role
-    when "reviewer", "consultant" then true
-    when "hr_pic" then CandidateIdentity.screening_confirmed?(job)
+    when "hr_manager", "superadmin" then true
+    when "hr_admin" then CandidateIdentity.screening_confirmed?(job)
     else false
     end
   end

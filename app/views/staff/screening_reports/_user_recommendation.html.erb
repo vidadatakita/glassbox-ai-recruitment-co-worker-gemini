@@ -11,7 +11,7 @@
     <% else %>
       <p class="text-muted">No hiring manager's pick yet.</p>
     <% end %>
-    <% if current_user.role == "hr_pic" %>
+    <% if current_user.role.in?(%w[hr_admin superadmin]) %>
       <%= form_with url: staff_job_screening_report_user_recommendation_path(board.job, row.application.id), method: :post, class: "report-label-form", data: { turbo: false, submit_guard: true } do %>
         <div class="report-label-form__fields">
           <div>
@@ -30,7 +30,7 @@
         </div>
         <label class="form-label" for="rec_note">Note (optional)</label>
         <input type="text" class="form-control mb-2" id="rec_note" name="note" maxlength="500">
-        <%= label_button "Save", "fa-save" %>
+        <div class="action-row"><%= label_button "Save", "fa-save" %></div>
       <% end %>
     <% end %>
   </div>

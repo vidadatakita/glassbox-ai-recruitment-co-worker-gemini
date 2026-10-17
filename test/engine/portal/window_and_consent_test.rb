@@ -100,11 +100,11 @@ class EnginePortalWindowAndConsentTest < ActionDispatch::IntegrationTest
     post staff_job_portal_reopen_path(@job), params: { reason: "  ", commit: "Reopen" }
     assert_equal "close", @job.application_window_events.order(:id).last.action
     refused_by_database do
-      ApplicationWindowEvent.insert_all!([{ job_id: @job.id, action: "reopen", reason: " ", actor_id: 1, actor_role: "hr_pic",
+      ApplicationWindowEvent.insert_all!([{ job_id: @job.id, action: "reopen", reason: " ", actor_id: 1, actor_role: "hr_admin",
                                             created_at: Time.current }])
     end
     post staff_job_portal_reopen_path(@job), params: { reason: "Kuota ditambah", commit: "Reopen" }
-    assert_equal ["reopen", "hr_pic", "Kuota ditambah"], @job.application_window_events.order(:id).last.slice(:action, :actor_role, :reason).values
+    assert_equal ["reopen", "hr_admin", "Kuota ditambah"], @job.application_window_events.order(:id).last.slice(:action, :actor_role, :reason).values
   end
 
   test "reopen re-checks the preconditions: no reopen while the ad is not approved" do
@@ -116,27 +116,37 @@ class EnginePortalWindowAndConsentTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "a consultant opening on HR's behalf is logged as consultant, never as hr_pic" do
+  test "the HR Admin who opens the portal is logged as that person with the role hr_admin" do
     set_retention
     publish_consent
     consultant = staff_user("consultant")
     sign_in_as consultant
     post staff_job_portal_open_path(@job), params: { commit: "Open portal" }
     event = @job.application_window_events.sole
-    assert_equal [consultant.id, "consultant"], [event.actor_id, event.actor_role]
+    assert_equal [consultant.id, "hr_admin"], [event.actor_id, event.actor_role]
   end
 
-  test "owner and admin cannot open, close or reopen the portal" do
+  # Three roles (17 Oct 2026): the HR Manager is still refused; the superadmin passes every role
+  # check, so the superadmin may open and close, and the event records the role "superadmin".
+  test "the HR Manager cannot open, close or reopen the portal; the superadmin can" do
     set_retention
     publish_consent
-    %w[owner admin reviewer].each do |role|
+    %w[owner reviewer].each do |role|
       assert_raises(Portal::WindowChange::Refused, role) { Portal::WindowChange.open!(job: @job, actor: staff_user(role)) }
     end
-    open_portal(@job)
-    %w[owner admin reviewer].each do |role|
+    refute ApplicationWindow.new(@job).open?
+    Portal::WindowChange.open!(job: @job, actor: staff_user("admin"))
+    assert ApplicationWindow.new(@job).open?
+    %w[owner reviewer].each do |role|
       assert_raises(Portal::WindowChange::Refused, role) { Portal::WindowChange.close!(job: @job, actor: staff_user(role)) }
+      assert_raises(Portal::WindowChange::Refused, role) do
+        Portal::WindowChange.reopen!(job: @job, actor: staff_user(role), reason: "lagi")
+      end
     end
     assert ApplicationWindow.new(@job).open?
+    Portal::WindowChange.close!(job: @job, actor: staff_user("admin"))
+    refute ApplicationWindow.new(@job).open?
+    assert_equal %w[superadmin superadmin], @job.application_window_events.order(:id).pluck(:actor_role)
   end
 
   # --- consent (D35) ------------------------------------------------------------------------

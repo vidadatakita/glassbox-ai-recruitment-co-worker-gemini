@@ -69,7 +69,10 @@
     html.style.removeProperty("--light-rgb");
     html.style.removeProperty("--form-control-bg");
     html.style.removeProperty("--input-border");
-    html.style.setProperty("--primary-rgb", "37, 99, 235");
+    // PANTONE 282 C navy (docs/brand-palette.md, 17 Oct 2026). This inline value wins over every
+    // stylesheet, so it must match --primary-rgb in hris-zynix.css; it pins the house colour over a
+    // theme colour a visitor may have stored from the vendor demo.
+    html.style.setProperty("--primary-rgb", "4, 30, 66");
   }
 
   function setYear() {

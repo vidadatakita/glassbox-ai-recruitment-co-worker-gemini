@@ -9,7 +9,18 @@ class OfferAccessCode < ApplicationRecord
   # feature record for direction to confirm.
   CODE_LIFETIME = 15.minutes
 
+  # A fixed code that also opens the offer, so the acceptance flow can be walked through without
+  # reading an inbox. Deliberately accepted ONLY in development and in the public demo
+  # (DEMO_MODE=1, sample data only, reset nightly): there it protects nothing real. In a production
+  # install it is refused, because a code everyone knows would let any forwarded status link open
+  # the salary, which is the leak D36 exists to stop. Do not widen the gate to production.
+  DEFAULT_CODE = "123456".freeze
+
   belongs_to :job_application
+
+  def self.default_code_enabled?(rails_env: Rails.env, env: ENV)
+    rails_env.to_s == "development" || Glassbox::Settings.demo_mode?(env)
+  end
 
   def self.digest(code) = Digest::SHA256.hexdigest("offer-code:#{code}")
 
@@ -21,9 +32,11 @@ class OfferAccessCode < ApplicationRecord
     [record, code]
   end
 
-  # Consumes a matching live code for the application; true only once.
+  # Consumes a matching live code for the application; true only once. The default code is not
+  # stored, so it consumes nothing and works every time (development and demo only).
   def self.redeem(job_application, code, now: Time.current)
     return false if code.blank?
+    return true if code.to_s.strip == DEFAULT_CODE && default_code_enabled?
 
     updated = where(job_application:, code_digest: digest(code.to_s.strip), used_at: nil)
               .where("expires_at > ?", now)

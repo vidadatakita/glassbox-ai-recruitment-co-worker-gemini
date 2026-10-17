@@ -28,8 +28,9 @@ module Staff
       record
     end
 
+    # The superadmin passes every role check (GlassBox Team, 17 Oct 2026).
     def require_role!(*roles)
-      return if roles.map(&:to_s).include?(current_user.role)
+      return if current_user.role == "superadmin" || roles.map(&:to_s).include?(current_user.role)
 
       redirect_to staff_jobs_path, alert: "You do not have access to this action."
     end

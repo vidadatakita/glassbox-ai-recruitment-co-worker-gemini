@@ -11,7 +11,7 @@ module Staff
   # is the job's consultant may read but every action is refused (and refused again by the
   # database).
   class AiReleasesController < BaseController
-    before_action -> { require_role!(:reviewer) }
+    before_action -> { require_role!(:hr_manager) }
     before_action :load_release, except: :index
 
     def index

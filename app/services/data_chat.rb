@@ -10,7 +10,7 @@
 #      or a phone number;
 #   6. links to the pages concerned are made by the code; everything is recorded (DataQuestion).
 module DataChat
-  ROLES = %w[hr_pic owner consultant admin].freeze
+  ROLES = %w[hr_admin hr_manager superadmin].freeze
   MAX_QUESTION = 500
   OUT_OF_SCOPE = "Sorry, I cannot help with that one. I can help you read the recruitment data in your vacancies: applicants, stages, screening results, decisions, and processing time.".freeze
   # Starter questions in the chat window, four at random on each page; each one a read function

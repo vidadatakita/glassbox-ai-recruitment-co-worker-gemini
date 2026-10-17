@@ -16,7 +16,7 @@ module ScreeningReport
     end
 
     def call
-      refuse("Only a consultant approves the narrative.") unless @user.role == "consultant"
+      refuse("Only a consultant approves the narrative.") unless @user.role.in?(%w[hr_admin superadmin])
       refuse("Only the consultant of this vacancy approves the narrative.") if @job.consultant_id && @job.consultant_id != @user.id
       refuse("This result has no AI narrative.") if @result.narratives.blank?
       refuse("The narrative of this result is already approved.") if ScreeningNarrativeApproval.exists?(screening_result_id: @result.id)

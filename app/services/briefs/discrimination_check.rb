@@ -21,9 +21,13 @@ module Briefs
   #
   # Each line: { "id" => "R<id>", "text", "verdict", "reason", "replacement", "source" => "rule" | "ai" }.
   # Structure of the standard's Appendix D (task-related? testable? protected attribute?); the
-  # standard's own wording is pasted in by the team later (docs/builder2/appendix-D.md).
+  # standard's own wording is pasted in by the team later (docs/engineering-notes/appendix-D.md).
   module DiscriminationCheck
-    PROMPT_VERSION = "requirement-check-2026-10-16.1"
+    # .2 (16 Oct, accuracy pass): the protected list is the screening standard's full §8 table (region
+    # of origin, politics, union, photo, family card, bank account, experience caps and graduation
+    # years added), bona fide requirements are named so they are kept, and the reason is generated
+    # BEFORE the verdict (schema key order).
+    PROMPT_VERSION = "requirement-check-2026-10-16.2"
     VERDICTS = %w[keep replace delete].freeze
 
     AI_SYSTEM = <<~PROMPT
@@ -31,22 +35,33 @@ module Briefs
       following the structure of the employer's screening standard (Appendix D). For EACH
       requirement answer three questions: is it related to the tasks of the job? can it be tested
       from a CV, a work-sample test or an interview? does it name, or stand in for, a protected
-      attribute: age, gender, religion, ethnicity or descent, marital status or pregnancy or
-      children, appearance or height or weight, disability or health not needed for the work,
-      family data, or a proxy such as "fresh graduate", "young", "native speaker", "energetic",
-      "presentable"?
-      Return one entry per requirement with its id exactly as given and a verdict:
-      - "keep": task-related, testable, no protected attribute. reason: one sentence; replacement: "".
-      - "replace": task-related but worded through a protected attribute or a proxy. reason: one
-        sentence naming the attribute; replacement: the same requirement in neutral, testable
-        wording (what the work needs, e.g. "able to work rotating shifts" instead of "young and
-        energetic").
-      - "delete": not related to the work, or not testable at all. reason: one sentence;
-        replacement: "".
+      attribute?
+      Protected attributes: age; gender; religion; ethnicity, race, descent or region of origin;
+      marital status, pregnancy or children; appearance, height or weight; disability or health
+      not needed for the work; family data; political views; union membership.
+      Stand-ins (proxies) for them: "fresh graduate" (required or excluded), a maximum number of
+      years of experience, a graduation-year limit, "young", "energetic", "native speaker",
+      "presentable", "good looking", "physically and mentally healthy" without a task, a photo, a
+      family card or a bank account asked for at application.
+      Requirements that ARE about the work are kept: a minimum education level, a licence or
+      certificate the work needs, a minimum number of years of experience, a named tool or skill,
+      a language at a stated level ("fluent English"), willingness to work shifts, travel or work
+      on site, and a physical ability when the requirement names the task that needs it ("able to
+      lift 20 kg boxes in the warehouse").
+      Return one entry per requirement, in the order given, with its id exactly as given:
+      - reason: one sentence; for "replace" and "delete" it names the attribute, stand-in or
+        problem.
+      - verdict: "keep" (task-related, testable, no protected attribute or stand-in); "replace"
+        (task-related but worded through a protected attribute or a stand-in); "delete" (not
+        related to the work, or not testable at all).
+      - replacement: for "replace", the same requirement in neutral, testable wording that keeps
+        what the work needs (e.g. "able to work rotating shifts" instead of "young and
+        energetic"); otherwise "".
       Write every sentence in English. Judge the wording only; never guess who will apply.
     PROMPT
-    LINE = Suggest::ROW.call(id: { type: "string" }, verdict: { type: "string", enum: VERDICTS },
-                             reason: { type: "string" }, replacement: { type: "string" })
+    # Key order is generation order (see Screening::AiClient::SCHEMA): the reason before the verdict.
+    LINE = Suggest::ROW.call(id: { type: "string" }, reason: { type: "string" },
+                             verdict: { type: "string", enum: VERDICTS }, replacement: { type: "string" })
     AI_SCHEMA = Suggest::ROW.call(lines: { type: "array", items: LINE }).freeze
     AI_DID_NOT_RUN = "No protected attribute is named. The AI test did not run; a person confirms the line is task-related and testable."
     NAMED = "The requirement names a protected attribute or asks for something the work does not need. Reword it to what the work needs."

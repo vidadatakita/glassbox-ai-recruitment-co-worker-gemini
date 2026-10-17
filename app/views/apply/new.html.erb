@@ -1,0 +1,61 @@
+<%# Three-step application, step 1 (17 Oct 2026): a copy of the two-step form's details page (lamar/form),
+    with the requirement questions inside it and without the CV, which is step 2. %>
+<% content_for :title, "Apply · #{@job.title}" %>
+<%= render "candidate_shared/job_top", job: @job %>
+<%= render "lamar/aside", job: @job %>
+<%# The heading names the step; the job title is already the line above the card (job_top) and is
+    kept here for screen readers only, so the page no longer shows the same title twice. %>
+<div class="cand-head">
+  <%= render "apply/stepper", step: 1 %>
+  <h1>Step 1 · Your details<span class="visually-hidden">: <%= @job.title %></span></h1>
+  <p class="small">Step 1 of 3: the requirement questions, your details and your consent. Then your CV, then a short competency test.</p>
+</div>
+<% if @job.ad_text.present? %>
+  <details class="job-ad">
+    <summary>About this vacancy</summary>
+    <div class="job-ad__text"><%= ad_html(@job.ad_text) %></div>
+  </details>
+<% end %>
+<%= render "candidate_shared/errors", errors: @errors %>
+<% values = @values || {} %>
+<% fe = @field_errors || {} %>
+<%# Native checks (required, pattern, accept) stop most mistakes BEFORE the round trip, so the
+    chosen CV is not lost; the server checks everything again (SubmitApplication). %>
+<%= form_with url: apply_start_path(@job.public_code, ch: params[:ch]), method: :post, class: "cand-form lamar-form", data: { turbo: false, submit_guard: true } do %>
+  <%# What the candidate is shown, signed (D35). %>
+  <input type="hidden" name="lamaran[consent_token]" value="<%= @consent_token %>">
+  <%# Vida 17 Oct 2026: the requirement questions sit inside step 1; a "No" ends here and nothing is stored. %>
+  <%= render "lamar/knockout_fields", job: @job, answers: @answers || {} %>
+  <div class="field <%= "has-error" if fe[:name] %>">
+    <label for="lamaran_name">Full name</label>
+    <input type="text" id="lamaran_name" name="lamaran[name]" value="<%= values[:name] %>" autocomplete="name" required
+           aria-describedby="lamaran_name-hint<%= " lamaran_name-error" if fe[:name] %>" <%= 'aria-invalid="true"'.html_safe if fe[:name] %>>
+    <span class="small" id="lamaran_name-hint">As on your ID card (KTP).</span>
+    <%= render "lamar/field_error", id: "lamaran_name", message: fe[:name] %>
+  </div>
+  <div class="field <%= "has-error" if fe[:phone] %>">
+    <label for="lamaran_phone">WhatsApp number</label>
+    <input type="tel" id="lamaran_phone" name="lamaran[phone]" value="<%= values[:phone] %>" autocomplete="tel" inputmode="tel"
+           placeholder="0812 3456 7890" required pattern="(\+62|62|0)8[0-9\s\-]{7,16}" title="A WhatsApp number starting with 08, 628 or +628."
+           aria-describedby="<%= "lamaran_phone-error" if fe[:phone] %>" <%= 'aria-invalid="true"'.html_safe if fe[:phone] %>>
+    <%= render "lamar/field_error", id: "lamaran_phone", message: fe[:phone] %>
+  </div>
+  <div class="field <%= "has-error" if fe[:email] %>">
+    <label for="lamaran_email">E-mail</label>
+    <input type="email" id="lamaran_email" name="lamaran[email]" value="<%= values[:email] %>" autocomplete="email" required
+           aria-describedby="lamaran_email-hint<%= " lamaran_email-error" if fe[:email] %>" <%= 'aria-invalid="true"'.html_safe if fe[:email] %>>
+    <span class="small" id="lamaran_email-hint">The status link and the offer code are sent to this address.</span>
+    <%= render "lamar/field_error", id: "lamaran_email", message: fe[:email] %>
+  </div>
+  <%= render "lamar/expected_salary", values: values, field_errors: fe %>
+  <%= render "lamar/domicile_city", values: values, field_errors: fe %>
+  <%= render "lamar/consent", consent: @consent, retention_days: @retention_days %>
+  <label class="consent-check <%= "has-error" if fe[:consent] %>">
+    <input type="checkbox" name="lamaran[consent]" value="1" required <%= "checked" if values[:consent] == "1" %>>
+    <span>I have read and agree to the use of my data as written above.</span>
+  </label>
+  <%= render "lamar/field_error", id: "lamaran_consent", message: fe[:consent] %>
+  <%# The button's value is its label: no controller reads params[:commit] on the candidate forms. %>
+  <button type="submit" class="btn primary" name="commit" value="Next: your CV">Next: your CV</button>
+<% end %>
+<p class="small">Your details are kept as an unsent application so you can continue with the private link of the next page. If you do not send it, it is deleted when the vacancy closes.</p>

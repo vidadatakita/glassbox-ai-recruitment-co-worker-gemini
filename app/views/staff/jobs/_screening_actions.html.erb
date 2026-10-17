@@ -1,14 +1,28 @@
-<div class="btn-list screening-actions">
-  <% if current_user.role == "consultant" && board.enabled? %>
-    <%= form_with url: staff_job_screening_start_path(job), method: :post, class: "d-inline", data: { turbo: false, submit_guard: true } do %>
-      <%= label_button "Start screening", "fa-play" %>
+<%# One action bar (17 Oct 2026): the pages to open on the left, the actions on the right. Each action
+    is its own form; none is nested; names and values unchanged. %>
+<div class="screening-actions">
+  <div class="screening-actions__links">
+    <% if %w[hr_admin hr_manager superadmin].include?(current_user.role) %>
+      <%= label_link "Calibration", "fa-balance-scale", staff_job_screening_calibration_path(job), purpose: :neutral %>
     <% end %>
-  <% end %>
-  <% if %w[consultant reviewer].include?(current_user.role) %>
-    <%= label_link "Calibration", "fa-balance-scale", staff_job_screening_calibration_path(job), purpose: :neutral %>
-  <% end %>
-  <% if current_user.role == "reviewer" %>
-    <%= label_link "Review before AI (#{board.awaiting_release.size})", "fa-shield", staff_job_ai_releases_path(job), purpose: :neutral %>
-    <%= label_link "Screening review (#{board.to_review.size})", "fa-check-square-o", staff_job_screening_review_path(job), purpose: :neutral %>
-  <% end %>
+    <% if current_user.role.in?(%w[hr_manager superadmin]) %>
+      <%= label_link "Review before AI (#{board.awaiting_release.size})", "fa-shield", staff_job_ai_releases_path(job), purpose: :neutral %>
+      <%= label_link "Screening review (#{board.to_review.size})", "fa-check-square-o", staff_job_screening_review_path(job), purpose: :neutral %>
+    <% end %>
+  </div>
+  <div class="screening-actions__buttons">
+    <%# The HR owner and the reviewer retry failed AI screenings themselves (the public demo has no
+        consultant door). Shown only while there is a failed row a new attempt can fix. %>
+    <% retryable = %w[hr_admin hr_manager superadmin].include?(current_user.role) && board.enabled? ? board.retryable : [] %>
+    <% if retryable.any? %>
+      <%= form_with url: staff_job_screening_retry_path(job), method: :post, class: "d-inline", data: { turbo: false, submit_guard: true } do %>
+        <%= label_button "Retry failed screening (#{retryable.size})", "fa-repeat", purpose: :neutral %>
+      <% end %>
+    <% end %>
+    <% if current_user.role.in?(%w[hr_admin superadmin]) && board.enabled? %>
+      <%= form_with url: staff_job_screening_start_path(job), method: :post, class: "d-inline", data: { turbo: false, submit_guard: true } do %>
+        <%= label_button "Start screening", "fa-play" %>
+      <% end %>
+    <% end %>
+  </div>
 </div>

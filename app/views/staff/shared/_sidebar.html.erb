@@ -16,12 +16,12 @@
             <%= nav_item :work_queue, "Work queue", "fa-tasks", staff_work_queue_path %>
           </li>
         <% end %>
-        <% if current_user.role.in?(%w[hr_pic owner consultant admin]) %>
+        <% if current_user.role.in?(%w[hr_admin hr_manager superadmin]) %>
           <li class="slide">
             <%= nav_item :impact, "Impact summary", "fa-line-chart", staff_impact_path %>
           </li>
         <% end %>
-        <% if current_user.role == "admin" && !demo_mode? %>
+        <% if current_user.role.in?(%w[superadmin superadmin]) && !demo_mode? %>
           <li class="slide__category"><span class="category-name">System</span></li>
           <li class="slide">
             <%= nav_item :settings, "System settings", "fa-cog", staff_settings_path %>

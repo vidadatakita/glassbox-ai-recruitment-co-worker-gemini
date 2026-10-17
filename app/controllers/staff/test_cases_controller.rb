@@ -5,10 +5,12 @@ module Staff
   # (TestCases::Approve). The case file is downloaded only through #case_file, as an attachment
   # with nosniff, never through a public ActiveStorage URL (plan §d).
   class TestCasesController < BaseController
+    include TechnicalTestStep
+
     before_action :load_job
     before_action :require_test!
-    before_action -> { require_role!(:consultant) }, only: :save
-    before_action -> { require_role!(:hr_pic) }, only: :approve
+    before_action -> { require_role!(:hr_admin) }, only: %i[save ai_case]
+    before_action -> { require_role!(:hr_admin) }, only: :approve
 
     # ?saran=<id>: the form shows that AI proposal (Briefs::Suggest, step 5) instead of the saved version.
     def edit
@@ -16,8 +18,35 @@ module Staff
       render_step
     end
 
+    # AI co-worker (slice D): the case study text (Briefs::Suggest step 5) AND the case file
+    # (TestCases::DraftCaseFile) in one press. Nothing is saved: the form opens filled, the file is
+    # previewed and downloadable, and Save attaches it like an upload.
+    def ai_case
+      unless TestCases::Authority.may_edit?(current_user, @job)
+        return redirect_to(staff_job_test_case_step_path(@job), alert: TestCases::Authority.edit_refusal(current_user, @job))
+      end
+
+      text = Briefs::Suggest.call(job: @job, actor: current_user, step: "5")
+      return redirect_to(staff_job_test_case_step_path(@job), alert: text.error) unless text.ok?
+
+      file = TestCases::DraftCaseFile.call(job: @job, actor: current_user, instructions: text.suggestion.test["instructions"])
+      return redirect_to(staff_job_test_case_step_path(@job, saran: text.suggestion.id), alert: "The case study text is drafted below; the case file was not: #{file.error}") unless file.ok?
+
+      redirect_to staff_job_test_case_step_path(@job, saran: text.suggestion.id, case_saran: file.suggestion.id, anchor: "ai-case-file"),
+                  notice: "The AI drafted the case study and the case file. Check both, then Save."
+    end
+
+    # The proposed case file (applicant's sheets only), to check before saving.
+    def ai_case_file
+      proposal = case_file_proposals.find(params[:suggestion_id])
+      response.headers["X-Content-Type-Options"] = "nosniff"
+      instructions = @job.brief_suggestions.find_by(id: params[:saran])&.test&.dig("instructions")
+      send_data TestCases::DraftCaseFile.workbook(proposal.payload.fetch("case_file"), instructions),
+                filename: "case-file-draft-#{@job.id}.xlsx", type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", disposition: "attachment"
+    end
+
     def save
-      result = TestCases::SaveVersion.call(job: @job, actor: current_user, params: test_case_params)
+      result = TestCases::SaveVersion.call(job: @job, actor: current_user, params: with_ai_case_file(test_case_params))
       return redirect_to(staff_job_test_case_step_path(@job), notice: saved_notice(result.test_case)) if result.ok?
 
       render_step(errors: result.errors, status: :unprocessable_content)
@@ -51,21 +80,21 @@ module Staff
 
     def load_job = @job = org_jobs.find(params[:job_id])
 
-    # A package without S2 has no step 5: the address does not exist for it (404), exactly as an
-    # unknown step number did before D60.
-    def require_test!
-      raise ActiveRecord::RecordNotFound, "job #{@job.id} has no technical test" unless TestCases::Requirement.applies?(@job)
+    # When the HR Admin saves the AI-drafted case without choosing another file, the drafted file is
+    # built from the stored proposal and goes through SaveVersion exactly like an upload.
+    def with_ai_case_file(attrs)
+      return attrs if attrs[:case_file].present? || attrs["case_file"].present? || params[:case_saran].blank?
+
+      proposal = case_file_proposals.find(params[:case_saran])
+      bytes = TestCases::DraftCaseFile.workbook(proposal.payload.fetch("case_file"), attrs["instructions"] || attrs[:instructions])
+      tempfile = Tempfile.new(["case-file", ".xlsx"], binmode: true).tap { |f| f.write(bytes); f.rewind }
+      attrs.merge("case_file" => ActionDispatch::Http::UploadedFile.new(tempfile:, filename: "case-file-#{@job.id}.xlsx",
+                                                                        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
     end
 
-    def render_step(errors: [], status: :ok)
-      @errors = errors
-      @versions = @job.test_cases.includes(:created_by, :approved_by, :criteria, case_file_attachment: :blob).to_a
-      @current = @versions.select(&:approved?).max_by(&:version)
-      @latest = @versions.max_by(&:version)
-      @form = TestCaseForm.new(@job, @latest, submitted: errors.any? ? test_case_params : @suggestion&.form_params("5", @job))
-      @check = Briefs::BriefCheck.new(@job)
-      render :edit, status:
-    end
+    # Only this vacancy's AI case-file proposals: any other id (another vacancy's, or the case-study text
+    # proposal) is not found (404), never a crash (independent test pass, slice D, F1/F2).
+    def case_file_proposals = @job.brief_suggestions.where("payload ? 'case_file'")
 
     def saved_notice(test_case)
       "Technical test version #{test_case.version} saved as a draft. HR must approve it before applicants use it."
@@ -73,14 +102,6 @@ module Staff
 
     def download_name(test_case)
       "case-file-#{@job.id}-v#{test_case.version}.#{test_case.case_file_kind}"
-    end
-
-    def test_case_params
-      return {} unless params.key?(:test_case)
-
-      params.require(:test_case).permit(:instructions, :time_limit_minutes, :new_version_reason, :case_file,
-                                        :answer_types_submitted, answer_types: [],
-                                        criteria: %i[activity_id name weight anchor_1 anchor_3 anchor_5]).to_h
     end
   end
 end

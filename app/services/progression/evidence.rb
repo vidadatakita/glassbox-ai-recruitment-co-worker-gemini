@@ -3,14 +3,21 @@ module Progression
   # application up to and including it. Structured facts only (see Recommend for the list); the
   # interviewer's note is the one free text, redacted with the candidate's name and residual-checked
   # like a CV. { data:, held: } where held means a note still shows personal data: send nothing.
+  #
+  # stage_advice: true (Progression::Recommend, prompt stage-advice-2026-10-16.3) adds, per screening
+  # judgement, the CV passages it rests on, so the advice can weigh what the CV says and not only a
+  # rating; and writes tiers and the interviewers' picks as English words, so no stored code
+  # ("wajib", "tidak_lanjut") reaches that prompt (the 16 Oct test found "tidak_lanjut" in the advice
+  # text). The salary advice keeps the payload its prompt was written for.
   class Evidence
-    def self.call(participation) = new(participation).call
+    def self.call(participation, stage_advice: false) = new(participation, stage_advice:).call
 
-    def initialize(participation)
+    def initialize(participation, stage_advice: false)
       @participation = participation
       @application = participation.job_application
       @job = participation.stage.job
       @names = [@application.candidate&.name]
+      @stage_advice = stage_advice
     end
 
     def call
@@ -44,7 +51,25 @@ module Progression
       return { status: "not yet screened by AI" } unless result
 
       { requirements_met: result.wajib_met,
-        requirements: result.criteria.map { |c| { tier: c["tier"], requirement: c["text"], judgement: c["judgement"], quote_verified: c["verified"] } } }
+        requirements: result.criteria.map do |c|
+          next { tier: c["tier"], requirement: c["text"], judgement: c["judgement"], quote_verified: c["verified"] } unless @stage_advice
+
+          { tier: Requirement::TIERS.fetch(c["tier"], c["tier"]).downcase, requirement: c["text"], judgement: c["judgement"],
+            quote_verified: c["verified"], quotes: cv_quotes(c) }
+        end }
+    end
+
+    # The passages behind one judgement, only when the quote check found every one of them (an
+    # unverified quote is not evidence). Each is redacted with the candidate's name like an
+    # interview note, and dropped, not sent, when the residual check or the money check still finds
+    # something (D62 h5: no salary figure reaches the AI). Empty after an erasure (quote is null).
+    def cv_quotes(criterion)
+      return [] unless criterion["verified"]
+
+      Screening::QuoteCheck.passages(criterion["quote"]).filter_map do |passage|
+        text = MoneyText.strip(Screening::Redactor.call(passage, names: @names).text)
+        text unless Screening::ResidualCheck.findings(text, names: @names).any? || MoneyText.suspicious?(text)
+      end
     end
 
     def technical_test(participation)
@@ -74,7 +99,7 @@ module Progression
         card = { interviewer: "Assessor #{i + 1}", role: invites[entry.id] ? "user (hiring manager)" : "HR", ratings: }
         if (invite = invites[entry.id])
           pick = picks.reverse.find { |r| r.user_name == invite.interviewer_name && r.created_at <= invite.submitted_at + 1.second }
-          card[:recommendation] = pick&.pick
+          card[:recommendation] = @stage_advice && pick ? UserRecommendation::PICKS.fetch(pick.pick, [pick.pick]).first.downcase : pick&.pick
         end
         note = entry.note.to_s.strip
         unless note.empty?

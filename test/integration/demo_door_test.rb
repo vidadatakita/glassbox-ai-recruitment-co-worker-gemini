@@ -30,29 +30,36 @@ class DemoDoorTest < ActionDispatch::IntegrationTest
       assert_select "input[type=password]", count: 0
       assert_select "form form", { count: 0 }, "a form inside a form (house hard rule)"
       assert_select "[disabled]", count: 0
+      # The auth layout's card logo and the page's own logo once both rendered (17 Oct 2026).
+      assert_select "img[src*='glassbox-logo']", { count: 1 }, "the logo shows once"
       assert_includes response.body, "invented"
-      %w[HR\ owner Reviewer Owner].each { |title| assert_includes response.body, "Enter as #{title}" }
+      ["HR Admin", "HR Manager", "Superadmin"].each { |title| assert_includes response.body, "Enter as #{title}" }
     end
   end
 
   test "entering a door signs the visitor into that role's seeded account and logs it as a demo sign-in" do
     in_demo_mode do
       assert_difference -> { SignInEvent.where(auth_method: "demo", outcome: "success").count }, 1 do
-        post "/demo", params: { role: "reviewer" }
+        post "/demo", params: { role: "hr_manager" }
       end
       assert_redirected_to "/staff"
       follow_redirect!
       assert_response :success
       assert_equal @reviewer.id, SignInEvent.order(:id).last.user_id
-      assert_includes response.body, @reviewer.name
+      assert_includes response.body, @reviewer.name # the first hr_manager account by id
+      post "/demo", params: { role: "superadmin" }
+      # The fixtures hold superadmin accounts too, so the door's account is any superadmin.
+      assert_equal "superadmin", SignInEvent.order(:id).last.user.role
     end
   end
 
-  test "an unknown door is refused, and the HR door lands on the staff screens" do
+  test "an unknown door (and the old five-role door names) is refused, and the HR Admin door lands on the staff screens" do
     in_demo_mode do
-      post "/demo", params: { role: "root" }
-      assert_redirected_to "/demo"
-      post "/demo", params: { role: "hr" }
+      %w[root hr reviewer owner].each do |door|
+        post "/demo", params: { role: door }
+        assert_redirected_to "/demo", door
+      end
+      post "/demo", params: { role: "hr_admin" }
       assert_redirected_to "/staff"
       assert_equal @hr.id, Session.order(:id).last.user_id
     end

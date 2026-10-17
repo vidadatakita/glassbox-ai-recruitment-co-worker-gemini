@@ -96,14 +96,17 @@ class EngineScreeningReviewerTest < ActiveSupport::TestCase
     cases.each_value { |p| assert_nil p.reload.current_decision, "no automatic decision for #{p.job_application.candidate.name}" }
   end
 
-  test "non-reviewer roles are refused by the service; nothing is written" do
+  # Three-role model (17 Oct 2026): review is an HR manager action. Both HR admin persons (old
+  # consultant and HR PIC) are refused; owner is now an HR manager and superadmin passes every role
+  # check, so neither is in the refused list any more.
+  test "HR admin persons are refused by the service; nothing is written" do
     p = screen(criteria_for(@job, wajib: "not_met"), "Calon Peran")
     result = p.screening_results.sole
-    %w[consultant admin hr_pic owner].each do |role|
+    %w[consultant hr_pic hr_admin].each do |role|
       error = assert_raises(Screening::Review::Refused, role) do
         Screening::Review.call(result:, reviewer: staff_user(role), verdict: "confirm")
       end
-      assert_includes error.message, "Only a reviewer"
+      assert_includes error.message, "Only the HR Manager"
     end
     assert_equal 0, ScreeningReview.count
     assert_nil p.reload.current_decision

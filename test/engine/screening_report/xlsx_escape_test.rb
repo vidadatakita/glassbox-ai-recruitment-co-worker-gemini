@@ -33,9 +33,12 @@ class Engine08XlsxEscapeTest < ActionDispatch::IntegrationTest
     ScreeningReport::RecordUserRecommendation.call(application: p1.job_application, user: staff_user("hr_pic"), user_name: payload, pick: "lanjut")
   end
 
+  # Exported as superadmin: since the three-role model (17 Oct 2026) it is the only role that sees
+  # names and contacts before the gate, so it is the only viewer for whom every payload reaches the
+  # Name, Email and WhatsApp cells unmasked.
   test "every D62 h8 prefix and DDE payload in Name, Last position, Email and WhatsApp number is text with exactly one leading apostrophe" do
     PAYLOADS.each_with_index { |p, i| plant(p, i) }
-    x = export_as("consultant")
+    x = export_as("superadmin")
     h = x[:header]
     cols = ["Name", "Last position", "Email", "WhatsApp number"].map { |c| h.index(c) || flunk("column #{c} missing") }
     data = x[:rows][4, PAYLOADS.size]
@@ -55,7 +58,7 @@ class Engine08XlsxEscapeTest < ActionDispatch::IntegrationTest
     @job.update_columns(title: "=HYPERLINK(\"http://contoh.example\")")
     _a, p1, _p2 = e8_applicant(@job, @s1, @s2, name: "Uji Judul")
     e8_result(p1, score: 70)
-    x = export_as("consultant")
+    x = export_as("superadmin")
     assert x[:rows][0].first.start_with?("Screening report · ="), "masthead starts with fixed text"
     refute x[:all].include?("<f>HYPERLINK"), "the job title became a formula"
   end
@@ -65,11 +68,12 @@ class Engine08XlsxEscapeTest < ActionDispatch::IntegrationTest
   # file), not for the prefix list.
   test "probe outside the list: leading space, full-width equals, newline-first never become formulas" do
     [" =1+1", "  @SUM(A1)", "＝1+1", "＋1", "\n=1+1"].each_with_index { |p, i| plant(p, i) }
-    x = export_as("consultant")
+    x = export_as("superadmin")
     assert_equal 0, x[:all].scan(/<f>(?!IF\(D)/).size, "a formula other than the band in the file"
   end
 
-  test "blind HR PIC export: no Email / WhatsApp columns, no name, CONFIDENTIAL footer without model or prompt, -anonim- filename" do
+  # The HR admin (old HR PIC + consultant) is blind before the gate under the three-role model.
+  test "blind HR admin export: no Email / WhatsApp columns, no name, CONFIDENTIAL footer without model or prompt, -anonim- filename" do
     _a, p1, _p2 = e8_applicant(@job, @s1, @s2, name: "Rahasia Nama Uji", email: "rahasia.e8@uji.example", phone: "0813-5555-0000")
     e8_result(p1, score: 70)
     x = export_as("hr_pic")

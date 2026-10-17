@@ -52,8 +52,10 @@ class Engine08BlindViewTest < ActionDispatch::IntegrationTest
     out
   end
 
-  test "HR PIC and owner before the gate closes: no name, email or phone on any channel, numbered instead" do
-    %w[hr_pic owner].each do |role|
+  # Three roles (17 Oct 2026): both HR Admin people and both HR Manager people are blind until the
+  # gate closes; only the superadmin sees identity before it.
+  test "the HR Admin and the HR Manager before the gate closes: no name, email or phone on any channel, numbered instead" do
+    %w[hr_pic consultant owner reviewer].each do |role|
       seen = visit_all(role)
       assert_no_identity(seen[:list], "#{role} list")
       assert_no_identity(seen[:detail], "#{role} detail")
@@ -74,10 +76,10 @@ class Engine08BlindViewTest < ActionDispatch::IntegrationTest
     end
   end
 
-  # Control for the test above: the same channels DO carry the identity for the consultant, so a
+  # Control for the test above: the same channels DO carry the identity for the superadmin, so a
   # refute there is not passing on an empty page.
-  test "control: the consultant sees names and contacts on list, detail and xlsx; the export is not -anonim-" do
-    seen = visit_all("consultant")
+  test "control: the superadmin sees names and contacts on list, detail and xlsx; the export is not -anonim-" do
+    seen = visit_all("admin")
     [NAME_A, "wulan.e8@uji.example", "0813-7777-1111"].each do |s|
       assert_includes seen[:list], s
       assert_includes seen[:xlsx][:all], s
@@ -89,9 +91,10 @@ class Engine08BlindViewTest < ActionDispatch::IntegrationTest
     assert_includes seen[:xlsx][:header], "WhatsApp number"
   end
 
-  test "after the gate closes: HR PIC names and contacts; owner names only; reviewer names only; consultant both" do
+  test "after the gate closes: the HR Admin names and contacts; the HR Manager names only; the superadmin both" do
     close_gate!
-    expect = { "hr_pic" => [true, true], "owner" => [true, false], "reviewer" => [true, false], "consultant" => [true, true] }
+    expect = { "hr_pic" => [true, true], "consultant" => [true, true], "owner" => [true, false], "reviewer" => [true, false],
+               "admin" => [true, true] }
     expect.each do |role, (names, contacts)|
       seen = visit_all(role)
       [[seen[:list], "list"], [seen[:detail], "detail"], [seen[:xlsx][:all], "xlsx"]].each do |body, where|
@@ -104,19 +107,26 @@ class Engine08BlindViewTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "reviewer never sees contacts even while the gate is open (stricter than the shared rule), but sees names" do
+  # Three roles: the HR Manager (old reviewer) is now blind to names too while the gate is open, and
+  # never sees contacts; the superadmin on the same pages is the control that the data is there.
+  test "the HR Manager sees neither names nor contacts while the gate is open; the superadmin sees both" do
     seen = visit_all("reviewer")
-    assert seen[:list].include?(NAME_A), "control: reviewer sees names"
+    refute seen[:list].include?(NAME_A), "the HR Manager saw a name before the gate closed"
     refute seen[:list].include?("wulan.e8@uji.example"), "reviewer saw an email on the list"
     refute seen[:detail].include?("0813-7777-1111"), "reviewer saw a phone on the detail"
+    control = visit_all("admin")
+    assert control[:list].include?(NAME_A), "control: the superadmin sees names"
+    assert control[:detail].include?("0813-7777-1111"), "control: the superadmin sees the phone"
   end
 
-  test "admin is refused every report route; an anonymous visitor is sent to log in" do
+  # Three roles: the superadmin passes every role check, so no signed-in role is refused the report
+  # any more; the refusal half is the anonymous visitor.
+  test "the superadmin reaches every report route; an anonymous visitor is sent to log in" do
     sign_in_as staff_user("admin")
     [staff_job_screening_report_path(@job), staff_job_screening_report_candidate_path(@job, @app_a.id),
      staff_job_screening_report_export_path(@job)].each do |path|
       get path
-      assert_redirected_to staff_jobs_path, "admin reached #{path}"
+      assert_response :success, "the superadmin was refused #{path}"
     end
     sign_out
     get staff_job_screening_report_export_path(@job)
@@ -165,7 +175,7 @@ class Engine08BlindViewTest < ActionDispatch::IntegrationTest
   test "FINDING probe: every 'Download answer' link the report shows opens for the person it is shown to (no dead link)" do
     require Rails.root.join("db/seeds/demo_screening_report").to_s
     _open, closed = DemoScreeningReport.run(company:, hr: staff_user("hr_pic"), consultant: staff_user("consultant"), reviewer: staff_user("reviewer"))
-    a = JobApplication.joins(:candidate).find_by!(job: closed, candidates: { name: "Kandidat Contoh A" })
+    a = JobApplication.joins(:candidate).find_by!(job: closed, candidates: { name: "Sample Candidate A" })
     shown = {}
     %w[consultant hr_pic owner reviewer].each do |role|
       sign_in_as staff_user(role)

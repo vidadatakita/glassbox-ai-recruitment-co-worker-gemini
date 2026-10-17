@@ -13,5 +13,20 @@
     <p class="mb-0">The applicant's CV and contact details are shown to HR once the screening decision is confirmed (screening stage closed). The DataKita consultant contacts the applicant until then.</p>
     <% end %>
     <p class="text-muted mt-2 mb-0">Channel: <%= application.channel_code.presence || "direct" %>. Consent withdrawn: <%= wib(application.consent_withdrawn_at) || "no" %>.</p>
+    <%# Access links for HR (17 Oct 2026): this record's own address, to share with a colleague who may open
+        it, and the vacancy's public apply page. The applicant's personal status link is never shown here:
+        the link itself is never stored, by design (see the card's subtitle). %>
+    <div class="access-links mt-3">
+      <label class="form-label" for="access-record-<%= application.id %>">This applicant's record (staff sign-in required)</label>
+      <div class="access-links__row">
+        <input class="form-control" id="access-record-<%= application.id %>" type="text" readonly value="<%= staff_application_url(application) %>" onclick="this.select()">
+        <%= link_to staff_application_path(application, anchor: "score-matrix"), class: "btn btn-light", title: "Go to the score matrix" do %><i class="fa fa-table" aria-hidden="true"></i><span class="visually-hidden">Score matrix</span><% end %>
+      </div>
+      <label class="form-label mt-2" for="access-apply-<%= application.id %>">The vacancy's apply page (public, what applicants see)</label>
+      <div class="access-links__row">
+        <input class="form-control" id="access-apply-<%= application.id %>" type="text" readonly value="<%= lamar_url(application.job.public_code) %>" onclick="this.select()">
+        <%= link_to lamar_path(application.job.public_code), class: "btn btn-light", target: "_blank", rel: "noopener", title: "Open the apply page" do %><i class="fa fa-external-link" aria-hidden="true"></i><span class="visually-hidden">Open the apply page</span><% end %>
+      </div>
+    </div>
   </div>
 </div>

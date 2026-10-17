@@ -18,9 +18,9 @@ class DemoSessionsController < ApplicationController
 
   # Door => role of the seeded account it opens. The seed creates one account per role.
   DOORS = {
-    "hr" => { role: "hr_pic", title: "HR owner", does: "Writes the brief with AI help, releases the ad, and takes every Continue / Do not continue decision with a written reason." },
-    "reviewer" => { role: "reviewer", title: "Reviewer", does: "Reads each redacted CV and presses Send to Gemini. Nothing reaches the model before that click." },
-    "owner" => { role: "owner", title: "Owner", does: "Sees the passed candidates beside the salary band and agrees the number. The AI never sees money." }
+    "hr_admin" => { role: "hr_admin", title: "HR Admin", does: "Writes the brief and the ad with AI help, opens the portal, starts the screening, and takes every Continue / Do not continue decision with a written reason." },
+    "hr_manager" => { role: "hr_manager", title: "HR Manager", does: "Reads each redacted CV and presses Send to Gemini, scores the technical test, and agrees the salary. The AI never sees money." },
+    "superadmin" => { role: "superadmin", title: "Superadmin", does: "Can do every step, from the job ad to the system settings, to walk the whole flow alone." }
   }.freeze
 
   def show

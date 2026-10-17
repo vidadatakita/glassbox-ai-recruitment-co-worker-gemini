@@ -1,6 +1,6 @@
 require "test_helper"
 
-# The example board published with the blueprint (artifact v9): 12 candidates, five stages.
+# The example board published with the blueprint (blueprint version 9): 12 candidates, five stages.
 # Expected values below were computed independently of this code. If a change to the
 # scoring core moves any of them, the change is wrong until proven otherwise.
 class Scoring::OracleTest < ActiveSupport::TestCase

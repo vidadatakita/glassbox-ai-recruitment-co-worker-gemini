@@ -1,0 +1,51 @@
+/* Layout pass, 17 Oct 2026 (Vida: every layout proper, responsive, not too much information).
+   Presentational rules only; loaded after workflow.css so they apply without !important. */
+
+/* ===== Screening report: list (/staff/jobs/:id/screening-report) and candidate detail ===== */
+
+/* Candidate tiles: five equal tiles (see _candidate_metrics). Words such as "Not given by applicant"
+   were set larger than "5/5", so the row read as two groups; every value now has one size and may
+   wrap instead of widening its tile. */
+.screening-report .report-metrics .loan-index-metric strong { font-size: 1.2rem; line-height: 1.2; white-space: normal; overflow-wrap: break-word; }
+/* A flex column sizes to its content unless it may shrink: without this the long budget words
+   made the last tiles wider than the first three. */
+.screening-report .report-metrics > [class*="col-"], .screening-report .report-metrics .loan-index-metric > div { min-width: 0; }
+
+/* "Screening label" in the header jumps here; keep the card's title clear of the sticky header. */
+.screening-report #label-analisa { scroll-margin-top: 5rem; }
+
+/* Education / Latest experience: the caption above a quote shown on its own (see _background). */
+.report-quote-caption { margin: 0 0 .15rem; font-size: .6875rem; font-weight: 600; color: #63666A; text-transform: uppercase; letter-spacing: .04em; }
+
+/* Long CV quotes and requirement text wrap instead of forcing the card wider. */
+.screening-report .report-quote, .screening-report .report-criteria td { overflow-wrap: anywhere; }
+
+/* Stacked applicant cards (the list table below 768 px, screening_report.css). The old flex row
+   pushed every child to the right edge, so a value made of two parts (score + note) split across
+   the card and plain text sat left: three alignments in one card. One grid instead: label in a
+   fixed column, value left-aligned in the rest. A cell with no value (.is-empty, set in _table)
+   is dropped so the card lists only what is known. */
+@media (max-width: 767.98px) {
+  .screening-report .report-table td[data-label] { display: grid; grid-template-columns: 8.75rem minmax(0, 1fr); gap: .75rem; align-items: baseline; }
+  .screening-report .report-table td[data-label] > * { text-align: left; }
+  .screening-report .report-table td[data-label]::before { font-size: .75rem; }
+  .screening-report .report-table td.is-empty { display: none; }
+  /* The grid above outranks screening_report.css's rule hiding the row number; keep it hidden. */
+  .screening-report .report-table td[data-label="No"] { display: none; }
+  .screening-report .report-table .report-cell__value .report-cell__note { display: inline; margin: 0 0 0 .35rem; }
+  /* Salary and Label have no value wrapper (see _table): value and caption are two grid items,
+     so the caption is placed under the value, in the value column. */
+  .screening-report .report-table td.report-cell--pair { row-gap: .1rem; }
+  .screening-report .report-table td.report-cell--pair > * { justify-self: start; }
+  .screening-report .report-table td.report-cell--pair .report-cell__note { grid-column: 2; margin: 0; }
+}
+
+/* Criteria table on a phone: each requirement is its own block (.table-stack in workflow.css).
+   That rule only lifts the overflow for .card-body.table-responsive; here the wrapper is a plain
+   .table-responsive, so it is lifted here, and the quote takes the full width of the block. */
+@media (max-width: 575.98px) {
+  .screening-report .table-responsive:has(> .report-criteria) { overflow-x: visible; }
+  .screening-report .report-criteria td.report-criteria__quote { grid-column: 1 / -1; }
+  .screening-report .report-criteria td:first-child { font-size: .875rem; }
+  .screening-report .report-criteria td { white-space: normal; }
+}

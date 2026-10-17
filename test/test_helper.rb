@@ -1,6 +1,13 @@
 ENV["RAILS_ENV"] ||= "test"
 require_relative "../config/environment"
 require "rails/test_help"
+
+# Draw the routes NOW, with the test environment's settings. Rails 8 draws them lazily on first use,
+# and config/routes.rb cuts routes when DEMO_MODE=1: a test that seeds under DEMO_MODE=1 (the demo
+# seed and page-tour tests) would otherwise draw the cut set for its whole worker, and every later test
+# in that worker would fail on a missing route helper, depending on test order (17 Oct 2026).
+# Tests that need the cut set reload the routes themselves (test/config/demo_routes_test.rb).
+Rails.application.reload_routes_unless_loaded
 require_relative "test_helpers/session_test_helper"
 
 Dir[Rails.root.join("test/support/**/*.rb")].each { |f| require f }

@@ -5,7 +5,6 @@
 <div class="card custom-card test-scoring-item" id="jawaban-<%= attempt.id %>">
   <div class="card-header justify-content-between flex-wrap gap-2">
     <div class="card-title"><%= candidate_label(row.participation.job_application) %></div>
-    <% unless attempt.repo_link? %><span class="portal-state portal-state--<%= attempt.answer_scan_state == "clean" ? "success" : "warning" %>"><%= attempt.scan_label %></span><% end %>
   </div>
   <div class="card-body">
     <dl class="job-brief-facts job-brief-facts--inline">
@@ -19,16 +18,26 @@
       <% end %>
     </dl>
     <%# Who may download is feature 07's one rule (TechnicalTests.answer_downloadable_by?); a repository
-        link answer has no file to download (its URL is shown above). %>
-    <% if !attempt.repo_link? && TechnicalTests.answer_downloadable_by?(current_user, row.participation.stage.job) %>
-      <p class="mb-3"><%= label_link "Download answer", "fa-download", answer_link(attempt), purpose: :neutral %>
-        <span class="text-muted small ms-2">File not scanned by antivirus: open it on a safe computer.</span></p>
+        link answer has no file to download (its URL is shown above).
+        The scan state is said ONCE, as a badge just before the download (it used to repeat in the card
+        header and again in the helper text). It renders for every file answer, also for a reader who
+        may not download, so nobody loses the scan state; the full warning sits in its title. %>
+    <% unless attempt.repo_link? %>
+      <% scan_clean = attempt.answer_scan_state == "clean" %>
+      <% scan_note = "#{attempt.scan_label}: open the file on a safe computer." %>
+      <div class="test-scoring-item__action mb-3">
+        <span class="portal-state portal-state--<%= scan_clean ? "success" : "warning" %> test-scoring-scan" title="<%= scan_note %>"><i class="fa fa-<%= scan_clean ? "check" : "exclamation-triangle" %> me-1" aria-hidden="true"></i><%= attempt.scan_label %></span>
+        <% if TechnicalTests.answer_downloadable_by?(current_user, row.participation.stage.job) %>
+          <%= label_link "Download answer", "fa-download", answer_link(attempt), purpose: :neutral, title: scan_note %>
+          <span class="text-muted small test-scoring-item__helper">Open it on a safe computer.</span>
+        <% end %>
+      </div>
     <% end %>
     <% if can_score && Screening::Config.enabled? && TechnicalTests::AiScore.allowed?(current_user, attempt) %>
       <%# The reviewer chooses: score by hand below, or ask the AI for a proposal first (preview, then send). %>
-      <p class="mb-3"><%= link_to staff_test_attempt_ai_path(attempt), class: "btn btn-outline-primary btn-sm ai-btn" do %>
+      <div class="test-scoring-item__action mb-3"><%= link_to staff_test_attempt_ai_path(attempt), class: "btn btn-outline-primary btn-sm ai-btn" do %>
         <%= render "staff/shared/ai_sparkle" %><span><%= local_assigns[:ai] ? "Refresh AI advice" : "Ask for AI advice" %></span>
-      <% end %><span class="text-muted small ms-2">Optional. Or score it yourself below.</span></p>
+      <% end %><span class="text-muted small test-scoring-item__helper">Optional. Or score it yourself below.</span></div>
     <% end %>
     <% if local_assigns[:ai] && local_assigns[:ai].payload["summary"].present? %>
       <div class="alert alert-primary job-brief-notice" role="status"><%= render "staff/shared/ai_sparkle", size: 20 %>

@@ -9,7 +9,7 @@
       <div class="border-bottom pb-3 mb-3">
         <p class="mb-1"><strong><%= candidate_label(application) %></strong> · <%= application.job.title %> · received <%= wib(objection.received_at) %></p>
         <p class="mb-2"><%= objection.text %></p>
-        <% if %w[consultant reviewer].include?(current_user.role) %>
+        <% if %w[hr_admin hr_manager superadmin].include?(current_user.role) %>
           <%= form_with url: staff_objection_answer_path(objection), method: :post, data: { turbo: false, submit_guard: true } do %>
             <div class="row g-3">
               <div class="col-md-4">

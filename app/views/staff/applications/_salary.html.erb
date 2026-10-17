@@ -46,7 +46,7 @@
       <% end %>
     </div>
 
-    <% if current_user.role == "owner" %>
+    <% if current_user.role.in?(%w[hr_manager superadmin]) %>
       <% amount_error = flash[:salary_field] == "amount" %>
       <% note_error = flash[:salary_field] == "note" %>
       <%= form_with url: staff_application_salary_path(application), method: :post, class: "mt-3", data: { turbo: false, submit_guard: true } do %>
@@ -60,7 +60,7 @@
                   data-salary-ai="<%= rec.amount if rec&.ready? %>" data-band-min="<%= job.salary_min %>" data-band-max="<%= job.salary_max %>"
                   placeholder="Required when outside the band or different from the AI advice."><%= flash[:salary_note] %></textarea>
         <% if note_error %><div class="invalid-feedback d-block"><%= flash[:alert] %></div><% end %>
-        <div class="mt-2"><%= label_button(agreement ? "Change the agreed salary" : "Approve salary", "fa-check", purpose: :approve) %></div>
+        <div class="mt-2 action-row"><%= label_button(agreement ? "Change the agreed salary" : "Approve salary", "fa-check", purpose: :approve) %></div>
       <% end %>
     <% else %>
       <p class="text-muted mt-3 mb-0"><%= agreement ? "" : "Waiting for the owner's decision." %></p>

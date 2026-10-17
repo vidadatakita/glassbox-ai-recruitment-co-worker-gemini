@@ -46,7 +46,9 @@ class Progression::ScoreManualTest < ActiveSupport::TestCase
   end
 
   test "refusals: wrong role, bad values, a future date, a second score, an interview or gate stage" do
-    assert_match(/Only the HR owner/, refused { score(actor: staff_user("consultant")) })
+    # Three roles (17 Oct 2026): the consultant is an hr_admin now and may score; the hr_manager may not.
+    assert_match(/Only the HR Admin/, refused { score(actor: staff_user("owner")) })
+    assert_match(/Only the HR Admin/, refused { score(actor: staff_user("reviewer")) })
     %w[abc 101 -5 7,5,5].each { |bad| assert_match(/0 to 100/, refused { score(value: bad) }, bad) }
     assert_match(/in the future/, refused { score(tested_on: (Date.current + 2).iso8601) })
     assert_match(/not recognised/, refused { score(tested_on: "13-10-2026") })

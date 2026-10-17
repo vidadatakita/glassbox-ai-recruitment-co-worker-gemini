@@ -19,12 +19,17 @@ module ScreeningHelper
   # yet judged it, no screen shows the AI's score or outcome for it, so the consultant's judgement is
   # not anchored on the AI. Engine 06 pins this on every staff page (staff_screens_test.rb:51); the
   # AI Builder Cup applicant page (2026-10-11) printed the score, which the 2026-10-12 merge hid.
-  # Only the CONSULTANT is blinded: D13 protects the consultant's own judgement (feature 06 §4.1
-  # step 7). HR and the other roles do not judge calibration, so they see the score (GlassBox Team,
-  # 2026-10-13: HR saw "disembunyikan" on every new job's first CVs).
+  # Only the JUDGE is blinded: D13 protects the consultant's own judgement (feature 06 §4.1 step 7).
+  # Others do not judge calibration, so they see the score (GlassBox Team, 2026-10-13: HR saw
+  # "disembunyikan" on every new job's first CVs). Three roles (17 Oct 2026): the judge is the HR Admin
+  # (or superadmin) who is the job's consultant, or any of them while the job has none assigned; the
+  # role alone no longer tells the judge apart, so the person is checked.
   def ai_result_blinded?(participation)
-    return false unless current_user&.role == "consultant"
+    return false unless current_user&.role.in?(%w[hr_admin superadmin])
     return false unless participation&.stage&.code == "S1"
+
+    consultant_id = participation.stage.job.consultant_id
+    return false if consultant_id.present? && consultant_id != current_user.id
 
     calibration = Screening::Calibration.new(participation.stage.job)
     row = calibration.applicable? && calibration.rows.find { |r| r.participation.id == participation.id }

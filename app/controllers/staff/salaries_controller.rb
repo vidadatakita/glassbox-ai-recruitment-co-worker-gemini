@@ -2,8 +2,8 @@ module Staff
   # AI Builder Cup step 08 on the applicant page: the AI's band position (HR PIC or owner asks) and
   # the owner's agreed salary. Rules in Progression::Salary.
   class SalariesController < BaseController
-    before_action -> { require_role!(:hr_pic, :owner) }, only: :recommend
-    before_action -> { require_role!(:owner) }, only: :agree
+    before_action -> { require_role!(:hr_admin, :hr_manager) }, only: :recommend
+    before_action -> { require_role!(:hr_manager) }, only: :agree
     before_action { @application = org_find(JobApplication, params[:application_id]) }
 
     def recommend

@@ -3,7 +3,7 @@ module Staff
   class ApplicationsController < BaseController
     # A candidate's detail, contact data and CV: the people who run or decide the job (BP §1.2;
     # D40: the owner yes). Admin manages clients, packages and users, not candidates (test engine F13).
-    before_action -> { require_role!(:hr_pic, :consultant, :reviewer, :owner) }
+    before_action -> { require_role!(:hr_admin, :hr_manager) }
     def show
       @application = org_find(JobApplication.includes(:candidate, participations: :stage), params[:id])
       @job = @application.job

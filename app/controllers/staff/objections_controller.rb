@@ -2,7 +2,7 @@ module Staff
   # Answering an objection (E21). Answered by a consultant or reviewer; the answer is shown to
   # the candidate on their status page.
   class ObjectionsController < BaseController
-    before_action -> { require_role!(:consultant, :reviewer) }
+    before_action -> { require_role!(:hr_admin, :hr_manager) }
 
     def answer
       org_find(Objection.open, params[:id]).answer!(user: current_user, outcome: params[:outcome], answer: params[:answer])

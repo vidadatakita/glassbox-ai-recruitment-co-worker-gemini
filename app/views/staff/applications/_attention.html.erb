@@ -1,0 +1,23 @@
+<%# What needs a person on this applicant, right under the header (layout pass, 17 Oct 2026): a CV
+    screening that failed, was unreadable or was not sent, with the way to fix it as a button. %>
+<% s1 = application.participations.joins(:stage).find_by(stages: { code: "S1" }) %>
+<% state = s1&.screening_state %>
+<% if %w[screening_failed cv_unreadable not_sent].include?(state) %>
+  <div class="attention-card" role="alert">
+    <i class="fa fa-exclamation-triangle attention-card__icon" aria-hidden="true"></i>
+    <div class="attention-card__text">
+      <strong>CV screening needs a person.</strong>
+      <span><%= case state
+                when "cv_unreadable" then "The CV has no readable text (for example a scan). Paste the CV text or ask the applicant for a new CV."
+                when "not_sent" then "The CV was not sent to the AI. Decide this applicant's CV screening by hand."
+                else "#{ScreeningBoard.failure_label(s1)}. No score was produced."
+                end %></span>
+    </div>
+    <div class="attention-card__actions">
+      <%= label_link "Open CV screening", "fa-arrow-right", staff_job_path(application.job, anchor: "screening"), purpose: :neutral, icon_end: true %>
+      <% if state != "not_sent" && current_user.role.in?(%w[hr_admin superadmin]) %>
+        <%= label_link "Paste CV text", "fa-paste", staff_participation_cv_text_path(s1) %>
+      <% end %>
+    </div>
+  </div>
+<% end %>

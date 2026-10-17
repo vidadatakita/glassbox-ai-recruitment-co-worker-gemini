@@ -1,47 +1,56 @@
 <%# The Applicant portal box (BP §3.6 A). Each action is its own form: no form inside another. %>
 <% window = board.window %>
-<div class="hris-form-card">
+<div class="hris-form-card" id="applicant-portal">
   <div class="hris-form-card__header">
     <div class="hris-form-card__icon"><i class="fa fa-globe"></i></div>
     <div><h3>Applicant portal <%= window_badge(window) %></h3>
-      <p>Open it when the vacancy is ready, close it when there are enough applications. Every change is recorded with a name and time.
-        <br><span class="ai-tier"><%= ai_models_locked_line(job) %></span></p></div>
+      <p>Open it when the vacancy is ready, close it when there are enough applications. Every change is recorded with a name and time.</p></div>
   </div>
   <div class="hris-form-card__body">
     <% if job.ad_approved_at.nil? && !job.brief_complete? %>
-      <%# Feature 03: an ad is approved only for a complete brief; say why and where to finish it. %>
-      <p class="mb-2">The job ad cannot be approved yet because the vacancy brief is incomplete. The portal can be opened once the brief is complete and HR has approved the job ad.</p>
+      <%# Feature 03: the portal opens only for a complete brief; say why and where to finish it. %>
+      <% open_problems = Briefs::BriefCheck.new(job).problems.group_by(&:step) %>
+      <% if open_problems.empty? %>
+        <p class="mb-2">All brief steps are filled in. Complete the brief on its last step; then the applicant portal can open.</p>
+        <p class="mb-3"><%= link_to "Complete the brief", (TestCases::Requirement.applies?(job) ? staff_job_test_case_step_path(job) : staff_job_brief_step_path(job, 4)), class: "btn btn-sm btn-primary portal-missing__fix" %></p>
+      <% else %>
+      <p class="mb-2">The applicant portal opens once the vacancy brief is complete. Still missing:</p>
+      <ul class="portal-missing">
+        <% open_problems.sort.each do |step, problems| %>
+          <li>
+            <span class="portal-missing__step">Step <%= step %></span>
+            <span class="portal-missing__items"><%= problems.map(&:message).join(" ") %></span>
+            <%= link_to "Fix step #{step}", (step.to_i == 5 ? staff_job_test_case_step_path(job) : staff_job_brief_step_path(job, step)), class: "btn btn-sm btn-primary portal-missing__fix" %>
+          </li>
+        <% end %>
+      </ul>
+      <% end %>
       <div class="d-flex flex-wrap gap-2">
         <%= link_to staff_job_brief_path(job), class: "btn btn-sm btn-primary-light", title: "View vacancy brief details" do %>
           <i class="fa fa-plus" aria-hidden="true"></i> View brief
         <% end %>
-        <%# The ad can be written (or drafted by the AI) before the brief is complete; approval waits. %>
+        <%# The ad can be written (or drafted by the AI) before the brief is complete; the open waits. %>
         <%= link_to staff_job_ad_path(job), class: "btn btn-sm btn-light" do %>
           <%# A view action uses fa-plus (house rule); writing a new ad keeps the bullhorn. %>
           <i class="fa <%= job.ad_text.present? ? "fa-plus" : "fa-bullhorn" %>" aria-hidden="true"></i> <%= job.ad_text.present? ? "View & edit job ad" : "Write job ad" %>
         <% end %>
       </div>
-    <% elsif job.ad_approved_at.nil? && job.ad_text.blank? %>
-      <p>The job ad has not been written yet. Write it (the AI can help), then HR approves it before the Applicant portal opens.</p>
+    <% elsif job.ad_text.blank? && job.ad_approved_at.nil? %>
+      <p>The job ad has not been written yet. Write it (the AI can help); opening the portal shows it to applicants.</p>
       <%= label_link "Write job ad", "fa-bullhorn", staff_job_ad_path(job), purpose: :neutral %>
-    <% elsif job.ad_approved_at.nil? %>
-      <p>The job ad is written and awaits HR approval. The portal can be opened once the job ad is approved.
-        <% if Array(job.ad_flags).any? %><span class="text-warning"><%= job.ad_flags.size %> <%= "sentence".pluralize(job.ad_flags.size) %> in the job ad need checking.</span><% end %></p>
-      <div class="d-flex flex-wrap gap-2">
-        <%= label_link "View & edit job ad", "fa-plus", staff_job_ad_path(job), purpose: :neutral %>
-        <% if current_user.role == "hr_pic" && Array(job.ad_flags).empty? %>
-          <%= form_with url: approve_ad_staff_job_path(job), method: :patch, data: { turbo: false, submit_guard: true } do %>
-            <%= label_button "Approve job ad", "fa-check", purpose: :approve %>
-          <% end %>
-        <% end %>
-      </div>
     <% else %>
+      <% if job.ad_approved_at.nil? && Array(job.ad_flags).any? %>
+        <p class="text-warning mb-2"><%= job.ad_flags.size %> <%= "sentence".pluralize(job.ad_flags.size) %> in the job ad <%= job.ad_flags.size == 1 ? "needs" : "need" %> checking before you open the portal.</p>
+      <% end %>
       <%= render "staff/shared/consent_blockers", blockers: Portal::ConsentReadiness.blockers(company: job.client_company) %>
-      <div class="mb-3"><%= label_link "View job ad", "fa-plus", staff_job_ad_path(job), purpose: :neutral %>
+      <div class="mb-3"><%= label_link(job.ad_approved_at ? "View job ad" : "View & edit job ad", "fa-plus", staff_job_ad_path(job), purpose: :neutral) %>
         <% if job.ad_text.blank? %><span class="text-muted small ms-2">This job ad was approved before it had a text, so applicants do not see a description yet.</span><% end %></div>
       <p class="mb-2">Application link: <span class="portal-link-copy"><%= lamar_url(job.public_code) %></span></p>
-      <p class="text-muted mb-3">Add <code>?ch=code</code> to the link per channel (for example <code>?ch=ig</code>) so the source of each application is recorded.</p>
-      <% if %w[hr_pic consultant].include?(current_user.role) %>
+      <details class="tech-details mb-3"><summary>Technical details</summary>
+        <p class="mb-1">Add <code>?ch=code</code> to the link per channel (for example <code>?ch=ig</code>) so the source of each application is recorded.</p>
+        <p class="mb-0 ai-tier"><%= ai_models_locked_line(job) %></p>
+      </details>
+      <% if %w[hr_admin superadmin].include?(current_user.role) %>
         <%# Only offer an action that can succeed: while S1 is closed (D40) or the consent is not
             complete (D38) the server refuses opening, so the box explains instead of offering a form. %>
         <% if window.first_stage_closed? %>
@@ -63,7 +72,7 @@
         <% else %>
           <%= render "staff/jobs/window_form", url: staff_job_portal_reopen_path(job), label: "Reopen", icon: "fa-unlock", reason: true %>
         <% end %>
-        <% if current_user.role == "consultant" %>
+        <% if current_user.role.in?(%w[hr_admin superadmin]) %>
           <p class="text-muted mt-2 mb-0">You act on behalf of HR; the action is recorded with your role.</p>
         <% end %>
       <% end %>

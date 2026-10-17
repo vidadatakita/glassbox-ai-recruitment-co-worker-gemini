@@ -16,7 +16,7 @@ module Staff
                 else JobBriefsController.suggestable?(job)
                 end
       unless allowed
-        refusal = { "5" => TestCases::Authority.edit_refusal(current_user, job), "ad" => "The job ad is approved by HR and cannot be changed." }
+        refusal = { "5" => TestCases::Authority.edit_refusal(current_user, job), "ad" => "The job ad is live and only the HR Admin can change it." }
         return redirect_to(back_to(job, step), alert: refusal.fetch(step, "AI advice is only for a brief that is not locked and has no applications yet."))
       end
 
