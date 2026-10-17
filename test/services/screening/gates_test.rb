@@ -43,7 +43,7 @@ class Screening::GatesTest < ActiveSupport::TestCase
   end
 
   test "the model is one setting with the D50 default" do
-    with_env("AI_MODEL" => nil, "AI_MODEL_HIGH" => nil) { assert_equal "gemini-3.8-pro", Screening::Config.model }
+    with_env("AI_MODEL" => nil, "AI_MODEL_HIGH" => nil) { assert_equal "gemini-3.8-flash", Screening::Config.model }
     with_env("AI_MODEL" => "gemini-3.5-flash-lite") { assert_equal "gemini-3.5-flash-lite", Screening::Config.model }
   end
 

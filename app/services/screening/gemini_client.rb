@@ -2,7 +2,9 @@ module Screening
   # The Google Gemini provider (AI_PROVIDER=gemini). Plain REST generateContent, no SDK.
   #
   # Two ways in, picked by which credentials exist:
-  # - AI_API_KEY (or credentials ai.api_key): the Gemini API (AI Studio). Easiest locally.
+  # - AI_API_KEY (or credentials ai.api_key): the Gemini API (AI Studio). Easiest locally. With
+  #   AI_API_KEY_ENDPOINT=vertex the key is a Vertex AI express-mode key instead (Google Cloud
+  #   console), sent to Vertex AI in GOOGLE_CLOUD_PROJECT (optional) at GOOGLE_CLOUD_LOCATION.
   # - otherwise the service account of the Google integrations (GOOGLE_SERVICE_ACCOUNT_JSON, see
   #   GoogleIntegration::Config): Vertex AI in that key's project, location GOOGLE_CLOUD_LOCATION
   #   (default "global"). This is what bin/gcp deploys; the account has roles/aiplatform.user.
@@ -23,6 +25,7 @@ module Screening
     def self.configured? = Config.api_key.present? || GoogleIntegration::Config.service_account_present?
 
     def self.credential_source
+      return "#{Config.api_key_source}, Vertex AI express mode" if Config.api_key.present? && ENV["AI_API_KEY_ENDPOINT"].to_s.strip == "vertex"
       return Config.api_key_source if Config.api_key.present?
       return "Vertex AI, service account (#{GoogleIntegration::Config.source(:service_account_json)})" if GoogleIntegration::Config.service_account_present?
 
@@ -38,7 +41,7 @@ module Screening
     end
 
     def count(content)
-      body = @api_key ? { generateContentRequest: { model: "models/#{@model}", **contents(content) } } : contents(content)
+      body = studio? ? { generateContentRequest: { model: "models/#{@model}", **contents(content) } } : contents(content)
       post("countTokens", body).fetch("totalTokens")
     end
 
@@ -72,7 +75,8 @@ module Screening
 
       usage = response["usageMetadata"] || {}
       Reply.new(model: response["modelVersion"].presence || @model, text:,
-                input_tokens: usage["promptTokenCount"], output_tokens: usage["candidatesTokenCount"])
+                input_tokens: usage["promptTokenCount"], output_tokens: usage["candidatesTokenCount"],
+                thinking_tokens: usage["thoughtsTokenCount"])
     end
 
     def post(method, body)
@@ -80,16 +84,27 @@ module Screening
       post_json(uri, headers, body)
     end
 
+    # The AI Studio endpoint: an API key that is not marked as a Vertex AI express-mode key.
+    def studio? = @api_key.present? && ENV["AI_API_KEY_ENDPOINT"].to_s.strip != "vertex"
+
     def endpoint(method)
-      if @api_key
+      if studio?
         [URI("https://generativelanguage.googleapis.com/v1beta/models/#{@model}:#{method}"), { "x-goog-api-key" => @api_key }]
+      elsif @api_key
+        [vertex_uri(ENV["GOOGLE_CLOUD_PROJECT"].to_s.strip.presence, method), { "x-goog-api-key" => @api_key }]
       else
         key = GoogleIntegration::Config.service_account
-        location = ENV["GOOGLE_CLOUD_LOCATION"].to_s.strip.presence || "global"
-        host = location == "global" ? "aiplatform.googleapis.com" : "#{location}-aiplatform.googleapis.com"
-        path = "/v1/projects/#{key['project_id']}/locations/#{location}/publishers/google/models/#{@model}:#{method}"
-        [URI("https://#{host}#{path}"), { "Authorization" => "Bearer #{access_token(key)}" }]
+        [vertex_uri(key["project_id"], method), { "Authorization" => "Bearer #{access_token(key)}" }]
       end
+    end
+
+    # Without a project (express mode only) Google picks the location; some models exist only at "global".
+    def vertex_uri(project, method)
+      return URI("https://aiplatform.googleapis.com/v1/publishers/google/models/#{@model}:#{method}") if project.nil?
+
+      location = ENV["GOOGLE_CLOUD_LOCATION"].to_s.strip.presence || "global"
+      host = location == "global" ? "aiplatform.googleapis.com" : "#{location}-aiplatform.googleapis.com"
+      URI("https://#{host}/v1/projects/#{project}/locations/#{location}/publishers/google/models/#{@model}:#{method}")
     end
 
     def access_token(key)

@@ -55,6 +55,6 @@ class Engine08PipelineTest < ActiveSupport::TestCase
     schema = req.to_s
     assert_includes schema, "label_proposal"
     refute_includes schema, "over_qualified"
-    assert_equal "s1-2026-10-16.2", Screening::PROMPT_VERSION
+    assert_equal "s1-2026-10-16.4", Screening::PROMPT_VERSION
   end
 end

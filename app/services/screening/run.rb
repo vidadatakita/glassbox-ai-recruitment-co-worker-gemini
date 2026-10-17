@@ -65,13 +65,18 @@ module Screening
         return :awaiting_release
       end
       @release = release
-      judgements, protected_categories = parse(reply.text, rubric, extracted: text, redacted: release.cv_part)
-      if protected_categories.any?
+      # flags: the protected categories the model reported, plus AiClient::INSTRUCTION_FLAG.
+      judgements, flags = parse(reply.text, rubric, extracted: text, redacted: release.cv_part)
+      if (categories = flags - [AiClient::INSTRUCTION_FLAG]).any?
         # Category names only: they tell the redactor's owner which word list missed something.
-        Rails.logger.warn("[screening] participation=#{@participation.id} protected_attribute_seen categories=#{protected_categories.join(',')}")
+        Rails.logger.warn("[screening] participation=#{@participation.id} protected_attribute_seen categories=#{categories.join(',')}")
+      end
+      if flags.include?(AiClient::INSTRUCTION_FLAG)
+        # The flag only, never the text: it tells the owner of InjectionCheck's rules that one was missed.
+        Rails.logger.warn("[screening] participation=#{@participation.id} instruction_seen")
       end
       score = Score.compute(rubric, judgements)
-      persist(rubric, judgements, score, reply, protected_categories)
+      persist(rubric, judgements, score, reply, flags)
       Finalize.call(@job)
       :done
     rescue Errors::Base => e
@@ -130,9 +135,11 @@ module Screening
 
     # Returns { "R12" => { "judgement", "quote", "verified" } } for every criterion, or raises
     # Malformed. Structured output makes the SHAPE reliable; the per-job rules (every id exactly
-    # once, a judgement allowed for the tier) are checked here.
-    TOP_KEYS = %w[criteria protected_attribute_seen protected_attribute_categories report].freeze
-    CRITERION_KEYS = %w[id judgement quote].freeze
+    # once, a judgement allowed for the tier) are checked here. "quote" holds the criterion's
+    # passages joined (QuoteCheck.check); "verified" is true only when every passage was found.
+    TOP_KEYS = %w[criteria protected_attribute_seen protected_attribute_categories instruction_seen report].freeze
+    # "quote": the one-passage shape up to prompt s1-2026-10-16.3, read the same way (QuoteCheck.passages_of).
+    CRITERION_KEYS = %w[id quotes judgement quote].freeze
 
     def parse(text, rubric, extracted:, redacted:)
       @schema_breach = false
@@ -153,9 +160,7 @@ module Screening
         end
 
         @schema_breach = true if (entry.keys - CRITERION_KEYS).any?
-        quote = entry["quote"].to_s
-        by_id[id] = { "judgement" => judgement, "quote" => quote,
-                      "verified" => QuoteCheck.verified?(judgement:, quote:, extracted:, redacted:) }
+        by_id[id] = { "judgement" => judgement, **QuoteCheck.check(entry, judgement:, extracted:, redacted:) }
       end
       missing = rubric.criteria.map(&:key) - by_id.keys
       raise Errors::Malformed.new("malformed", "#{missing.size} requirement(s) not judged") if missing.any?
@@ -174,10 +179,21 @@ module Screening
       @report_attributes = report.attributes
       categories = protected_categories(data)
       categories = (categories + ["other"]).uniq if @schema_breach
+      categories += [AiClient::INSTRUCTION_FLAG] if instruction_seen?(data)
       [by_id, categories]
     rescue JSON::ParserError
       raise Errors::Malformed.new("malformed", "jawaban bukan JSON")
     end
+
+    # The model's instruction flag (prompt s1-2026-10-16.4): text in the CV written as an
+    # instruction to the AI. Seen -> AiClient::INSTRUCTION_FLAG joins the stored categories, so the
+    # review queue holds the result for a person exactly as for a protected attribute (the review
+    # reason stays "protected_attribute", the one value the database allows for a model flag; the
+    # report names the instruction). Present but not false (true, "yes", null) is read as seen:
+    # fail safe. Missing is read as not seen: answers in the shape up to .3 had no such flag, and
+    # Screening::InjectionCheck still holds every CV whose instruction its rules recognise before
+    # any call.
+    def instruction_seen?(data) = data.key?("instruction_seen") && data["instruction_seen"] != false
 
     # The model's protected-attribute flag (ADR 0004 line 3). Fail safe, not fail hard: a flag that
     # is missing or not in the schema's shape is read as "seen, category other", so the result goes

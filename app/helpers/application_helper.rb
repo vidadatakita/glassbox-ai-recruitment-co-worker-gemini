@@ -4,7 +4,7 @@ module ApplicationHelper
   # psychological-test score, data chat): a link to an undrawn route raises at render time.
   def demo_mode? = Glassbox::Settings.demo_mode?
 
-  # FLOW §9 rule 3: "Tier HIGH · gemini-3.8-pro" beside every AI result, so a judge sees which model produced
+  # FLOW §9 rule 3: "Tier HIGH · gemini-3.8-flash" beside every AI result, so a judge sees which model produced
   # which evidence (the one place a model id is shown to users, by team decision). job: the vacancy whose
   # locked mapping applies, when there is one.
   def ai_tier_badge(task, job: nil)

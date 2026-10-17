@@ -17,7 +17,16 @@ module Staff
     def update
       return write_with_ai if params[:ai].present?
 
-      result = Briefs::SaveAd.call(job: @job, actor: current_user, text: params[:ad_text], confirmed: params[:confirmed] == "1")
+      result = Briefs::SaveAd.call(job: @job, actor: current_user, text: params[:ad_text], confirmed: params[:confirmed] == "1",
+                                   reason: params[:flags_reason])
+      if result.needs_reason
+        # A live ad's text that names a protected attribute: the page comes back with what HR typed,
+        # the rule flags of that text and the reason field, nothing saved.
+        @text = params[:ad_text].to_s
+        @unsaved_flags = result.flags
+        flash.now[:alert] = result.error
+        return render(:edit, status: :unprocessable_content)
+      end
       return redirect_to(staff_job_ad_path(@job), alert: result.error) unless result.ok?
 
       notice = result.flags.any? ? "Job ad saved. #{result.flags.size} flags need checking before approval." : "Job ad saved. No sentence was flagged."

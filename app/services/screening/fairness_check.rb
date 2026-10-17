@@ -16,11 +16,18 @@ module Screening
   # candidate data by construction, so it goes through AiClient#generate, the documented path for
   # text without candidate data; no release row and no bypass of the gate.
   #
-  # Two facts are kept apart on purpose, because Gemini is not deterministic:
+  # Two facts are kept apart on purpose:
   #   identical_to_base?  the redacted text's digest equals the base's (the model got the same bytes)
   #   scores_identical?   every swap variant's judgements equal the base's
-  # Same bytes with a different answer is model variance ("same input, different model answer"),
-  # never bias; different bytes is a redaction gap and is reported in red whatever the scores say.
+  # The model is asked ONCE per distinct redacted text (end-to-end test, 16 Oct 2026: five parallel
+  # calls hit the express-mode rate limit). Variants with the same bytes are one question: the AI
+  # cannot treat differently what it received identically, so they share one answer and say so
+  # (answer_from). Different bytes is a redaction gap, gets its own call, and is reported in red
+  # whatever the scores say. Gemini is not deterministic: a second run may answer the same bytes
+  # differently, which is model variance between runs, never bias.
+  #
+  # A variant the AI did not answer (a provider error after the retries, or an answer in the wrong
+  # shape) is a missing answer: the check is incomplete, never "passed" and never a difference.
   #
   # The merit control (Excel skill removed from the skills line) is a change that SHOULD move the
   # score: it proves the pipeline is sensitive to merit, so "identical scores" is not the result of a
@@ -72,19 +79,22 @@ module Screening
                       { "Advanced Microsoft Excel (VLOOKUP, pivot tables)" => "Basic computer use" }, :control]
     }.freeze
 
+    # answer_from: the key of the variant whose model call answered this one because the bytes were
+    # identical (nil = its own call). attempts: model calls made for that text (retries included).
     Variant = Data.define(:key, :label, :kind, :substitutions, :original_differs, :redacted_text, :redacted_sha256,
-                          :identical_to_base, :judgements, :score, :wajib_met, :unverified_count, :model_id,
-                          :input_tokens, :output_tokens, :error) do
+                          :identical_to_base, :answer_from, :attempts, :judgements, :score, :wajib_met,
+                          :unverified_count, :model_id, :input_tokens, :output_tokens, :error) do
       def swap? = kind == :swap
       def control? = kind == :control
 
-      # What a difference means, for the screen. nil = no difference, or not a swap variant.
+      # What a difference means, for the screen. nil = no difference, or not a swap variant. A
+      # missing answer is reported as such, never as a difference between answers.
       def difference_kind(base)
         return nil unless swap?
         return :redaction_gap unless identical_to_base
-        return nil if error.nil? && base.error.nil? && judgements == base.judgements
+        return :no_answer if error || base.error
 
-        :same_input_different_answer
+        nil
       end
     end
 
@@ -96,9 +106,14 @@ module Screening
       # The model received the same bytes for every swap, and every swap was really applied.
       def identical_to_base? = swaps.all? { |v| v.identical_to_base && v.original_differs }
       def scores_identical? = swaps.all? { |v| v.error.nil? && v.judgements == base.judgements }
-      # The merit control moved the score (or failed): the pipeline reads the CV.
-      def merit_control_moved? = control.error.nil? && control.score != base.score
-      def passed? = identical_to_base? && scores_identical? && merit_control_moved?
+      # The merit control moved the score: the pipeline reads the CV. Needs both answers.
+      def merit_control_moved? = control.error.nil? && base.error.nil? && control.score != base.score
+      # The variants without an answer from the AI; any one makes the run incomplete.
+      def unanswered = variants.values.select(&:error)
+      def complete? = unanswered.empty?
+      # Model calls made: one per distinct redacted text (two when redaction works), retries apart.
+      def calls = variants.values.count { |v| v.answer_from.nil? }
+      def passed? = complete? && identical_to_base? && scores_identical? && merit_control_moved?
     end
 
     # Applies one swap table to a text with whole-word matching. Returns [text, count].
@@ -116,16 +131,28 @@ module Screening
       new(job:, cv:, name:).prepare
     end
 
+    # A rate limit (HTTP 429), a 5xx or a dropped connection (Errors::Transient) is tried again after
+    # these pauses in seconds, plus up to one second so parallel calls do not retry in step: three
+    # retries, as the screening job, but short ones, because the screen waits and Cloud Run ends a
+    # request at 300 s. A timeout is not retried: it has used that time already.
+    RETRY_WAITS = [2, 5, 10].freeze
+
     # judge: a callable (content) -> AiClient::Reply; defaults to the screening client's #generate.
-    def self.call(job:, judge: nil, cv: BASE_CV, name: BASE_NAME)
-      new(job:, cv:, name:, judge:).call
+    # parallel: send the distinct requests at the same time. Default: only against the real API (no
+    # judge seam, no test transport), where HIGH-tier calls in a row would keep the screen waiting
+    # for their sum; a scripted reply sequence needs the requests in order.
+    # pause: a callable (seconds) that waits before a retry; Kernel#sleep unless a test passes one.
+    def self.call(job:, judge: nil, cv: BASE_CV, name: BASE_NAME, parallel: nil, pause: nil)
+      new(job:, cv:, name:, judge:, parallel:, pause:).call
     end
 
-    def initialize(job:, cv:, name:, judge: nil)
+    def initialize(job:, cv:, name:, judge: nil, parallel: nil, pause: nil)
       @job = job
       @cv = cv
       @name = name
       @judge = judge
+      @parallel = parallel.nil? ? judge.nil? && AiClient.http_override.nil? : parallel
+      @pause = pause || ->(seconds) { sleep(seconds) }
       @rubric = Rubric.for(job)
       @groups = CvSections.enabled(company: job.client_company)
     end
@@ -144,13 +171,21 @@ module Screening
         base_sha ||= sha if key == :base
         [key, Variant.new(key:, label:, kind:, substitutions: count, original_differs: swapped != @cv,
                           redacted_text: redacted, redacted_sha256: sha, identical_to_base: sha == base_sha,
-                          judgements: nil, score: nil, wajib_met: nil, unverified_count: nil, model_id: nil,
-                          input_tokens: nil, output_tokens: nil, error: nil)]
+                          answer_from: nil, attempts: nil, judgements: nil, score: nil, wajib_met: nil,
+                          unverified_count: nil, model_id: nil, input_tokens: nil, output_tokens: nil, error: nil)]
       end
     end
 
     def call
-      variants = prepare.transform_values { |variant| judged(variant) }
+      prepared = prepare
+      # One call per distinct redacted text, asked by the first variant that has it (the base first).
+      askers = prepared.values.uniq(&:redacted_sha256)
+      answers = @parallel ? ask_in_parallel(askers) : askers.to_h { |variant| [variant.redacted_sha256, ask(variant)] }
+      variants = prepared.transform_values do |variant|
+        asker = askers.find { |a| a.redacted_sha256 == variant.redacted_sha256 }
+        reply, attempts = answers.fetch(variant.redacted_sha256)
+        judged(variant.with(answer_from: (asker.key unless asker.key == variant.key), attempts:), reply)
+      end
       model_id = variants.values.filter_map(&:model_id).first
       Result.new(tier: TIER, model_id:, prompt_version: PROMPT_VERSION, rubric_digest: @rubric.digest, variants:)
     end
@@ -169,29 +204,71 @@ module Screening
     end
 
     def judge
-      @judge ||= begin
-        client = Config.client(:fairness, job: @job)
-        ->(content) { client.generate(system: AiClient::SYSTEM_PROMPT, schema: AiClient::SCHEMA, content:) }
-      end
+      @judge ||= client_judge
     end
 
-    # One model call per variant. A provider error or a malformed answer is recorded on the variant
-    # (the table shows it) instead of aborting the whole check: the other columns are still evidence.
-    def judged(variant)
+    def client_judge
+      client = Config.client(:fairness, job: @job)
+      ->(content) { client.generate(system: AiClient::SYSTEM_PROMPT, schema: AiClient::SCHEMA, content:) }
+    end
+
+    CALL_ERRORS = [Errors::Base, Errors::NotConfigured, Errors::Unreleased].freeze
+
+    # One model call for one distinct text, retried per RETRY_WAITS: [the reply, or the provider
+    # error to record on the variants that share the text; the calls made].
+    def ask(variant, with = nil)
       content = AiClient.user_content(variant.redacted_text, @rubric.payload)
-      reply = judge.call(content)
+      attempts = 0
+      begin
+        attempts += 1
+        [(with || judge).call(content), attempts]
+      rescue Errors::Transient => e
+        wait = RETRY_WAITS[attempts - 1]
+        raise if wait.nil? || e.kind == "timeout"
+
+        @pause.call(wait + rand)
+        retry
+      end
+    rescue *CALL_ERRORS => e
+      [e, attempts]
+    end
+
+    # One client per distinct text (a client approves one text at a time, so threads must not share
+    # it), built here on the calling thread; each thread then only waits on its HTTP calls. An
+    # injected judge is shared and must be thread-safe. The calling thread lets go of the autoload
+    # interlock while it waits, as Rails asks of code that joins threads.
+    def ask_in_parallel(askers)
+      threads = askers.to_h do |variant|
+        judge = thread_judge
+        [variant.redacted_sha256, Thread.new { Rails.application.executor.wrap { judge.is_a?(Exception) ? [judge, 0] : ask(variant, judge) } }]
+      end
+      ActiveSupport::Dependencies.interlock.permit_concurrent_loads { threads.transform_values(&:value) }
+    end
+
+    def thread_judge
+      @judge || client_judge
+    rescue *CALL_ERRORS => e
+      e
+    end
+
+    # A provider error or a malformed answer is recorded on the variant (the table shows it) instead
+    # of aborting the whole check: the other columns are still evidence.
+    def judged(variant, reply)
+      raise reply if reply.is_a?(Exception)
+
       judgements = parse(reply.text, variant.redacted_text)
       score = Score.compute(@rubric, judgements)
       variant.with(judgements:, score: score.score, wajib_met: score.wajib_met, unverified_count: score.unverified_count,
                    model_id: reply.model, input_tokens: reply.input_tokens, output_tokens: reply.output_tokens)
-    rescue Errors::Base, Errors::NotConfigured, Errors::Unreleased, Malformed => e
+    rescue *CALL_ERRORS, Malformed => e
       variant.with(error: "#{e.class.name.demodulize}: #{e.message}"[0, 200])
     end
 
     class Malformed < StandardError; end
 
     # The same per-criterion rules as Screening::Run#parse (one entry per requirement, a judgement
-    # allowed for its tier, the quote checked verbatim against the text the model was given).
+    # allowed for its tier, every quoted passage checked verbatim against the text the model was
+    # given; QuoteCheck.check reads the "quotes" list of prompt .4 and the older single "quote").
     # Deliberately duplicated in the small: Run#parse is private and belongs to the screening run,
     # which also stores results; this check stores nothing.
     def parse(text, redacted)
@@ -208,9 +285,7 @@ module Screening
         judgement = entry["judgement"].to_s
         raise Malformed, "judgement not allowed for the tier" unless Rubric::JUDGEMENTS.fetch(criterion.tier).include?(judgement)
 
-        quote = entry["quote"].to_s
-        by_key[criterion.key] = { "judgement" => judgement, "quote" => quote,
-                                  "verified" => QuoteCheck.verified?(judgement:, quote:, extracted: redacted, redacted:) }
+        by_key[criterion.key] = { "judgement" => judgement, **QuoteCheck.check(entry, judgement:, extracted: redacted, redacted:) }
       end
       missing = @rubric.criteria.map(&:key) - by_key.keys
       raise Malformed, "#{missing.size} requirement(s) not judged" if missing.any?

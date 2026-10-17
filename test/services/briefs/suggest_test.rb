@@ -171,10 +171,10 @@ class Briefs::SuggestTest < ActiveSupport::TestCase
   end
 
   test "each tier can use its own model and thinking level (FLOW §9)" do
-    env = { "AI_PROVIDER" => "gemini", "AI_MODEL" => "gemini-3.8-pro", "AI_MODEL_MEDIUM" => "gemini-3.5-flash-lite", "AI_THINKING" => "high", "AI_THINKING_MEDIUM" => "low",
+    env = { "AI_PROVIDER" => "gemini", "AI_MODEL" => "gemini-4-argon", "AI_MODEL_MEDIUM" => "gemini-3.5-flash-lite", "AI_THINKING" => "high", "AI_THINKING_MEDIUM" => "low",
             "AI_MODEL_HIGH" => nil, "AI_THINKING_HIGH" => nil }
     with_env(env) do
-      assert_equal ["gemini-3.8-pro", "high"], [Screening::Config.model(:screening), Screening::Config.thinking(:screening)]
+      assert_equal ["gemini-4-argon", "high"], [Screening::Config.model(:screening), Screening::Config.thinking(:screening)]
       assert_equal ["gemini-3.5-flash-lite", "low"], [Screening::Config.model(:brief), Screening::Config.thinking(:brief)]
     end
   end

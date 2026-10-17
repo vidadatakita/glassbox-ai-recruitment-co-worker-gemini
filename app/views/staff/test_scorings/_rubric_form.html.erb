@@ -11,7 +11,8 @@
             <% proposal = local_assigns[:ai]&.for_criterion(c.id) %>
             <td><strong><%= c.name %></strong><br><span class="text-muted small"><%= c.activity_text %></span>
               <% if proposal %><div class="test-ai-reason"><%= render "staff/shared/ai_sparkle", size: 14 %> <strong>AI advice: <%= proposal["rating"] %></strong> · <%= proposal["reason"] %>
-                <% if proposal["quote"].present? %><br><span class="text-muted">"<%= proposal["quote"].truncate(160) %>"</span><% end %></div><% end %></td>
+                <% if proposal["quote"].present? %><br><span class="text-muted">"<%= proposal["quote"].truncate(160) %>"</span><% end %>
+                <% if proposal["verified"] == false %> <span class="portal-state portal-state--danger">unverified</span><% end %></div><% end %></td>
             <td class="job-brief-num-col" data-label="Weight"><%= c.weight %>%</td>
             <td data-label="Score 1"><%= c.anchor_1 %></td><td data-label="Score 3"><%= c.anchor_3 %></td><td data-label="Score 5"><%= c.anchor_5 %></td>
             <% if can_score %>

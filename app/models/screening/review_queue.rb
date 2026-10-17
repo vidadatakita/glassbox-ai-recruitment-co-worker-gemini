@@ -3,7 +3,8 @@ module Screening
   # (blueprint §4.1 step 8). Reads current, non-stale AI results of undecided S1 participations.
   #
   # Why a result needs a person, first reason wins:
-  #   protected_attribute        the model reported a protected attribute in the text (ADR 0004)
+  #   protected_attribute        the model reported a protected attribute in the text (ADR 0004), or
+  #                              text written as an instruction to it (AiClient::INSTRUCTION_FLAG)
   #   unverified                 a quote was not found in the CV (§4.1 step 6)
   #   calibration_disagreement   the consultant judged this CV differently during calibration
   #   elimination                the AI result eliminates (EVERY elimination is reviewed)

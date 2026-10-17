@@ -56,13 +56,15 @@ module Glassbox
       "AI_THINKING" => { required: false, values: %w[low medium high], about: "thinking level for every tier at once; unset = each tier's default" },
       # FLOW §9 model tiers: HIGH (judgements a person acts on), MEDIUM (structured drafting), LOW (short text).
       # A configured id must be in Screening::Config::KNOWN_MODELS or the server does not start.
-      "AI_MODEL_HIGH" => { required: false, about: "Gemini model id of the HIGH tier (CV scoring, test scoring, stage advice, fairness); default gemini-3.8-pro" },
+      "AI_MODEL_HIGH" => { required: false, about: "Gemini model id of the HIGH tier (CV scoring, test scoring, stage advice, fairness); default gemini-3.8-flash" },
       "AI_MODEL_MEDIUM" => { required: false, about: "Gemini model id of the MEDIUM tier (brief suggestion, discrimination test, red flags); default gemini-3.8-flash" },
       "AI_MODEL_LOW" => { required: false, about: "Gemini model id of the LOW tier (ad drafting and scan, letters, chat); default gemini-3.5-flash-lite" },
-      "AI_THINKING_HIGH" => { required: false, values: %w[low medium high], about: "thinking level of the HIGH tier; default high" },
+      "AI_THINKING_HIGH" => { required: false, values: %w[low medium high], about: "thinking level of the HIGH tier; default medium" },
       "AI_THINKING_MEDIUM" => { required: false, values: %w[low medium high], about: "thinking level of the MEDIUM tier; default medium" },
       "AI_THINKING_LOW" => { required: false, values: %w[low medium high], about: "thinking level of the LOW tier; default low" },
       "AI_SCREENING_REVIEW" => { required: false, values: %w[auto required], about: "auto (default): AI screens each CV as it arrives, people decide on the result; required: a reviewer releases each CV before the AI sees it" },
+      "AI_API_KEY_ENDPOINT" => { required: false, values: %w[gemini vertex], about: "gemini (default): AI_API_KEY is an AI Studio key; vertex: it is a Vertex AI express-mode key" },
+      "GOOGLE_CLOUD_PROJECT" => { required: false, about: "Vertex AI project of an express-mode AI_API_KEY (id or number); unset = Google picks the location" },
       "GOOGLE_CLOUD_LOCATION" => { required: false, about: "Vertex AI location for Gemini; default global" },
       # D52 Google integrations. ALL optional ON PURPOSE: each integration is off until its keys are
       # set (GoogleIntegration::Config); Rails credentials google.<name> win over these variables.

@@ -114,7 +114,10 @@ module DemoGlassbox
       activities: [["Visit and audit the outlets in the area", "Visit report per outlet", 50],
                    ["Coach outlet leaders on sales and stock routines", "Routines followed", 30],
                    ["Report area sales and stock figures weekly", "Weekly report on time", 20]],
-      requirements: [["M1", "wajib", "Holds a driving licence and is willing to travel across the area", "Driving licence and travel willingness in the CV", nil],
+      # M1 asks only what a CV can show (16 Oct agreement check: the compound "licence and willing to
+      # travel" was judged not met on 6 of 7 CVs that name a licence, because no CV states the
+      # willingness). The willingness is the first knockout question, answered by the applicant.
+      requirements: [["M1", "wajib", "Holds a driving licence", "A driving licence (SIM A, B or C) named in the CV", nil],
                      ["S1", "sebaiknya", "Experience supervising several outlets or branches", "Multi-outlet supervision in the work history", 60],
                      ["S2", "sebaiknya", "Experience with stock counts and sales reporting", "Stock counts or sales reports named", 40],
                      ["N1", "nilai_tambah", "Experience coaching outlet leaders", "Coaching or training outlet leaders named", nil]],

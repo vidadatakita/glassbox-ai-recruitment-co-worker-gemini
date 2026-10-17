@@ -37,7 +37,11 @@ module AiReleases
     end
 
     def answered = @answered ||= results.count
-    def model_flagged = @model_flagged ||= results.where("cardinality(protected_attribute_categories) > 0").count
+    # The instruction flag shares the column (Screening::AiClient::INSTRUCTION_FLAG) but is not a
+    # protected attribute, so it is not counted here.
+    def model_flagged
+      @model_flagged ||= results.where("cardinality(array_remove(protected_attribute_categories, ?::varchar)) > 0", Screening::AiClient::INSTRUCTION_FLAG).count
+    end
 
     def rate?(denominator) = denominator >= MIN_FOR_RATE
 

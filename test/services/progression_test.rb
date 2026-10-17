@@ -12,8 +12,8 @@ class ProgressionTest < ActiveSupport::TestCase
     end
   end
 
-  ADVICE = { advice: "tidak_lanjut", ai_score: 40, summary: "Bukti belum cukup.", strengths: ["Node.js"],
-             gaps: ["Tes belum dikerjakan"], risks: [], change_view: "Nilai tes di atas ambang." }.freeze
+  ADVICE = { advice: "do_not_continue", ai_score: 40, summary: "Bukti belum cukup.", strengths: [{ evidence: "Node.js", point: "Node.js disebut" }],
+             gaps: [{ evidence: "Tes teknis", point: "Tes belum dikerjakan" }], risks: [], change_view: "Nilai tes di atas ambang." }.freeze
 
   setup do
     @job = technical_test_job(open_gate: false)
@@ -68,7 +68,7 @@ class ProgressionTest < ActiveSupport::TestCase
   test "Rekomendasi AI follows the recommendation on screen; stale, missing, and departures without a note are refused" do
     assert_match(/No AI advice is available yet/, assert_raises(Progression::Choose::Refused) { choose("ikut_ai") }.message)
 
-    shown = with_ai(ADVICE, ADVICE.merge(advice: "lanjut")) do
+    shown = with_ai(ADVICE, ADVICE.merge(advice: "continue")) do
       first = Progression::Recommend.call(participation: @s1, actor: @hr)
       Progression::Recommend.call(participation: @s1, actor: @hr)
       first
@@ -124,7 +124,7 @@ class ProgressionTest < ActiveSupport::TestCase
     others = @job.competencies.where(stage_code: "S3").where.not(id: competency.id)
     ratings = { competency.id.to_s => "5" }.merge(others.to_h { |c| [c.id.to_s, "4"] })
 
-    rec = with_ai(ADVICE.merge(advice: "lanjut", ai_score: 85)) do |fake|
+    rec = with_ai(ADVICE.merge(advice: "continue", ai_score: 85)) do |fake|
       result = Progression::ScoreInterview.call(participation: s3, actor: @hr, attendance: "attended", ratings:,
                                                 note: "Dewi menjelaskan arsitektur API dengan jelas.")
       body = fake.seen.first
@@ -164,5 +164,50 @@ class ProgressionTest < ActiveSupport::TestCase
       r
     end
     assert_equal "held", rec.status
+  end
+
+  # stage-advice-2026-10-16.3 (16 Oct end-to-end test: the advice repeated the ratings, named one
+  # item as both a strength and a gap, and wrote "tidak_lanjut" into its English text).
+  def screened_s1!(judgements)
+    @s1.update!(attendance: "attended") unless @s1.attendance == "attended"
+    entry = ScoreEntry.create!(participation: @s1, value: 70, ratings: {}, entered_by_id: Screening::AI_ACTOR_ID, event_at: 1.day.ago,
+                               entered_at: 1.day.ago, model_id: "uji-model", prompt_version: Screening::PROMPT_VERSION)
+    ScreeningResult.create!(participation: @s1, score_entry: entry, rubric_digest: "uji", model_id: "uji-model", prompt_version: Screening::PROMPT_VERSION,
+                            judgements:, score: 70, wajib_met: true, unverified_count: judgements.count { |j| !j["verified"] }, created_at: 1.day.ago)
+  end
+
+  test "the advice sees the verified CV passages behind each judgement, redacted, in English words; an unverified quote is not sent" do
+    row = ->(key, tier, text, judgement, quote, verified) { { "requirement_id" => nil, "key" => key, "tier" => tier, "text" => text, "weight" => (100 if tier == "sebaiknya"), "judgement" => judgement, "quote" => quote, "verified" => verified } }
+    screened_s1!([row.("w1", "wajib", "Pendidikan minimal D3", "met", "D3 Teknik Informatika", true),
+                  row.("s1", "sebaiknya", "Pengalaman Node.js", "2", "Dewi Lestari membangun API Node.js … Memimpin dua developer", true),
+                  row.("n1", "nilai_tambah", "Docker", "1", "Kutipan karangan AI", false)])
+    sent = with_ai(ADVICE) do |fake|
+      Progression::Recommend.call(participation: @s1, actor: @hr)
+      fake.seen.first
+    end
+    requirements = JSON.parse(sent)["stages"].first.dig("evidence", "requirements")
+    assert_equal %w[must-have should-have nice-to-have], requirements.map { |r| r["tier"] }
+    assert_equal [["D3 Teknik Informatika"], ["[REDACTED] membangun API Node.js", "Memimpin dua developer"], []], requirements.map { |r| r["quotes"] }
+    refute_includes sent, "Dewi", "a passage is redacted again before it is sent"
+    refute_includes sent, "Kutipan karangan AI", "an unverified quote is not evidence"
+    refute_match(/wajib|sebaiknya|nilai_tambah|lanjut/, sent, "no stored code reaches the prompt")
+  end
+
+  test "the advice values the model sees are English and are stored as the codes; a stored code from the model is refused" do
+    assert_equal %w[continue do_not_continue], Progression::Recommend::SCHEMA.dig(:properties, :advice, :enum)
+    refute_match(/lanjut/, Progression::Recommend::SYSTEM)
+    rec = with_ai(ADVICE.merge(advice: "continue")) { Progression::Recommend.call(participation: @s1, actor: @hr) }
+    assert_equal ["lanjut", "Continue"], [rec.advice, rec.advice_label]
+    assert_equal "failed", with_ai(ADVICE.merge(advice: "tidak_lanjut")) { Progression::Recommend.call(participation: @s1, actor: @hr) }.status
+  end
+
+  test "one piece of evidence is a strength or a gap, never both: a gap on a strength's evidence is dropped" do
+    answer = ADVICE.merge(strengths: [{ evidence: "Node.js experience", point: "Builds APIs; should-have rated 2 of 3" }],
+                          gaps: [{ evidence: " node.js  Experience", point: "Two years only; should-have rated 2 of 3" },
+                                 { evidence: "Technical test", point: "Not taken yet" },
+                                 { evidence: "", point: "Builds APIs; should-have rated 2 of 3" }])
+    rec = with_ai(answer) { Progression::Recommend.call(participation: @s1, actor: @hr) }
+    assert_equal ["Node.js experience: Builds APIs; should-have rated 2 of 3"], rec.list("strengths"), "the point starts with its evidence"
+    assert_equal ["Technical test: Not taken yet"], rec.list("gaps")
   end
 end

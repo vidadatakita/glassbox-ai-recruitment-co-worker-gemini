@@ -25,10 +25,23 @@ module Briefs
       def ok? = error.nil?
     end
 
-    PROMPT_VERSION = "brief-2026-10-16.1"
-    COMPETENCY_PROMPT_VERSION = "competencies-2026-10-16.1"
-    TEST_PROMPT_VERSION = "test-case-2026-10-16.1"
-    AD_PROMPT_VERSION = "job-ad-2026-10-16.1"
+    # .2 (16 Oct, accuracy pass): the brief is written for the CV screening that judges against it
+    # (one checkable item per requirement, cv_evidence as a CV line would say it, must-haves only for
+    # what day one needs), the screening standard's stand-ins for protected attributes are named in
+    # every prompt, and the test and ad prompts say what makes a case and an ad usable.
+    PROMPT_VERSION = "brief-2026-10-16.2"
+    COMPETENCY_PROMPT_VERSION = "competencies-2026-10-16.2"
+    TEST_PROMPT_VERSION = "test-case-2026-10-16.2"
+    AD_PROMPT_VERSION = "job-ad-2026-10-16.2"
+    # The screening standard's prohibitions (FLOW §8.6), shared by the four drafting prompts.
+    NEVER = <<~TEXT.freeze
+      Never require or mention age, gender, religion, ethnicity or region of origin, marital status,
+      pregnancy or children, appearance, height or weight, general health, disability not tested by
+      the work, family data, political views or union membership. Never use their stand-ins either:
+      "fresh graduate" (required or excluded), a maximum number of years of experience, a
+      graduation-year limit, "young", "energetic", "native speaker", "presentable", "good looking",
+      a photo, a family card or a bank account at application.
+    TEXT
     MAX_COMPETENCIES = BriefForm::COMPETENCY_SLOTS
     LIMITS = { "wajib" => 6, "sebaiknya" => 6, "nilai_tambah" => 4 }.freeze # BriefForm::REQUIREMENT_SLOTS
     MAX_ACTIVITIES = BriefForm::ACTIVITY_SLOTS
@@ -41,23 +54,34 @@ module Briefs
     SYSTEM = <<~PROMPT.freeze
       You draft a job brief for an Indonesian employer. A recruiter reviews and edits every line
       before it is used, so be concrete and realistic for the Indonesian labour market. Write every
-      text in English.
+      text in English. The brief drives what follows: every CV is judged against its requirements,
+      quote by quote, and the technical test is built from its activities.
 
       From the job title and level, return:
       - success_90d: one or two sentences: what the right person has visibly achieved after 90 days
-        on the job. Observable results, not personality.
-      - activities: 5 to 8 main activities. description = what the person does; output = the work
-        product it delivers; share_percent = share of working time, whole numbers summing to 100.
+        on the job. Observable results with a deliverable, a deadline or a quality level, not
+        personality.
+      - activities: 5 to 8 main activities. description = what the person does (a verb and its
+        object); output = the work product it delivers; share_percent = share of working time,
+        whole numbers summing to 100.
       - requirements, each checkable from a CV:
-        tier "wajib" (must-have, 2 to 4 lines; give 2 or 3 of them a yes/no knockout question in
-        "knockout", else ""), tier "sebaiknya" (should-have, 3 to 5 lines, "weight" whole numbers
-        summing to 100), tier "nilai_tambah" (nice-to-have, 1 to 3 lines). For each line, "text" is
-        the requirement and "cv_evidence" what a CV would show to prove it. Use weight 0 and an
-        empty knockout where they do not apply.
+        tier "wajib" (must-have, 2 to 4 lines): only what the work cannot be done without from day
+        one, such as a minimum education level, a licence or certificate the work needs, or core
+        experience. Give 2 or 3 of them a yes/no knockout question in "knockout" that any applicant
+        can answer truthfully about themselves (e.g. "Do you hold a valid SIM C driving licence?"),
+        else "".
+        tier "sebaiknya" (should-have, 3 to 5 lines, "weight" whole numbers summing to 100, the
+        largest for what the main activities need most).
+        tier "nilai_tambah" (nice-to-have, 1 to 3 lines).
+        For each line, "text" is ONE skill, tool, duty, qualification or certificate, specific
+        enough to check (name the tool, the duty or the level, e.g. "Experience preparing bank
+        reconciliations"), never a personality trait such as "honest" or "hard-working". Education
+        uses Indonesian levels with the English, e.g. "At least a D3 (diploma) in Accounting".
+        "cv_evidence" is what a line of a CV would say that proves it, e.g. "Bank reconciliations
+        named in the work history". Use weight 0 and an empty knockout where they do not apply.
 
-      Never require or mention age, gender, religion, marital status, ethnicity, appearance, height
-      or weight, or anything else not needed to do the work. Requirements are about skills,
-      experience, education and certifications only.
+      #{NEVER.strip}
+      Requirements are about skills, experience, education, licences and certifications only.
     PROMPT
 
     ROW = ->(props) { { type: "object", additionalProperties: false, required: props.keys.map(&:to_s), properties: props } }
@@ -80,11 +104,13 @@ module Briefs
       - stage_code: one of the given stages, the one that best assesses it (a CV shows knowledge and
         experience; a technical test shows skill; an interview shows judgement, teaching and integrity).
       - anchor_1, anchor_3, anchor_5: what the person observably DOES and its result at rating 1
-        (falls short), 3 (meets the job) and 5 (excellent). Never personality or attitude words.
+        (falls short), 3 (meets the job) and 5 (excellent), each one sentence that two assessors
+        would apply the same way. Never personality or attitude words.
       - questions: for stages S3 and S5 (interviews), 2 or 3 behavioural questions asking for a real
-        past example, one per line; for other stages an empty string.
+        past example (the situation, what the person did, the result), one per line; for other
+        stages an empty string.
 
-      Never mention age, gender, religion, marital status, ethnicity, appearance, height or weight.
+      #{NEVER.strip}
     PROMPT
 
     COMPETENCY_SCHEMA = ROW.call(
@@ -104,15 +130,17 @@ module Briefs
 
       Return:
       - instructions: what the candidate must do and what to hand in, 3 to 6 sentences, for a case
-        that fits in the time limit. Refer to "the case file" for the data the candidate works on.
+        that fits in the time limit and is solved from the case file alone, the way the work is
+        done on the job. Refer to "the case file" for the data the candidate works on.
       - time_limit_minutes: whole minutes, 20 to 60.
       - answer_types: the file types the answer is handed in as, from the given list.
       - criteria: 2 to 5 rubric lines. activity = the NUMBER of the job activity it tests (from the
         numbered list); name = short criterion name; weight = whole numbers summing to 100;
         anchor_1, anchor_3, anchor_5 = what an answer rated 1 (falls short), 3 (meets) and 5
-        (excellent) observably contains. Never personality.
+        (excellent) observably contains, countable where possible (e.g. "finds all three errors
+        with the correct figures"), so a reviewer can point to it in the answer. Never personality.
 
-      Never mention age, gender, religion, marital status, ethnicity, appearance, height or weight.
+      #{NEVER.strip}
     PROMPT
 
     TEST_SCHEMA = ROW.call(
@@ -137,9 +165,9 @@ module Briefs
       Nice to have (the nice-to-haves, if any)
       Location and work arrangement (location, employment type, work arrangement; the salary range
       only if it is given)
-      Never write the company name (it is shown separately). Never require or mention age, gender,
-      appearance, marital status, religion, ethnicity, height or weight. Do not invent benefits,
-      salary or facts that are not in the brief.
+      Never write the company name (it is shown separately). Do not invent benefits, salary,
+      requirements or facts that are not in the brief; keep every requirement's meaning and level.
+      #{NEVER.strip}
     PROMPT
     AD_SCHEMA = ROW.call(ad_text: { type: "string" }).freeze
 
