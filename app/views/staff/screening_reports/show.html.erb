@@ -1,3 +1,5 @@
+<%# "Screening label" in the header jumps to the reviewer's main action, which sits below the
+    criteria, the test and the narrative (about 2000 px down on a phone). %>
 <% row = @row %>
 <% person = report_person(row, @board) %>
 <% content_for :title, "Candidate report · #{person}" %>
@@ -5,7 +7,8 @@
   <%= render "staff/shared/page_header", eyebrow: "Candidate detail · #{@board.job.title}",
              title: "#{format('%02d', row.number)} · #{person}",
              subtitle: "Last position: #{report_ai(ScreeningReport::Text.last_position(row.result), row)}",
-             actions: label_link("Back to report", "fa-arrow-left", staff_job_screening_report_path(@board.job), purpose: :neutral, icon_end: true) %>
+             actions: safe_join([label_link("Screening label", "fa-tag", "#label-analisa", purpose: :neutral),
+                                 label_link("Back to report", "fa-arrow-left", staff_job_screening_report_path(@board.job), purpose: :neutral, icon_end: true)], " ") %>
   <section class="content">
     <%= render "staff/screening_reports/visibility_notice", board: @board %>
     <%= render "staff/screening_reports/candidate_metrics", row: row, board: @board %>

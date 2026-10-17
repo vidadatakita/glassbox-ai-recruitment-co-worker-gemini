@@ -1,0 +1,8 @@
+<%# The technical test cell (S2) as a badge. Red is kept for failure only: an "expired" test is a missed
+    window, not a failed test, so it shows in neutral grey here. The shared helper still maps it to
+    "danger" for every other caller; this partial is the one place these two pages ask for it. %>
+<% if cell.state == :expired %>
+  <%= report_state(cell.label, "muted") %>
+<% else %>
+  <%= report_test_score(cell) %>
+<% end %>

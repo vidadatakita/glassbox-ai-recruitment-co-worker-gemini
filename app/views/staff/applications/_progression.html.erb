@@ -3,7 +3,7 @@
     Continue / Follow AI advice / Do not continue, which is what moves the candidate. Everyone who may
     see the applicant reads it; only the HR PIC acts (Progression::*). One form per action, no nesting. %>
 <% stage = participation.stage %>
-<% hr = current_user.role == Progression::CHOOSER %>
+<% hr = Progression.chooser?(current_user) %>
 <% interview = stage.score_source == "scorecard" %>
 <% scored = participation.score_entries.current.exists? || participation.current_decision.present? %>
 <% choice = participation.progression_choice %>
@@ -38,7 +38,7 @@
       <% if competencies.empty? %><p class="text-danger">This vacancy has no competencies for this stage yet. Complete brief step 4.</p><% end %>
       <label class="form-label" for="note-<%= participation.id %>">Interview note</label>
       <textarea class="form-control mb-2" id="note-<%= participation.id %>" name="note" rows="3" placeholder="What the candidate showed; avoid personal data."></textarea>
-      <%= label_button "Save scoring", "fa-save" %>
+      <div class="action-row"><%= label_button "Save scoring", "fa-save" %></div>
       <% if ai_on? %><span class="hris-field-hint d-block mt-1">Once saved, the AI prepares its advice: Continue or Do not continue.</span><% end %>
     <% end %>
   <% else %>
@@ -103,7 +103,7 @@
         <textarea class="form-control <%= "is-invalid" if note_error %>" id="choice-note-<%= participation.id %>" name="note" rows="2"
                   placeholder="A reason is required for Do not continue, and whenever your choice departs from the AI advice."><%= flash[:progression_note] %></textarea>
         <% if note_error %><div class="invalid-feedback d-block"><%= flash[:alert] %></div><% end %>
-        <div class="d-flex flex-wrap gap-2 mt-2">
+        <div class="d-flex flex-wrap gap-2 mt-2 action-row">
           <%= label_button "Continue", "fa-arrow-right", purpose: :approve, name: "choice", value: "lanjut",
                            data: { requires_note: (rec&.ready? && rec.advice != "lanjut").to_s } %>
           <% if rec&.ready? %>

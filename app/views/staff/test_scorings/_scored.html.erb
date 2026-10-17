@@ -5,18 +5,21 @@
     <% if rows.empty? %>
       <p class="text-muted mb-0">No scores yet. Every reviewer score is recorded here with its score and decision.</p>
     <% else %>
+      <%# table-stack + data-label: below 576px each scored answer becomes its own block, every cell under
+          its column name (workflow.css), so Reviewer, Scored and the download no longer sit off-screen
+          behind a horizontal scroll with no cue. %>
       <div class="table-responsive">
-        <table class="table align-middle">
+        <table class="table align-middle table-stack">
           <thead><tr><th>Candidate</th><th class="job-brief-num-col">Score</th><th>Decision</th><th>Reviewer</th><th>Scored</th><th>Answer</th></tr></thead>
           <tbody>
             <% rows.each do |row| %>
               <tr>
                 <td><%= candidate_label(row.participation.job_application) %></td>
-                <td class="job-brief-num-col"><%= score_text(row.review.score_entry.value) %></td>
-                <td><%= gate_decision_badge(row.review.decision) %></td>
-                <td><%= row.review.reviewer.name %></td>
-                <td><%= wib(row.review.created_at) %></td>
-                <td><% if !row.attempt.repo_link? && TechnicalTests.answer_downloadable_by?(current_user, board.job) %><%= link_to "Download", answer_link(row.attempt), title: "Download answer (#{row.attempt.scan_label})" %><% else %><span class="text-muted">-</span><% end %></td>
+                <td class="job-brief-num-col" data-label="Score"><%= score_text(row.review.score_entry.value) %></td>
+                <td data-label="Decision"><%= gate_decision_badge(row.review.decision) %></td>
+                <td data-label="Reviewer"><%= row.review.reviewer.name %></td>
+                <td data-label="Scored"><%= wib(row.review.created_at) %></td>
+                <td data-label="Answer"><% if !row.attempt.repo_link? && TechnicalTests.answer_downloadable_by?(current_user, board.job) %><%= label_link "Download", "fa-download", answer_link(row.attempt), purpose: :neutral, class: "btn-sm", title: "Download answer (#{row.attempt.scan_label})" %><% else %><span class="text-muted">-</span><% end %></td>
               </tr>
             <% end %>
           </tbody>

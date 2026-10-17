@@ -3,9 +3,22 @@
 # A "step" is one stage, or the S1+S2 gate as one: its choice and recommendations hang on the S1
 # participation.
 module Progression
-  CHOOSER = "hr_pic".freeze
+  # Who takes the step decisions (choose, interview links and scores, manual scores, letters): the HR
+  # Admin, and the superadmin, who passes every role check (three roles, 17 Oct 2026). One predicate, so
+  # no service compares the role to a single string again (that refused the superadmin; the role test rewrite).
+  # The database guard enforce_progression_chooser accepts the same two roles.
+  CHOOSER_ROLES = %w[hr_admin superadmin].freeze
 
   module_function
+
+  def chooser?(user) = CHOOSER_ROLES.include?(user&.role)
+
+  # Who may create an interviewer's scoring link: every role (GlassBox Team, 17 Oct 2026). A link only
+  # invites someone to score; the HR Admin still decides Continue / Do not continue (chooser?), so the
+  # person who invites an assessor never decides the step by doing so.
+  INVITER_ROLES = %w[hr_admin hr_manager superadmin].freeze
+
+  def inviter?(user) = INVITER_ROLES.include?(user&.role)
 
   def order_of(stage) = Stage::CODES.index(stage.code)
 

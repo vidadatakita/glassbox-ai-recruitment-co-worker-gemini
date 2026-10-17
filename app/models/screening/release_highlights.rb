@@ -28,8 +28,12 @@ module Screening
     HINTS = {
       "religion" => Redactor::RELIGION, "marital" => Redactor::MARITAL, "gender" => Redactor::GENDER,
       "ethnicity" => Redactor::ETHNIC,
-      "family" => /\b(?:suami|istri|isteri|anak(?:\s+(?:saya|pertama|kedua|ketiga))?|ibu\s+(?:dua|tiga|satu|\d)|ayah|bapak\s+(?:dua|tiga|\d)|hamil|mertua|cucu|keluarga\s+saya)\b/i,
-      "worship" => /\b(?:masjid|mesjid|musholla|mushola|gereja|pura|vihara|klenteng|pesantren|mengaji|pengajian|rohis|rohani|ibadah|jemaat|majelis\s+taklim)\b/i
+      # Indonesian and English (17 Oct 2026: every demo CV is English, and the English words were missing,
+      # so these two categories could never mark an English CV). Display-only, like every hint.
+      "family" => /\b(?:suami|istri|isteri|anak(?:\s+(?:saya|pertama|kedua|ketiga))?|ibu\s+(?:dua|tiga|satu|\d)|ayah|bapak\s+(?:dua|tiga|\d)|hamil|mertua|cucu|keluarga\s+saya|
+                      husband|wife|my\s+(?:son|daughter|children|kids|family)|(?:mother|father)\s+of\s+(?:one|two|three|\d)|pregnant|in-laws?|grandchild(?:ren)?)\b/ix,
+      "worship" => /\b(?:masjid|mesjid|musholla|mushola|gereja|pura|vihara|klenteng|pesantren|mengaji|pengajian|rohis|rohani|ibadah|jemaat|majelis\s+taklim|
+                       mosque|church|temple|synagogue|congregation|bible\s+study|quran\s+recitation|prayer\s+group|worship)\b/ix
     }.freeze
 
     module_function

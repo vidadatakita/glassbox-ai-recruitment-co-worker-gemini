@@ -7,7 +7,7 @@ module Staff
   class ScreeningReportsController < BaseController
     XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet".freeze
 
-    before_action -> { require_role!(:hr_pic, :consultant, :reviewer, :owner) }
+    before_action -> { require_role!(:hr_admin, :hr_manager) }
     before_action :load_board
 
     def index; end

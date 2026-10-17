@@ -24,7 +24,7 @@ module ApplicationHelper
   # admin can see must not link to a page the admin cannot open: the click would look broken instead
   # of the link being absent (GlassBox Team's live click, 16 Oct 2026). Admin keeps the system settings
   # and never the candidate data (UU PDP scope).
-  APPLICATION_ROLES = %w[hr_pic consultant reviewer owner].freeze
+  APPLICATION_ROLES = %w[hr_admin hr_manager superadmin].freeze
   def can_open_applications? = APPLICATION_ROLES.include?(current_user&.role)
 
   # Whether an AI provider is configured (AI_* env). Without one every AI feature is unavailable:

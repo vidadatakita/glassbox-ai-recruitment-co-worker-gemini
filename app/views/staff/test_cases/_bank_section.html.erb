@@ -1,0 +1,62 @@
+<%# One section of the bank: coverage first (every brief activity or competency and how many questions
+    test it, so a gap is visible before the draw), then each question with its answer key. On a draft
+    the HR Admin edits a question in place (its own form) or removes it (a separate form beside it). %>
+<% questions = bank ? bank.questions_in(section) : [] %>
+<% technical = section == "technical" %>
+<% minimum = bank ? bank.minimum_for(section) : (technical ? QuestionBank::DEFAULT_TECHNICAL_DRAW : QuestionBank::DEFAULT_ROLE_DRAW) * QuestionBank::MIN_FACTOR %>
+<% links = technical ? job.activities.map { |a| [a.id, a.description] } : job.competencies.map { |c| [c.id, c.name] } %>
+<%= render layout: "staff/job_briefs/card", locals: { id: "question-bank-#{section}", icon: technical ? "fa-cogs" : "fa-users", title: label,
+           text: technical ? "Each question tests one activity of the job." : "Each question tests one competency of the job, through a short work situation.",
+           aside: content_tag(:span, "#{questions.size} of #{minimum} needed", class: "portal-state portal-state--#{questions.size >= minimum ? 'success' : 'warning'}") } do %>
+  <% if links.any? %>
+    <% counts = links.map { |id, text| [text, questions.count { |q| (technical ? q.activity_id : q.competency_id) == id }] } %>
+    <% gaps = counts.count { |_, n| n.zero? } %>
+    <p class="question-bank-coverage__summary"><%= gaps.zero? ? "Every #{technical ? 'activity' : 'competency'} has at least one question." : "#{gaps} #{(technical ? 'activity' : 'competency').pluralize(gaps)} #{gaps == 1 ? 'has' : 'have'} no question yet (listed first)." %></p>
+    <ul class="question-bank-coverage" aria-label="<%= label %> coverage">
+      <% counts.sort_by { |_, n| n.zero? ? 0 : 1 }.each do |text, n| %>
+        <li class="<%= n.zero? ? 'is-gap' : '' %>"><span class="question-bank-coverage__count"><%= n %></span> <%= text %><% if n.zero? %><span class="visually-hidden"> (no question yet)</span><% end %></li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p class="text-muted"><%= technical ? "No activities yet: fill in step 2 first." : "No competencies yet: fill in step 4 first." %></p>
+  <% end %>
+  <% if questions.empty? %>
+    <p class="text-muted mb-0">No questions in this section yet.</p>
+  <% else %>
+    <ol class="question-bank-list">
+      <% questions.each do |q| %>
+        <li class="question-bank-item">
+          <div class="question-bank-item__head">
+            <span class="question-bank-item__num">Q<%= q.position %></span>
+            <span class="portal-state portal-state--muted"><%= BankQuestion::KINDS[q.kind] %></span>
+            <span class="portal-state portal-state--<%= q.source == 'ai' ? 'info' : 'muted' %>"><%= BankQuestion::SOURCES[q.source] %></span>
+            <small class="text-muted">tests: <%= q.link_text.presence || "not linked yet" %></small>
+          </div>
+          <p class="question-bank-item__prompt"><%= q.prompt %></p>
+          <% if q.multiple_choice? %>
+            <ol type="A" class="question-bank-options">
+              <% q.options.each_with_index do |text, i| %><li class="<%= 'is-correct' if i == q.correct_index %>"><%= text %><% if i == q.correct_index %> <i class="fa fa-check text-success" aria-hidden="true"></i><span class="visually-hidden">(correct answer)</span><% end %></li><% end %>
+            </ol>
+          <% else %>
+            <dl class="question-bank-anchors">
+              <% [["1", q.anchor_1], ["3", q.anchor_3], ["5", q.anchor_5]].each do |n, text| %><dt>Score <%= n %></dt><dd><%= text.presence || "missing" %></dd><% end %>
+            </dl>
+          <% end %>
+          <% if editable %>
+            <div class="question-bank-item__actions">
+              <details class="question-bank-item__edit">
+                <summary class="btn btn-sm btn-light label-btn"><i class="fa fa-edit me-1" aria-hidden="true"></i>Edit</summary>
+                <%= render "staff/test_cases/bank_question_form", job: job, bank: bank, question: q %>
+              </details>
+              <%= button_to staff_job_question_bank_question_path(job, q.id), method: :delete, class: "btn btn-sm btn-danger-light label-btn",
+                            form: { data: { turbo: false, submit_guard: true }, class: "question-bank-item__remove" },
+                            title: "Remove question #{q.position}" do %>
+                <i class="fa fa-trash me-1" aria-hidden="true"></i>Remove
+              <% end %>
+            </div>
+          <% end %>
+        </li>
+      <% end %>
+    </ol>
+  <% end %>
+<% end %>

@@ -82,7 +82,7 @@ module TechnicalTests
 
     def self.allowed?(user, attempt)
       job = attempt.participation.stage.job
-      user&.role == "reviewer" && job.consultant_id != user.id
+      user&.role.in?(%w[hr_manager superadmin]) && job.consultant_id != user.id
     end
 
     # Exactly the text the preview shows above the rubric (the rubric and the instructions carry no

@@ -1,0 +1,39 @@
+<%# The vacancy's workflow as a stepper (17 Oct 2026): done steps green with when and who, the current step
+    highlighted, later steps grey. Steps come from HiringProgress, which reads what each step recorded. %>
+<%# Locals: progress (HiringProgress or BriefProgress: steps, current_key, complete?, done_count); title
+    and id (optional, so the brief page can draw its own workflow with the same look). %>
+<% progress = local_assigns.fetch(:progress) %>
+<div class="hris-form-card hiring-progress" id="<%= local_assigns.fetch(:id, "hiring-progress") %>">
+  <div class="hris-form-card__header">
+    <div class="hris-form-card__icon"><i class="fa fa-road" aria-hidden="true"></i></div>
+    <div><h3><%= local_assigns.fetch(:title, "Hiring progress") %></h3>
+      <% upcoming = progress.steps.find { |s| s.key == progress.current_key } %>
+      <p><%= progress.done_count %> of <%= progress.steps.size %> steps done<%= upcoming ? ". Next: #{upcoming.label} (#{upcoming.role})" : "; every step is done" %>. Each step shows when it was done and by whom.</p></div>
+    <div class="hris-form-card__action">
+      <span class="hiring-progress__badge hiring-progress__badge--<%= progress.complete? ? "done" : "open" %>"><%= progress.complete? ? "Completed" : "In progress" %></span>
+    </div>
+  </div>
+  <div class="hris-form-card__body">
+    <ol class="hiring-progress__track" aria-label="<%= local_assigns.fetch(:title, "Hiring progress") %>">
+      <% last_done = progress.steps.select(&:done?).last&.key %>
+      <% progress.steps.each do |step| %>
+        <% state = step.done? ? "done" : (step.key == progress.current_key ? "current" : "todo") %>
+        <li class="hiring-progress__step hiring-progress__step--<%= state %><%= " is-last-done" if step.key == last_done %>" aria-current="<%= state == "current" ? "step" : "false" %>">
+          <span class="hiring-progress__dot"><i class="fa <%= step.done? ? step.icon : (state == "current" ? "fa-hourglass-half" : step.icon) %>" aria-hidden="true"></i></span>
+          <span class="hiring-progress__label"><%= step.label %></span>
+          <% unless step.count.nil? %>
+            <span class="hiring-progress__count" title="Applicants handled at this step"><i class="fa fa-users" aria-hidden="true"></i> <%= step.count %> <%= "applicant".pluralize(step.count) %></span>
+          <% end %>
+          <% if step.done? %>
+            <span class="hiring-progress__when"><i class="fa fa-clock-o" aria-hidden="true"></i> <%= l(step.at.in_time_zone, format: "%d/%m/%Y %H:%M") %></span>
+            <% who = step.actor.respond_to?(:name) ? step.actor.name : step.actor.presence || "-" %>
+            <span class="hiring-progress__who" title="<%= who %>"><i class="fa fa-user" aria-hidden="true"></i> <%= who %></span>
+          <% else %>
+            <span class="hiring-progress__when"><%= state == "current" ? "Next" : "Waiting" %></span>
+            <span class="hiring-progress__who"><i class="fa fa-user-o" aria-hidden="true"></i> <%= step.role %></span>
+          <% end %>
+        </li>
+      <% end %>
+    </ol>
+  </div>
+</div>

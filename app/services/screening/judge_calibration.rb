@@ -19,7 +19,7 @@ module Screening
     end
 
     def call
-      refuse!("Only a consultant judges calibration CVs.") unless @user.role == "consultant"
+      refuse!("Only the HR Admin judges calibration CVs.") unless @user.role.in?(%w[hr_admin superadmin])
       if @job.consultant_id.present? && @job.consultant_id != @user.id
         refuse!("Calibration CVs are judged by the consultant of this vacancy.")
       end

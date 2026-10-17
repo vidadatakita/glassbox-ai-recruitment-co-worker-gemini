@@ -291,7 +291,11 @@ module Briefs
 
       problems = BriefCheck.new(@job).problems
       if problems.any?
-        raise Refused, ["This brief is complete, so every change must keep it complete.", *problems.map(&:message)]
+        # Each line names its step: the problems are usually in OTHER steps than the one being saved
+        # (17 Oct 2026, a step-3 save on a seeded "complete" brief listed step-2 and step-4 gaps with
+        # no step named, and read as a broken Save button).
+        raise Refused, ["This brief is complete, so every change must keep it complete. Fix these first:",
+                        *problems.map { |p| "Step #{p.step} (#{JobBriefChange::STEP_LABELS.fetch(p.step.to_s, 'brief')}): #{p.message}" }]
       end
 
       # A locked brief cannot change its stage plan (step 4 is refused above), and its opened

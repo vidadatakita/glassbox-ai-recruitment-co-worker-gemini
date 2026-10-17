@@ -1,0 +1,51 @@
+<%# Three-step application, step 3: the competency test. Before the start: what to expect and one button
+    (the timer starts only when pressed). Running: the drawn questions in one form, answers saved as
+    typed (apply_autosave.js) and by the "Save answers" button; Submit sends the application. After the
+    time: the saved answers are kept and Submit still sends them ("time up submits what is answered"). %>
+<% content_for :title, "Competency test · #{@job.title}" %>
+<%= render "candidate_shared/job_top", job: @job %>
+<div class="cand-head">
+  <%= render "apply/stepper", step: 3 %>
+  <h1>Competency test</h1>
+  <p class="small">Step 3 of 3. <%= @draft.question_bank.technical_draw + @draft.question_bank.role_draw %> questions about the work, <%= @draft.time_limit_minutes %> minutes in total.</p>
+</div>
+<%= render "candidate_shared/errors", errors: @errors %>
+<% if flash[:alert] %><p class="field-error" role="alert"><%= flash[:alert] %></p><% end %>
+<% if !@draft.test_started? %>
+  <ul class="small">
+    <li>The timer starts when you press the button below and keeps running if you close the page.</li>
+    <li>Your answers are saved as you go. When the time is up, the answers you gave are sent.</li>
+    <li>Some questions have one correct option; others ask for a short written answer.</li>
+  </ul>
+  <%= form_with url: apply_test_start_path(@job.public_code, params[:secret]), method: :post, data: { turbo: false, submit_guard: true } do %>
+    <button type="submit" class="btn primary" name="commit" value="Start the test">Start the test</button>
+  <% end %>
+<% else %>
+  <% over = @draft.time_over? %>
+  <p class="test-clock" data-due-at="<%= @draft.test_due_at.iso8601 %>" data-now="<%= Time.current.iso8601 %>" aria-live="polite">
+    Time left: <strong data-countdown-text><%= over ? "Time is up" : "#{@draft.remaining_seconds / 60} min" %></strong></p>
+  <%= form_with url: apply_submit_path(@job.public_code, params[:secret]), method: :post, id: "apply-test-form", class: "cand-form apply-test",
+                data: { turbo: false, submit_guard: true, autosave_url: apply_answers_path(@job.public_code, params[:secret]), locked: over } do %>
+    <% @draft.questions.each_with_index do |q, i| %>
+      <% answer = @draft.answer_for(q) %>
+      <fieldset class="field apply-question" <%= "disabled" if over %>>
+        <legend><span class="num"><%= i + 1 %>.</span> <%= q.prompt %></legend>
+        <% if q.multiple_choice? %>
+          <% q.options.each_with_index do |text, k| %>
+            <label class="apply-option"><input type="radio" name="answers[<%= q.id %>]" value="<%= k %>" <%= "checked" if answer&.choice_index == k %>> <span><%= text %></span></label>
+          <% end %>
+        <% else %>
+          <label class="visually-hidden" for="answer_<%= q.id %>">Your answer</label>
+          <textarea id="answer_<%= q.id %>" name="answers[<%= q.id %>]" rows="4" maxlength="4000"><%= answer&.answer_text %></textarea>
+        <% end %>
+      </fieldset>
+    <% end %>
+    <p class="small" data-autosave-status aria-live="polite"><%= over ? "The time is up. Your saved answers are kept; send your application." : "Answers are saved as you type." %></p>
+    <button type="submit" class="btn primary" name="commit" value="Send application">Send application</button>
+  <% end %>
+  <% unless over %>
+    <%# "Save answers" without JavaScript: a separate button (outside the test form, so no form sits in a
+        form) that submits the test form to the save address through formaction. %>
+    <button type="submit" class="btn" form="apply-test-form" formaction="<%= apply_answers_path(@job.public_code, params[:secret]) %>" name="commit" value="Save answers">Save answers</button>
+  <% end %>
+<% end %>

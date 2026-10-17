@@ -10,7 +10,7 @@ class SessionsController < ApplicationController
   def create
     if user = User.authenticate_by(params.permit(:email_address, :password))
       # A fresh Rails session after login (session fixation), keeping only where the user was going;
-      # same order as GoogleSessionsController (main seat 18:5x). Reading the URL AFTER the reset
+      # same order as GoogleSessionsController (team lead 18:5x). Reading the URL AFTER the reset
       # would always send the user to the root.
       return_to = after_authentication_url
       reset_session

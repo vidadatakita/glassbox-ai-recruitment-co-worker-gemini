@@ -10,6 +10,18 @@
 <% end %>
 <%= form_with url: staff_job_test_cases_path(job), method: :post, scope: :test_case, multipart: true,
               class: "salary-schema-form job-brief-form test-case-form", data: { turbo: false, submit_guard: true } do %>
+  <% if local_assigns[:case_proposal] %>
+    <%# The AI-drafted case file (staff/test_cases/_ai_case_file): attached on Save unless a file is chosen. %>
+    <input type="hidden" name="case_saran" value="<%= case_proposal.id %>">
+  <% end %>
+  <% if form.mode == :new_version %>
+    <%# The reason comes FIRST: the approved version never changes, so this form starts a new version. %>
+    <div class="hris-form-card question-bank-form">
+      <label class="form-label" for="test_case_new_version_reason"><strong>Reason for version <%= form.version_number %></strong></label>
+      <textarea class="form-control" id="test_case_new_version_reason" name="test_case[new_version_reason]" rows="2"><%= form.value("new_version_reason") %></textarea>
+      <span class="hris-field-hint">Required. Version <%= form.latest.version %> stays as it is (applicants may already be working on it); this reason is saved with version <%= form.version_number %> and shown in the version list.</span>
+    </div>
+  <% end %>
   <%= render "staff/test_cases/form_case", form: form %>
   <%= render "staff/test_cases/form_rubric", job: job, form: form %>
   <div class="hris-form-actions">

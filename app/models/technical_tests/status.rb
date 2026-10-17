@@ -24,7 +24,12 @@ module TechnicalTests
     def start_by = TechnicalTests.start_by(application)
     def due_at = attempt&.due_at
     def answer_deadline = attempt && TechnicalTests.answer_deadline(attempt)
-    def answered_at = attempt&.answered_at
+    # Three-step application (17 Oct 2026): the applicant took the competency test while applying, so
+    # the test step is DONE at submit. Without this the status page offered the 48-hour case test,
+    # said "Not started", a reminder e-mail went out at 25 h and "Not taken" showed at 49 h
+    # (independent test pass, slice B, F1).
+    def bank_draft = @bank_draft ||= application.id && ApplicationDraft.where(job_application_id: application.id).where.not(submitted_at: nil).first
+    def answered_at = attempt&.answered_at || bank_draft&.submitted_at
 
     # The version the candidate works on: the one pinned at start, otherwise the newest approved.
     def version = attempt&.test_case || (applies? ? TechnicalTestCase.current_for(application.job) : nil)
@@ -44,7 +49,7 @@ module TechnicalTests
 
     def compute_state
       return :none unless applies?
-      return :sent if attempt&.answered_at
+      return :sent if attempt&.answered_at || bank_draft
       return :closed if application.consent_withdrawn_at.present? || application.knocked_out?
       return :expired if participation.attendance == "no_show"
 

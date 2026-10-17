@@ -1,4 +1,5 @@
 <% content_for :title, "Try the demo · GlassBox" %>
+<% content_for :brand_in_page, "1" %>
 <%# A5: the no-login door. Three doors, one form each (never a form inside a form), no disabled
     buttons. The page says what the visitor is about to see and that every row is invented. %>
 <div class="text-center mb-4">
@@ -10,13 +11,12 @@
 
 <div class="d-grid gap-3">
   <% @doors.each do |key, door| %>
-    <div class="border rounded-3 p-3 d-flex align-items-start justify-content-between gap-3">
-      <div>
-        <div class="fw-semibold"><%= door[:title] %></div>
-        <div class="text-muted fs-13"><%= door[:does] %></div>
-      </div>
+    <%# Description above a full-width button: beside it, the text was squeezed to ~110px (9-10 lines). %>
+    <div class="demo-door border rounded-3 p-3">
+      <div class="fw-semibold"><%= door[:title] %></div>
+      <div class="text-body fs-13 mb-2"><%= door[:does] %></div>
       <%= button_to "Enter as #{door[:title]}", demo_path, params: { role: key }, method: :post,
-                    class: "btn btn-primary text-nowrap", form: { data: { turbo: false } } %>
+                    class: "btn btn-primary w-100", form_class: "d-grid", form: { data: { turbo: false } } %>
     </div>
   <% end %>
 </div>
@@ -27,11 +27,13 @@
     <div class="fw-semibold mb-1">Apply as a candidate</div>
     <p class="text-muted fs-13 mb-2">The applicant side needs no account either: open a vacancy, answer the knockout
       questions, give consent, upload a CV. The status link that follows shows the stage and the next date, never a score.</p>
-    <ul class="list-unstyled mb-0">
+    <div class="list-group">
       <% @apply_jobs.each do |job| %>
-        <li><%= link_to job.title, lamar_path(job.public_code), class: "link-primary" %></li>
+        <%= link_to lamar_path(job.public_code), class: "list-group-item list-group-item-action d-flex justify-content-between align-items-center" do %>
+          <span><%= job.title %></span><i class="fa fa-arrow-right text-muted" aria-hidden="true"></i>
+        <% end %>
       <% end %>
-    </ul>
+    </div>
   </div>
 <% end %>
 

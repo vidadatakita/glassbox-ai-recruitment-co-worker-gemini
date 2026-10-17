@@ -2,11 +2,12 @@
 
 module Briefs
   # Saves the job ad and checks it (Briefs::AdCheck), recording the change like every brief step.
-  # After HR has approved the ad, only HR edits it, and every save needs the tick (confirmed): the
-  # text shows on the Lamar page at once, so saving it IS HR's approval of the new text. A text that
-  # names a protected attribute (a rule flag, Briefs::AdCheck) is then saved only with HR's written
-  # reason (reason:), recorded with the change: the same rule as approving a draft
-  # (Staff::JobsController#approve_ad).
+  # The ad goes live when the portal opens (Portal::WindowChange#open! stamps the approval); after
+  # that only HR edits it, and every save needs the tick (confirmed): the text shows on the apply
+  # page at once, so saving it IS HR's approval of the new text. A text that names a protected
+  # attribute (a rule flag, Briefs::AdCheck) is saved only with the writer's reason (reason:),
+  # recorded with the change, live or not: since 17 Oct 2026 there is no separate approval step
+  # where the reason could be asked later.
   class SaveAd
     # needs_reason: refused only for the missing reason; flags then holds the rule flags of the
     # unsaved text, so the page can show them beside the reason field.
@@ -33,9 +34,9 @@ module Briefs
         return Result.new(false, "Tick \"I have checked this text\": this job ad is already approved, so the text you save is shown to applicants at once.", [])
       end
       # The rules first: a text refused for the missing reason costs no AI call.
-      if live && @reason.empty? && AdCheck.rule_hit?(rules = AdCheck.rule_flags(@text))
+      if @reason.empty? && AdCheck.rule_hit?(rules = AdCheck.rule_flags(@text))
         return Result.new(ok: false, flags: rules, needs_reason: true,
-                          error: "#{AdCheck.rule_summary(rules)} This job ad is shown to applicants as soon as it is saved: change the sentence, or write why the work needs it in \"Reason\".")
+                          error: "#{AdCheck.rule_summary(rules)} #{live ? 'This job ad is shown to applicants as soon as it is saved' : 'This job ad is shown to applicants once the portal opens'}: change the sentence, or write why the work needs it in \"Reason\".")
       end
 
       flags = AdCheck.call(@text)
@@ -44,9 +45,12 @@ module Briefs
         @job.update!(ad_text: @text, ad_flags: flags)
         # Saving with the tick IS HR's approval of this text.
         @job.update!(ad_approved_at: Time.current, ad_approved_by_id: @actor.id) if live && before != @text
-        if before != @text
-          changes = { "ad_text" => [before, @text] }
-          changes["ad_flags_reason"] = [AdCheck.rule_categories(flags).join(", "), @reason] if live && AdCheck.rule_hit?(flags)
+        # Test engine F3 (17 Oct 2026): a re-save of the same flagged text WITH a reason is recorded too;
+        # it is how an ad saved before the reason rule gets its reason on record.
+        reason_given = AdCheck.rule_hit?(flags) && @reason.present?
+        if before != @text || reason_given
+          changes = before != @text ? { "ad_text" => [before, @text] } : {}
+          changes["ad_flags_reason"] = [AdCheck.rule_categories(flags).join(", "), @reason] if AdCheck.rule_hit?(flags)
           JobBriefChange.create!(job: @job, actor: @actor, actor_role: @actor.role, step: "ad", changes_made: changes, created_at: Time.current)
         end
       end

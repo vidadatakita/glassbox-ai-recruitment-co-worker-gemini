@@ -1,8 +1,8 @@
 require "test_helper"
 
 # "Nilai Tes psikologi" on the applicant page (2026-10-13): the HR PIC sees the form on the S4 row,
-# saves a score through it, and the row then shows the score instead of the form. Other roles get
-# no form, and the controller refuses their post.
+# saves a score through it, and the row then shows the score instead of the form. The hr_manager
+# gets no form, and the controller refuses its post.
 class ManualScoreScreensTest < ActionDispatch::IntegrationTest
   include TechnicalTestFactory
 
@@ -66,8 +66,10 @@ class ManualScoreScreensTest < ActionDispatch::IntegrationTest
     assert_equal BigDecimal("75"), s5.reload.current_score, "rating 4 of 5 on every competency"
   end
 
-  test "other roles see no form and their post is refused" do
-    %w[consultant reviewer owner].each do |role|
+  # Three roles (17 Oct 2026): the consultant is an hr_admin now and may score like the HR PIC;
+  # the hr_manager (reviewer, owner) sees no form and is refused.
+  test "the hr_manager sees no form and its post is refused" do
+    %w[reviewer owner].each do |role|
       sign_in_as staff_user(role)
       get staff_application_path(@application)
       assert_nil form_doc, role if response.successful?

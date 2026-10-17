@@ -91,7 +91,7 @@ class JobFormCoverageAndPackageTest < ActiveSupport::TestCase
       assert Briefs::PackageAdvisor.override_problem(4, 2, reason), "reason #{reason.inspect} accepted"
     end
     assert_nil Briefs::PackageAdvisor.override_problem(4, 2, "Klien hanya butuh daftar pelamar")
-    assert_nil Briefs::PackageAdvisor.override_problem(4, 4, nil), "control: inside the set needs no reason"
+    assert_nil Briefs::PackageAdvisor.override_problem(4, 3, nil), "control: inside the set needs no reason"
   end
 
   test "override through the service: whitespace reason refused at completion, a real reason completes" do

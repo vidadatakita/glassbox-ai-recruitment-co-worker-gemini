@@ -1,10 +1,27 @@
-<dl class="job-brief-facts job-brief-facts--inline screening-counts">
-  <dt>Waiting</dt><dd><%= board.waiting.size %></dd>
-  <dt>Queued</dt><dd><%= board.queued.size %></dd>
-  <dt>Awaiting review</dt><dd><%= board.awaiting_release.size %></dd>
-  <dt>Done</dt><dd><%= board.done.size %></dd>
-  <dt>Needs review</dt><dd><%= board.to_review.size %></dd>
-  <dt>Screening failed</dt><dd><%= board.failed.size %></dd>
-  <dt>CV unreadable</dt><dd><%= board.unreadable.size %></dd>
-  <dt>Not sent</dt><dd><%= board.not_sent.size %></dd>
-</dl>
+<%# The screening figures as two groups of tiles (17 Oct 2026, "the layout is messy"): the pipeline
+    with its progress, and what needs a person, highlighted when not zero (information display §1). %>
+<% pipeline = [["Waiting", board.waiting.size, "fa-clock-o"], ["Queued", board.queued.size, "fa-list"],
+               ["Awaiting review", board.awaiting_release.size, "fa-shield"], ["Done", board.done.size, "fa-check"]] %>
+<% attention = [["Needs review", board.to_review.size, "fa-search"], ["Screening failed", board.failed.size, "fa-exclamation-triangle"],
+                ["CV unreadable", board.unreadable.size, "fa-file-o"], ["Not sent", board.not_sent.size, "fa-ban"]] %>
+<% total = pipeline.sum { |_, n, _| n } + board.failed.size + board.unreadable.size + board.not_sent.size %>
+<% done_pct = total.positive? ? (100.0 * board.done.size / total).round : 0 %>
+<div class="screening-tiles">
+  <div class="screening-tiles__group">
+    <div class="screening-tiles__head"><span>Pipeline</span><span><strong><%= board.done.size %></strong> of <%= total %> screened (<%= done_pct %>%)</span></div>
+    <span class="screening-tiles__bar" aria-hidden="true"><span style="width: <%= done_pct %>%"></span></span>
+    <div class="screening-tiles__grid">
+      <% pipeline.each do |label, n, icon| %>
+        <div class="screening-tile"><i class="fa <%= icon %>" aria-hidden="true"></i><strong><%= n %></strong><span><%= label %></span></div>
+      <% end %>
+    </div>
+  </div>
+  <div class="screening-tiles__group">
+    <div class="screening-tiles__head"><span>Needs attention</span><span><%= attention.sum { |_, n, _| n }.zero? ? "nothing waiting for a person" : "#{attention.sum { |_, n, _| n }} waiting for a person" %></span></div>
+    <div class="screening-tiles__grid">
+      <% attention.each do |label, n, icon| %>
+        <div class="screening-tile<%= " screening-tile--alert" if n.positive? %>"><i class="fa <%= icon %>" aria-hidden="true"></i><strong><%= n %></strong><span><%= label %></span></div>
+      <% end %>
+    </div>
+  </div>
+</div>

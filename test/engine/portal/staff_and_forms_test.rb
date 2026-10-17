@@ -3,10 +3,12 @@ require_relative "portal_engine_support"
 
 # Hunt items 1 (role matrix) and 8 (house hard rules) of brief 02.
 #
-# Role matrix, from blueprint §1.2 and the feature record §2: approve ad = hr_pic; open / close /
-# reopen = hr_pic or consultant; schedule, upload offer, mark follow-up = consultant; answer an
-# objection = consultant or reviewer; settings and consent text = admin; work queue (screen 6)
-# = consultant (slice plan §2). Each refusal has a control: the allowed role succeeds.
+# Role matrix, three roles (GlassBox Team, 17 Oct 2026). The helper names below are people:
+# consultant and hr_pic are hr_admin, reviewer and owner are hr_manager, admin is superadmin.
+# Approve ad, open / close / reopen, schedule, upload offer, mark follow-up and the work-queue
+# "handled" actions = hr_admin; answer an objection = hr_admin or hr_manager; settings and consent
+# text = superadmin; the superadmin passes every role check. Each refusal has a control: the
+# allowed role succeeds.
 #
 # House rules: every page a candidate or staff member can reach, in every state that adds a
 # form, is checked on the rendered HTML; and the important forms are SUBMITTED as a browser
@@ -16,6 +18,7 @@ class EnginePortalStaffAndFormsTest < ActionDispatch::IntegrationTest
   include PortalEngineSupport
 
   STAFF_ROLES = %w[owner hr_pic consultant reviewer admin].freeze
+  HR_MANAGERS = %w[owner reviewer].freeze # the people whose role is hr_manager
 
   setup do
     Rails.cache.clear
@@ -69,60 +72,64 @@ class EnginePortalStaffAndFormsTest < ActionDispatch::IntegrationTest
 
   # --- role matrix --------------------------------------------------------------------------
 
-  test "approve ad: only hr_pic; the approval records who" do
+  test "open portal approves the ad and records who; a reviewer or owner cannot open it" do
     job = portal_job
     job.update_columns(ad_approved_at: nil, ad_approved_by_id: nil, ad_text: "Tentang posisi ini\nIklan uji.")
-    (STAFF_ROLES - ["hr_pic"]).each do |role|
-      as role
-      patch approve_ad_staff_job_path(job), params: { commit: "Approve job ad" }
+    set_retention
+    publish_consent
+    %w[reviewer owner].each do |role|
+      assert_raises(Portal::WindowChange::Refused) { Portal::WindowChange.open!(job:, actor: staff_user(role)) }
       assert_nil job.reload.ad_approved_at, "#{role} approved the ad"
     end
-    as "hr_pic"
-    patch approve_ad_staff_job_path(job), params: { commit: "Approve job ad" }
+    Portal::WindowChange.open!(job:, actor: staff_user("hr_pic"))
     assert_equal staff_user("hr_pic").id, job.reload.ad_approved_by_id, "control"
   end
 
-  test "schedule an appointment: only consultant" do
+  test "schedule an appointment: hr_admin (and superadmin) only; hr_manager refused" do
     populated!
     participation = @rina.participations.find_by!(stage: stage_of(@job, "S5"))
     @appointment.update!(confirmation: "pending")
     start = 2.days.from_now.change(hour: 9)
     params = { appointment: { starts_at: start.strftime("%Y-%m-%dT%H:%M"), ends_at: (start + 1.hour).strftime("%Y-%m-%dT%H:%M"),
                               mode: "video", place_or_link: "https://meet.example/x", contact: "Dewi" }, commit: "Simpan perubahan jadwal" }
-    (STAFF_ROLES - ["consultant"]).each do |role|
+    HR_MANAGERS.each do |role|
       as role
       patch staff_appointment_path(@appointment), params: params
       assert_equal "onsite", @appointment.reload.mode, "#{role} changed a schedule"
     end
-    as "consultant"
+    as "hr_pic"
     patch staff_appointment_path(@appointment), params: params
     assert_equal "video", @appointment.reload.mode, "control"
     assert_equal participation.id, @appointment.participation_id
   end
 
-  test "mark the offer-to-start follow-up: only consultant (same before_action as the upload)" do
+  test "mark the offer-to-start follow-up: hr_admin (and superadmin) only; hr_manager refused (same before_action as the upload)" do
     populated!
     offer = accepted_offer!
-    (STAFF_ROLES - ["consultant"]).each do |role|
+    HR_MANAGERS.each do |role|
       as role
       post staff_offer_followed_up_path(offer), params: { commit: "Sudah dihubungi" }
       assert_nil offer.reload.followed_up_at, "#{role} marked the follow-up"
     end
-    as "consultant"
+    as "hr_pic"
     post staff_offer_followed_up_path(offer), params: { commit: "Sudah dihubungi" }
     assert offer.reload.followed_up_at, "control"
   end
 
-  test "answer an objection: only consultant or reviewer" do
+  # Three roles: hr_admin (old consultant) and hr_manager (old reviewer) both answer, and the
+  # superadmin passes every role check, so no signed-in role is refused any more. The refusal half
+  # is the logged-out request (see "every staff action refuses a logged-out request" below); here
+  # the allowed side is pinned for each role, on its own objection.
+  test "answer an objection: hr_admin, hr_manager and superadmin may; no signed-in role is refused" do
     populated!
-    %w[owner hr_pic admin].each do |role|
-      as role
-      post staff_objection_answer_path(@objection), params: { outcome: "upheld", answer: "Ya", commit: "Kirim jawaban" }
-      assert_nil @objection.reload.answered_at, "#{role} answered an objection"
-    end
     as "reviewer"
     post staff_objection_answer_path(@objection), params: { outcome: "not_upheld", answer: "Ditinjau", commit: "Kirim jawaban" }
-    assert_equal staff_user("reviewer").id, @objection.reload.answered_by_id, "control"
+    assert_equal staff_user("reviewer").id, @objection.reload.answered_by_id, "control: an hr_manager answers"
+    tari_p1 = @tari.participations.find_by!(stage: stage_of(@job, "S1"))
+    second = Portal::CandidateActions.new(@tari).object!(tari_p1.id, "Mohon ditinjau ulang")
+    as "hr_pic"
+    post staff_objection_answer_path(second), params: { outcome: "not_upheld", answer: "Ditinjau", commit: "Kirim jawaban" }
+    assert_equal staff_user("hr_pic").id, second.reload.answered_by_id, "control: an hr_admin answers"
   end
 
   test "settings and consent text: only admin" do
@@ -135,17 +142,18 @@ class EnginePortalStaffAndFormsTest < ActionDispatch::IntegrationTest
     assert_equal 1, ConsentTemplate.count
   end
 
-  # Screen 6 is the consultant's queue (slice plan §2). Marking a mail failure "handled" removes
+  # Screen 6 is the hr_admin's queue (slice plan §2). Marking a mail failure "handled" removes
   # it from the only place an operator sees it; before the F11 fix any logged-in role could.
-  test "F11 fixed: only the consultant can mark a failed email or a link request as handled" do
+  # Three roles: the hr_manager (owner, reviewer) is refused; the control is F12 below.
+  test "F11 fixed: an hr_manager cannot mark a failed email or a link request as handled" do
     populated!
-    %w[owner hr_pic reviewer admin].each do |role|
+    HR_MANAGERS.each do |role|
       as role
       post handle_mail_failure_staff_work_queue_path(@mail_failure), params: { commit: "Sudah ditangani" }
       post handle_link_request_staff_work_queue_path(@link_request), params: { commit: "Tandai selesai" }
     end
-    assert_nil @mail_failure.reload.handled_at, "a non-consultant hid a failed email from the work queue"
-    assert_nil @link_request.reload.handled_at, "a non-consultant closed a candidate's link request"
+    assert_nil @mail_failure.reload.handled_at, "an hr_manager hid a failed email from the work queue"
+    assert_nil @link_request.reload.handled_at, "an hr_manager closed a candidate's link request"
   end
 
   test "F12 fixed: a failed email marked handled records who handled it" do
@@ -156,19 +164,19 @@ class EnginePortalStaffAndFormsTest < ActionDispatch::IntegrationTest
     assert_equal staff_user("consultant").id, @mail_failure.handled_by_id
   end
 
-  # Blueprint §1.2: Admin = clients, packages, job library, templates, users. No candidate work.
-  test "F13 fixed / D40d: owner, hr_pic, consultant and reviewer get the CV; admin cannot open the candidate or the CV" do
+  # Three roles (17 Oct 2026): the old admin rule (no candidate work) is gone; the superadmin passes
+  # every role check and sees names and contacts always. Every signed-in role gets the CV; the
+  # refusal half is the logged-out request in the next test.
+  test "F13 / D40d: every role gets the CV; the superadmin also opens the candidate with the contact" do
     populated!
-    %w[owner hr_pic consultant reviewer].each do |role|
+    STAFF_ROLES.each do |role|
       as role
       get cv_staff_application_path(@rina)
       assert_equal "application/pdf", response.media_type, "control: #{role} gets the CV"
     end
     as "admin"
-    get cv_staff_application_path(@rina)
-    refute_equal "application/pdf", response.media_type, "admin downloaded a candidate CV"
     get staff_application_path(@rina)
-    refute_includes response.body, "rina@uji.example", "admin sees the candidate's email and phone"
+    assert_includes response.body, "rina@uji.example", "the superadmin sees the candidate's email"
   end
 
   test "every staff action refuses a logged-out request and a candidate's link session" do
@@ -363,10 +371,17 @@ class EnginePortalStaffAndFormsTest < ActionDispatch::IntegrationTest
         assert_engine_house_rules(response.body, "#{role} #{path}")
       end
     end
+    # A link request matches no job, so only a user without a client company (the superadmin) is
+    # shown it; the hr_admin (consultant) is shown the job-bound sections.
     as "consultant"
     get staff_work_queue_path
-    %w[Handled Mark\ done Send\ answer Contacted].each do |label|
+    %w[Handled Send\ answer Contacted].each do |label|
       assert_includes response.body, "value=\"#{label}\"", "control: the work queue renders '#{label}'"
+    end
+    as "admin"
+    get staff_work_queue_path
+    %w[Handled Mark\ done Send\ answer Contacted].each do |label|
+      assert_includes response.body, "value=\"#{label}\"", "control: the superadmin's work queue renders '#{label}'"
     end
   end
 

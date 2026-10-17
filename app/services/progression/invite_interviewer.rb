@@ -16,7 +16,7 @@ module Progression
 
     def call
       stage = @participation.stage
-      raise Refused, "Only the HR owner invites assessors." unless @actor&.role == CHOOSER
+      raise Refused, "Sign in as staff to invite an assessor." unless Progression.inviter?(@actor)
       raise Refused, "This stage is not an interview." unless stage.score_source == "scorecard"
       raise Refused, "This stage is already closed." if stage.status == "closed"
       raise Refused, "The choice for this stage is already recorded." if @participation.progression_choice

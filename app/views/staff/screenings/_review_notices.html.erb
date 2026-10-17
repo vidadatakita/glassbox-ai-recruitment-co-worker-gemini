@@ -1,12 +1,12 @@
 <%# D13: before calibration passes, results are shown but never as final, and no action is offered. %>
 <% unless board.calibrated? %>
   <div class="alert alert-warning" role="status">
-    <strong>Not yet calibrated.</strong> The AI advice below is not a final decision. Reviews can be made once the consultant and the AI have assessed the first 20 CVs with at most <%= Screening::Calibration::MAX_DISAGREEMENT_PERCENT %>% disagreement.
+    <strong>Not yet calibrated.</strong> The AI advice below is not a final decision. Reviews can be made once the HR Admin and the AI have assessed the first 20 CVs with at most <%= Screening::Calibration::MAX_DISAGREEMENT_PERCENT %>% disagreement.
   </div>
 <% end %>
 <% if board.stage.status != "open" %>
   <div class="alert alert-info" role="status">The CV screening stage is not open yet. Decisions can be recorded once the stage is open.</div>
 <% end %>
 <% if consultant_blocked %>
-  <div class="alert alert-danger" role="alert">You are recorded as the consultant of this vacancy, so you cannot be the reviewer of its screening.</div>
+  <div class="alert alert-danger" role="alert">You prepared this vacancy, so you cannot also review its screening.</div>
 <% end %>

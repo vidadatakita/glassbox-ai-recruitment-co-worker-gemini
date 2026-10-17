@@ -1,7 +1,7 @@
 require "test_helper"
 
 # F-10-01 and the 18:4x security review: no part of a service-account key may reach any place the
-# Google lane stores or shows an error. The check is strict on purpose: NO substring of 8 or more
+# Google integration stores or shows an error. The check is strict on purpose: NO substring of 8 or more
 # characters of the input may appear in the message, the full message, the cause chain, the Rails
 # log, google_integration_events, appointments.calendar_error, Settings or the check output.
 class GoogleIntegration::KeyLeakTest < ActionDispatch::IntegrationTest

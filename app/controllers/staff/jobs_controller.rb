@@ -2,7 +2,7 @@ module Staff
   # Screens 3 (My vacancies) and 4 (Vacancy home with the Applicant portal box).
   class JobsController < BaseController
     before_action :load_job, only: %i[show approve_ad]
-    before_action -> { require_role!(:hr_pic) }, only: :approve_ad
+    before_action -> { require_role!(:hr_admin) }, only: :approve_ad
 
     def index
       @jobs = org_jobs.includes(:client_company).order(:id).to_a
@@ -17,6 +17,9 @@ module Staff
     # Feature 03 (task part D): the ad of a job whose brief is not complete cannot be approved,
     # because the brief is what S1 screens against (blueprint §1.1 "everything downstream is
     # generated from the brief"). Jobs approved before the brief existed keep their approval.
+    # TAKEN DOWN 17 Oct 2026 (GlassBox Team): not routed. The ad is approved at portal open
+    # (Portal::WindowChange#open!); the rule-flag reason is required at save (Briefs::SaveAd).
+    # Kept so the step can be restored by re-adding its route.
     def approve_ad
       unless @job.brief_complete?
         return redirect_to(staff_job_path(@job), alert: "The job ad cannot be approved yet because the vacancy brief is incomplete. Complete the brief in step 4.")

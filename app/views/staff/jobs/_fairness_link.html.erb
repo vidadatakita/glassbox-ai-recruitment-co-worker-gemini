@@ -1,6 +1,6 @@
 <%# The way into the fairness check from the vacancy home (FLOW v2.1, new in v2.1): one invented CV,
     swapped before redaction, run on the HIGH tier. Same roles as the screening report. %>
-<% if job.brief_complete? && current_user.role.in?(%w[hr_pic consultant reviewer owner]) %>
+<% if job.brief_complete? && current_user.role.in?(%w[hr_admin hr_manager superadmin]) %>
 <div class="hris-form-card report-link" id="fairness-check">
   <div class="hris-form-card__header">
     <div class="hris-form-card__icon"><i class="fa fa-balance-scale" aria-hidden="true"></i></div>

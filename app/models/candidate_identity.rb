@@ -12,8 +12,10 @@
 # threshold change (rule 3, D37); a stage closes only when every candidate is decided (§3.4).
 # The view decides nothing itself; it asks CandidateIdentityHelper, which asks this module.
 module CandidateIdentity
-  STAFF_ROLES = %w[consultant reviewer admin].freeze
-  CLIENT_ROLES = %w[hr_pic owner].freeze
+  # 17 Oct 2026, three roles: the HR Admin and the HR Manager decide and check, so they see names only
+  # once the screening decision is confirmed (blind screening); the superadmin sees them always.
+  STAFF_ROLES = %w[superadmin].freeze
+  CLIENT_ROLES = %w[hr_admin hr_manager].freeze
 
   module_function
 

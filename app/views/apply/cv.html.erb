@@ -1,0 +1,26 @@
+<%# Three-step application, step 2: the CV, checked by its content as in the two-step form. %>
+<% content_for :title, "Your CV · #{@job.title}" %>
+<%= render "candidate_shared/job_top", job: @job %>
+<div class="cand-head">
+  <%= render "apply/stepper", step: 2 %>
+  <h1>Your CV</h1>
+  <p class="small">Step 2 of 3. PDF or Word (.docx), 5 MB at most. Save the link of this page to continue later.</p>
+</div>
+<%= render "candidate_shared/errors", errors: [@cv_error].compact %>
+<% if @draft.cv.attached? %>
+  <p class="small">A CV is already uploaded (<%= @draft.cv.filename %>). Upload another file to replace it, or continue.</p>
+  <%= link_to "Continue to the competency test", apply_test_path(@job.public_code, params[:secret]), class: "btn primary" %>
+<% end %>
+<%= form_with url: apply_cv_path(@job.public_code, params[:secret]), method: :post, multipart: true, class: "cand-form lamar-form",
+              data: { turbo: false, submit_guard: true } do %>
+  <div class="field <%= "has-error" if @cv_error %>">
+    <span class="field-label" id="apply_cv-label">CV (PDF or Word .docx, 5 MB at most)</span>
+    <label class="file-pick" for="apply_cv">
+      <input type="file" id="apply_cv" name="lamaran[cv]" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required
+             aria-labelledby="apply_cv-label" aria-describedby="apply_cv-name">
+      <span class="file-pick__button">Choose file</span>
+      <span class="file-pick__name" id="apply_cv-name" data-empty="No file chosen">No file chosen</span>
+    </label>
+  </div>
+  <button type="submit" class="btn primary" name="commit" value="Upload and continue">Upload and continue</button>
+<% end %>

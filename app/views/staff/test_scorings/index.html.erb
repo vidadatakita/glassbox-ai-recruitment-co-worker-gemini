@@ -7,6 +7,9 @@
              subtitle: "The reviewer scores each answer with the rubric of the version the applicant worked on. Ratings of 1 to 5 per criterion become the stage score and the technical test decision.",
              actions: label_link("Back", "fa-arrow-left", staff_job_path(@job, anchor: "gerbang-seleksi"), purpose: :neutral, icon_end: true) %>
   <section class="content">
+    <% if QuestionBank.current_for(@job) %>
+      <p class="mb-3"><%= link_to "Competency test scoring (applicants who took the test while applying)", staff_job_bank_scorings_path(@job), class: "link-primary" %></p>
+    <% end %>
     <%= render "staff/test_scorings/notices", board: @board, consultant_blocked: @consultant_blocked %>
     <%= render "staff/test_scorings/metrics", board: @board %>
     <% items = @board.to_score %>

@@ -1,0 +1,6 @@
+<%# Three-step application: where the applicant is, and what comes next. %>
+<ol class="stepper" aria-label="Application steps">
+  <% [[1, "Your details"], [2, "Your CV"], [3, "Competency test"]].each do |n, label| %>
+    <li class="<%= n == step ? "is-current" : (n < step ? "is-done" : "") %>" <%= 'aria-current="step"'.html_safe if n == step %>><span class="num"><%= n < step ? "✓" : n %></span><%= label %></li>
+  <% end %>
+</ol>

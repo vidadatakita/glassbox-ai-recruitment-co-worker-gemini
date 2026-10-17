@@ -74,16 +74,27 @@ class InterviewerScoreTest < ActionDispatch::IntegrationTest
     assert_equal expected, @s3.reload.current_score, "the stage score is the mean of both interviewers"
   end
 
-  test "HR creates the link from the applicant page; a consultant cannot; a tampered token is refused" do
+  # Every role may create an interviewer's link (17 Oct 2026); signed-out visitors may not.
+  test "every role creates the link from the applicant page; a signed-out visitor cannot; a tampered token is refused" do
     sign_in_as @hr
     post staff_participation_interviewer_path(@s3), params: { interviewer_name: "Budi" }
     follow_redirect!
     link = Nokogiri::HTML(response.body).at_css("input[aria-label='Scoring link']")["value"]
     assert_match %r{/score/[\w-]{20,}\z}, link
 
-    sign_in_as staff_user("consultant")
+    %w[reviewer admin].each_with_index do |role, i|
+      sign_in_as staff_user(role)
+      get staff_application_path(@s3.job_application)
+      assert_select "form[action=?]", staff_participation_interviewer_path(@s3), 1, "#{role} sees the link form"
+      assert_difference -> { InterviewerInvite.count }, 1, role do
+        post staff_participation_interviewer_path(@s3), params: { interviewer_name: "Assessor #{i}" }
+      end
+      assert_equal staff_user(role).id, InterviewerInvite.order(:id).last.issued_by_id
+    end
+
+    sign_out
     assert_no_difference -> { InterviewerInvite.count } do
-      post staff_participation_interviewer_path(@s3), params: { interviewer_name: "Lain" }
+      post staff_participation_interviewer_path(@s3), params: { interviewer_name: "Anonymous" }
     end
 
     get interviewer_score_path("tidak-ada")

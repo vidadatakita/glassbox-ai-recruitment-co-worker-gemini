@@ -228,29 +228,30 @@ class EnginePortalRateLimitsAndBoxTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "box: a never-opened ready job offers Open portal and the server accepts it; owner, reviewer and admin see no window button" do
+  # Three-role model (17 Oct 2026): owner and reviewer are both HR managers, who get no window button;
+  # superadmin passes every role check, so it is offered Open portal (asserted as the allowed side).
+  test "box: a never-opened ready job offers Open portal and the server accepts it; HR managers see no window button" do
     @job = portal_job
-    %w[owner reviewer admin].each do |role|
+    %w[owner reviewer].each do |role|
       sign_in_as staff_user(role)
       get staff_job_path(@job)
-      assert_empty box_buttons & ["Open portal", "Reopen", "Close portal", "Approve job ad"], "#{role} is offered a window action"
+      assert_empty box_buttons & ["Open portal", "Reopen", "Close portal"], "#{role} is offered a window action"
     end
+    sign_in_as staff_user("superadmin")
+    get staff_job_path(@job)
+    assert_includes box_buttons, "Open portal", "superadmin passes every role check"
     press_box("consultant", "Open portal")
     assert ApplicationWindow.new(@job).open?
   end
 
-  test "box: Approve job ad is offered to hr_pic only, and the server accepts it" do
+  test "box: a written but unapproved ad offers Open portal directly, and opening approves the ad" do
     @job = portal_job
-    # An ad is approved only once it has a text (AI Builder Cup step 02).
     @job.update_columns(ad_approved_at: nil, ad_approved_by_id: nil, ad_text: "Tentang posisi ini\nIklan uji.")
-    %w[consultant owner].each do |role|
-      sign_in_as staff_user(role)
-      get staff_job_path(@job)
-      refute_includes box_buttons, "Approve job ad", role
-    end
     sign_in_as staff_user("hr_pic")
     get staff_job_path(@job)
-    press("Approve job ad")
+    refute_includes box_buttons, "Approve job ad"
+    press("Open portal")
+    assert ApplicationWindow.new(@job).open?
     assert @job.reload.ad_approved_at
   end
 end

@@ -25,8 +25,17 @@ class AiReleaseScreensTest < ActionDispatch::IntegrationTest
     assert_empty doc.css("button[disabled], input[type=submit][disabled], [data-disable-with]"), "disabled submit on #{request.path}"
   end
 
-  test "HR PIC, owner and consultant never open the screen or its text" do
-    %w[hr_pic owner consultant].each do |role|
+  # Three roles (17 Oct 2026): the HR Admin (both old HR PIC and consultant people) is refused;
+  # the HR Manager and the superadmin open the screen (control, read only).
+  test "the HR Admin never opens the screen or its text; the HR Manager and the superadmin do" do
+    %w[owner admin].each do |role|
+      sign_in_as staff_user(role)
+      get staff_job_ai_releases_path(@job)
+      assert_response :success, role
+      get staff_ai_release_path(@release)
+      assert_response :success, role
+    end
+    %w[hr_pic consultant].each do |role|
       sign_in_as staff_user(role)
       get staff_job_ai_releases_path(@job)
       assert_redirected_to staff_jobs_path, role

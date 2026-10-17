@@ -18,7 +18,7 @@ class DemoTestCasesSeedTest < ActiveSupport::TestCase
       xml = nil
       Zip::File.open_buffer(bytes) { |zip| xml = zip.read("xl/workbook.xml") }
       sheets = xml.scan(/<sheet [^>]*name="([^"]+)"/).flatten
-      assert_equal %w[Petunjuk Data Jawaban], sheets, job.title
+      assert_equal %w[Instructions Data Answers], sheets, job.title
     end
     before = [TechnicalTestCase.count, TestCaseCriterion.count, JobBriefChange.count, ActiveStorage::Attachment.count]
     DemoJobs.run(company:, actor: staff_user("hr_pic"))

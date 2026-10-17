@@ -1,0 +1,79 @@
+<%# Add a question (question nil) or edit one. Six option slots and a "correct" radio per slot: blank
+    slots are dropped on save and the right answer follows its slot (TestCases::SaveBank). The
+    section's brief rows are offered as the link; anchors only matter for a written answer. %>
+<% q = question %>
+<%# ai: the fields "Write with AI" returned when the page was reloaded without JavaScript (keyed by input name). %>
+<% ai = local_assigns[:ai] || {} %>
+<% key = q ? "q#{q.id}" : "new" %>
+<% selected_section = q&.section || params.dig(:bank, :section) || "technical" %>
+<%= form_with url: q ? staff_job_question_bank_question_path(job, q.id) : staff_job_question_bank_questions_path(job),
+              method: q ? :patch : :post, scope: :bank, class: "question-bank-form#{' hris-form-card' unless q}",
+              id: "question-bank-form-#{key}", data: q ? { turbo: false, submit_guard: true } : { turbo: false, submit_guard: true, ai_fill: true } do %>
+  <% unless q %>
+    <h3 class="question-bank-form__title"><i class="fa fa-plus-square" aria-hidden="true"></i> Add a question</h3>
+  <% end %>
+  <div class="row g-2">
+    <div class="col-md-4">
+      <label class="form-label" for="<%= key %>_section">Section</label>
+      <select class="form-select" id="<%= key %>_section" name="bank[section]">
+        <% QuestionBank::SECTIONS.each do |value, text| %><option value="<%= value %>" <%= "selected" if selected_section == value %>><%= text %></option><% end %>
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label" for="<%= key %>_kind">Type</label>
+      <select class="form-select" id="<%= key %>_kind" name="bank[kind]">
+        <% BankQuestion::KINDS.each do |value, text| %><option value="<%= value %>" <%= "selected" if (q&.kind || "multiple_choice") == value %>><%= text %></option><% end %>
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label" for="<%= key %>_link">Tests (activity or competency)</label>
+      <select class="form-select" id="<%= key %>_link" name="bank[link_id]">
+        <option value="">Choose what it tests</option>
+        <optgroup label="Activities (technical section)">
+          <% job.activities.each do |a| %><option value="a:<%= a.id %>" <%= "selected" if q&.activity_id == a.id %>><%= a.description %></option><% end %>
+        </optgroup>
+        <optgroup label="Competencies (role section)">
+          <% job.competencies.each do |c| %><option value="c:<%= c.id %>" <%= "selected" if q&.competency_id == c.id %>><%= c.name %></option><% end %>
+        </optgroup>
+      </select>
+    </div>
+    <div class="col-12">
+      <label class="form-label" for="<%= key %>_prompt">Question</label>
+      <textarea class="form-control" id="<%= key %>_prompt" name="bank[prompt]" rows="2"><%= q&.prompt || ai["bank[prompt]"] %></textarea>
+    </div>
+    <fieldset class="col-lg-7 question-bank-form__options">
+      <legend class="form-label">Answer options (multiple choice) · mark the correct one</legend>
+      <% BankQuestion::MAX_OPTIONS.times do |i| %>
+        <div class="input-group input-group-sm mb-1">
+          <span class="input-group-text">
+            <input class="form-check-input mt-0" type="radio" name="bank[correct]" value="<%= i %>" id="<%= key %>_correct_<%= i %>"
+                   aria-label="Option <%= (65 + i).chr %> is correct" <%= "checked" if q&.correct_index == i || (q.nil? && ai["bank[correct]"] == i.to_s) %>>
+          </span>
+          <span class="input-group-text"><%= (65 + i).chr %></span>
+          <input type="text" class="form-control" name="bank[options][<%= i %>]" value="<%= q ? q.options[i] : ai["bank[options][#{i}]"] %>" aria-label="Option <%= (65 + i).chr %>">
+        </div>
+      <% end %>
+    </fieldset>
+    <fieldset class="col-lg-5 question-bank-form__anchors">
+      <legend class="form-label">Scoring anchors (written answer)</legend>
+      <% [["1", "Score 1 when the answer"], ["3", "Score 3 when the answer"], ["5", "Score 5 when the answer"]].each do |n, text| %>
+        <label class="form-label small mb-0" for="<%= key %>_anchor_<%= n %>"><%= text %></label>
+        <input type="text" class="form-control form-control-sm mb-1" id="<%= key %>_anchor_<%= n %>" name="bank[anchor_<%= n %>]" value="<%= q ? q.public_send("anchor_#{n}") : ai["bank[anchor_#{n}]"] %>">
+      <% end %>
+    </fieldset>
+  </div>
+  <div class="question-bank-form__actions action-row">
+    <% if q.nil? && Screening::Config.enabled? %>
+      <%# "Write with AI": the same form sent with ai=1 (formnovalidate, so empty fields do not block it);
+          ai_fill.js fills this form's fields from the JSON reply; nothing is saved until "Add question". %>
+      <%# No full-page overlay here: the reply fills the form in place (ai_fill.js), and the button's own
+          busy state ("The AI is writing…") shows the wait. %>
+      <button type="submit" class="btn btn-outline-primary ai-btn" name="ai" value="1" formnovalidate>
+        <%= render "staff/shared/ai_sparkle" %>
+        <span class="ai-btn__idle">Write with AI</span><span class="ai-btn__busy" role="status">The AI is writing…</span>
+      </button>
+    <% end %>
+    <%= label_button q ? "Save question #{q.position}" : "Add question", q ? "fa-save" : "fa-plus" %>
+  </div>
+  <% if q.nil? %><span class="hris-field-hint">Choose the section, type and what it tests, then "Write with AI" drafts one question here for you to edit. Only the position and the chosen activity or competency are sent to the AI.</span><% end %>
+<% end %>

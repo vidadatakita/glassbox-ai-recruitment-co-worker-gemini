@@ -89,6 +89,7 @@ module Portal
           if parts.any? { |p| p.appointment&.confirmation == "reschedule_requested" } then "Requested another time"
           elsif parts.any? { |p| (a = p.appointment) && a.confirmation == "pending" && a.starts_at.between?(now, now + 24.hours) } then "Not confirmed, appointment < 24 h"
           elsif parts.any? { |p| p.objections.any? { |o| o.answered_at.nil? } } then "Objection not answered"
+          elsif parts.any? { |p| %w[screening_failed cv_unreadable not_sent].include?(p.screening_state) } then "CV screening needs a person"
           end
         reached = parts.map { |p| stage_index(p.stage_id) }.max || -1
         closed_out = %w[danger muted].include?(summary.tone)

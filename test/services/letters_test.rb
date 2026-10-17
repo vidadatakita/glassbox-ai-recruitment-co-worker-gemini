@@ -92,7 +92,7 @@ class LettersTest < ActiveSupport::TestCase
     end
   end
 
-  test "the offer: the code fills the agreed salary; unfilled placeholders and other roles are refused" do
+  test "the offer: the code fills the agreed salary; unfilled placeholders and the HR Manager are refused" do
     Screening::Config.stub(:enabled?, false) do
       Progression::Choose.call(participation: @s1, actor: @hr, choice: "lanjut", seen_recommendation_id: nil)
       s3 = @application.participations.joins(:stage).find_by!(stages: { code: "S3" })
@@ -114,7 +114,7 @@ class LettersTest < ActiveSupport::TestCase
     end
     assert_match(/\[Start date\]/, error.message)
     assert_raises(Progression::Letters::Refused) do
-      Progression::Letters.send!(application: @application, actor: staff_user("consultant"), subject: "x", body: "y")
+      Progression::Letters.send!(application: @application, actor: staff_user("reviewer"), subject: "x", body: "y")
     end
   end
 end

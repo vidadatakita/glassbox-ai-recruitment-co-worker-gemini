@@ -172,16 +172,27 @@ class EngineAiReleaseWhoTest < ActiveSupport::TestCase
 
   setup { @job = screening_job }
 
-  test "only a reviewer who is not the job's consultant releases, cuts or declines (service and database)" do
+  # Three roles (17 Oct 2026): Send to Gemini belongs to the hr_manager (old reviewer and owner);
+  # the hr_admin (old consultant and HR PIC) is refused; the superadmin passes every role check.
+  # The per-person rule (never the job's consultant) still binds everyone.
+  test "only an hr_manager or superadmin who is not the job's consultant releases, cuts or declines (service and database)" do
     _, _, release = hold!(@job)
     with_ai(FakeGemini.new) do
-      %w[consultant admin hr_pic owner].each do |role|
+      %w[consultant hr_pic].each do |role|
         user = staff_user(role)
         assert_raises(AiReleases::Refused, role) { release!(release, user:) }
         assert_raises(AiReleases::Refused, role) { AiReleases::Cut.call(release:, user:, line_numbers: [release.cv_line_start + 1]) }
         assert_raises(AiReleases::Refused, role) { AiReleases::Decline.call(release:, user:, note: "uji") }
         error = refused_by_database { raw_action!(release, user) }
         assert_includes error.message, "is not a reviewer or is the job's consultant", role
+      end
+      # Allowed side: the database accepts an hr_manager (owner) and the superadmin. Rolled back so
+      # the release stays unreleased for the per-person checks below.
+      %w[owner admin].each do |role|
+        AiReleaseAction.transaction(requires_new: true) do
+          raw_action!(release, staff_user(role))
+          raise ActiveRecord::Rollback
+        end
       end
       reviewer = staff_user("reviewer", email: "konsultan-reviewer@uji.example")
       @job.update!(consultant: reviewer)

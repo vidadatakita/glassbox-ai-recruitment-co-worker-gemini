@@ -13,7 +13,7 @@ module ScreeningReport
   module CriterionScale
     WAJIB = { "met" => 5, "not_met" => 1 }.freeze
     RATED = { "0" => 1, "1" => 2, "2" => 4, "3" => 5 }.freeze
-    RULE = "Scale 1–5 per criterion (D53, display only): must-have met = 5, not met = 1; " \
+    RULE = "Scale 1–5 per criterion, for display only: must-have met = 5, not met = 1; " \
            "should-have and nice-to-have 0 = 1, 1 = 2, 2 = 4, 3 = 5. The AI score 0–100 and the decisions " \
            "still use the original judgements.".freeze
 

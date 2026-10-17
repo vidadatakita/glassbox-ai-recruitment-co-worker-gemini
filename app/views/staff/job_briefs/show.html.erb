@@ -1,12 +1,17 @@
 <%# Vacancy brief, read-only (all staff roles). Edited through the wizard by HR PIC and consultant. %>
 <% content_for :title, "Vacancy brief · #{@job.title}" %>
-<% editor = current_user.role.in?(%w[hr_pic consultant]) %>
-<% actions = safe_join([label_link("Back", "fa-arrow-left", staff_job_path(@job), purpose: :neutral, icon_end: true),
+<% editor = current_user.role.in?(%w[hr_admin superadmin]) %>
+<%# "Change history" opens the audit trail modal (_history_modal); a plain button, not a form. %>
+<% history_button = content_tag(:button, label_button_body("Change history", "fa-history", false), type: "button",
+                                class: label_button_classes(:neutral, nil, false), data: { bs_toggle: "modal", bs_target: "#brief-history-modal" }) %>
+<% actions = safe_join([label_link("Back", "fa-arrow-left", staff_job_path(@job), purpose: :neutral, icon_end: true), history_button,
                         (label_link("Edit brief", "fa-pencil", staff_job_brief_step_path(@job, 1)) if editor)].compact, " ") %>
 <div class="portal-page loan-index-page layout-decoration-page job-brief-page">
   <%= render "staff/shared/page_header", eyebrow: "Vacancy brief", title: @job.title,
              subtitle: [@job.golongan_label, Job::EMPLOYMENT_TYPES[@job.employment_type], (@job.headcount && "#{@job.headcount} #{'person'.pluralize(@job.headcount)}")].compact.join(" · "), actions: actions %>
   <section class="content">
+    <%# The brief's own workflow (17 Oct 2026): each step's state, when it was saved and by whom. %>
+    <%= render "staff/jobs/hiring_progress", progress: BriefProgress.new(@job), title: "Brief progress", id: "brief-progress" %>
     <%= render "staff/job_briefs/metrics", job: @job, check: @check %>
     <% if @locked %>
       <%= render "staff/job_briefs/lock_notice", locked: true, knockout_locked: true, step: "4" %>
@@ -25,6 +30,6 @@
     <%= render "staff/job_briefs/summary_competencies", job: @job %>
     <%= render "staff/test_cases/brief_summary", job: @job if TestCases::Requirement.applies?(@job) %>
     <%= render "staff/job_briefs/ai_diff", job: @job %>
-    <%= render "staff/job_briefs/history", job: @job %>
   </section>
 </div>
+<%= render "staff/job_briefs/history_modal", job: @job %>

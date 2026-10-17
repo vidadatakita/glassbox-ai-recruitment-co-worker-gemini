@@ -14,7 +14,8 @@ class Briefs::BriefCheckTest < ActiveSupport::TestCase
 
   test "D60: a package that runs S2 needs an approved technical test (step 5)" do
     job = briefed_job(golongan: 2, package: 3, complete: false, test_case: false)
-    assert_equal [[5, "The technical test has not been created. The consultant uploads the case study and its rubric in step 5, then HR approves it."]],
+    # 17 Oct 2026 (slice B): the competency bank is the first way to build the test; the upload the other.
+    assert_equal [[5, "The technical test has not been created. Build the competency bank in step 5 (or upload a case document), then have it approved."]],
                  Briefs::BriefCheck.new(job).problems.map { |p| [p.step, p.message] }
   end
 

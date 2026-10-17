@@ -34,9 +34,17 @@ class AiReleaseDatabaseTest < ActiveSupport::TestCase
     assert_raises(ActiveRecord::StatementInvalid) { AiRelease.transaction(requires_new: true) { AiRelease.insert!(attrs) } }
   end
 
-  test "only a reviewer who is not the job's consultant may release; never with a foreign digest" do
-    %w[consultant hr_pic owner].each do |role|
+  # Three roles (17 Oct 2026): the hr_manager (old reviewer and owner) releases; the hr_admin (old
+  # consultant and HR PIC) is refused; the superadmin passes every database guard.
+  test "only an hr_manager or superadmin who is not the job's consultant may release; never with a foreign digest" do
+    %w[consultant hr_pic].each do |role|
       assert_raises(ActiveRecord::StatementInvalid, role) { AiRelease.transaction(requires_new: true) { insert_action(actor: staff_user(role)) } }
+    end
+    %w[owner admin].each do |role| # allowed side, rolled back so the release stays open for the checks below
+      AiRelease.transaction(requires_new: true) do
+        insert_action(actor: staff_user(role))
+        raise ActiveRecord::Rollback
+      end
     end
     @job.update_columns(consultant_id: @reviewer.id)
     assert_raises(ActiveRecord::StatementInvalid) { AiRelease.transaction(requires_new: true) { insert_action } }

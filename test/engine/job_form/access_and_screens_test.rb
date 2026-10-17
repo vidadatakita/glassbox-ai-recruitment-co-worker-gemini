@@ -25,9 +25,12 @@ class JobFormAccessAndScreensTest < ActionDispatch::IntegrationTest
   end
 
   # --- roles ------------------------------------------------------------------------------------
-  test "owner, reviewer and admin: every write is refused through the routes, no row or audit changes" do
+  # Three roles (17 Oct 2026): the brief belongs to the hr_admin. The hr_manager (old owner and
+  # reviewer) is refused every write; the superadmin passes every role check, so it is no longer in
+  # the refused list (its allowed side is pinned by the control below).
+  test "hr_manager (owner, reviewer): every write is refused through the routes, no row or audit changes; superadmin may write" do
     job = briefed_job(complete: false)
-    %w[owner reviewer admin].each do |role|
+    %w[owner reviewer].each do |role|
       sign_in_as staff_user(role)
       state = [Job.count, JobBriefChange.count, job.reload.attributes.except("updated_at"), job.activities.pluck(:share_percent)]
       post staff_create_job_path, params: { brief: step1_params(title: "Oleh #{role}") }
@@ -45,6 +48,9 @@ class JobFormAccessAndScreensTest < ActionDispatch::IntegrationTest
       assert_response :success, "#{role} reads the brief"
       sign_out
     end
+    sign_in_as staff_user("admin")
+    get staff_job_brief_step_path(job, 1)
+    assert_response :success, "control: the superadmin opens a brief step"
   end
 
   test "without a login every brief route is refused and nothing is written" do
@@ -57,8 +63,6 @@ class JobFormAccessAndScreensTest < ActionDispatch::IntegrationTest
     get staff_job_brief_path(job)
     assert_redirected_to new_session_path
     patch staff_job_brief_step_path(job, 1), params: { brief: step1_params(title: "Tanpa login") }
-    assert_redirected_to new_session_path
-    patch approve_ad_staff_job_path(job)
     assert_redirected_to new_session_path
     assert_equal state, [Job.count, JobBriefChange.count, job.reload.title]
   end
@@ -84,27 +88,9 @@ class JobFormAccessAndScreensTest < ActionDispatch::IntegrationTest
     end
   end
 
-  # --- ad approval ---------------------------------------------------------------------------------
-  test "ad approval: refused for a draft brief with the reason on screen; only HR PIC approves a complete one" do
-    draft = briefed_job(complete: false)
-    sign_in_as staff_user("hr_pic")
-    patch approve_ad_staff_job_path(draft)
-    assert_redirected_to staff_job_path(draft)
-    follow_redirect!
-    assert_match(/vacancy brief is incomplete/i, response.body)
-    assert_nil draft.reload.ad_approved_at
-    sign_out
-
-    done = briefed_job
-    %w[consultant owner reviewer admin].each do |role|
-      sign_in_as staff_user(role)
-      patch approve_ad_staff_job_path(done)
-      assert_nil done.reload.ad_approved_at, "#{role} approved the ad"
-      sign_out
-    end
-    sign_in_as staff_user("hr_pic")
-    patch approve_ad_staff_job_path(done)
-    assert done.reload.ad_approved_at, "control: HR PIC approves a complete brief"
+  # --- ad approval: taken down 17 Oct 2026 (opening the portal approves the ad) --------------------
+  test "the approval route is gone: no role can reach a separate approval step" do
+    refute Rails.application.routes.url_helpers.respond_to?(:approve_ad_staff_job_path)
   end
 
   # --- the wizard forms ------------------------------------------------------------------------------

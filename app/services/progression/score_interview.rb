@@ -19,7 +19,7 @@ module Progression
     end
 
     def call
-      refuse!("Only the HR owner enters the interview scoring.") unless @actor&.role == CHOOSER
+      refuse!("Only the HR Admin enters the interview scoring.") unless Progression.chooser?(@actor)
       refuse!("This stage is not an interview.") unless @stage.score_source == "scorecard"
       refuse!("This stage is already closed.") if @stage.status == "closed"
       refuse!("This interview scoring is already recorded.") if @participation.score_entries.current.exists? || @participation.current_decision

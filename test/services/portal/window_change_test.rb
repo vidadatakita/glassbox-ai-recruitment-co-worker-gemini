@@ -23,19 +23,24 @@ class Portal::WindowChangeTest < ActiveSupport::TestCase
     assert_match(/consent text/, refused { Portal::WindowChange.open!(job: @job, actor: @hr) })
   end
 
-  test "refused while the ad is not approved" do
+  test "refused while the ad has no text; a written ad opens and is approved by the opener" do
     set_retention
     publish_consent
-    @job.update!(ad_approved_at: nil)
-    assert_match(/job ad has not been approved/, refused { Portal::WindowChange.open!(job: @job, actor: @hr) })
+    @job.update!(ad_approved_at: nil, ad_text: nil)
+    assert_match(/job ad has not been written yet/, refused { Portal::WindowChange.open!(job: @job, actor: @hr) })
+    @job.update!(ad_text: "About this role\nInvented ad.")
+    Portal::WindowChange.open!(job: @job, actor: @hr)
+    assert_equal @hr.id, @job.reload.ad_approved_by_id
   end
 
-  test "a consultant may open on HR's behalf and the role is logged; a reviewer may not" do
+  # Three-role model (17 Oct 2026): the old consultant is an HR admin, so the event logs "hr_admin";
+  # the old reviewer is an HR manager, who still may not open the portal.
+  test "an HR admin other than the ad's approver may open and the role is logged; an HR manager may not" do
     set_retention
     publish_consent
-    assert_match(/Only the HR owner/, refused { Portal::WindowChange.open!(job: @job, actor: staff_user("reviewer")) })
+    assert_match(/Only the HR Admin/, refused { Portal::WindowChange.open!(job: @job, actor: staff_user("reviewer")) })
     event = Portal::WindowChange.open!(job: @job, actor: staff_user("consultant"))
-    assert_equal "consultant", event.actor_role
+    assert_equal "hr_admin", event.actor_role
   end
 
   test "reopen needs a reason, and the database refuses a blank one too" do

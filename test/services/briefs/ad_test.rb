@@ -82,27 +82,35 @@ class Briefs::AdTest < ActiveSupport::TestCase
     assert_equal [["rule", "- Usia maksimal 30"], ["ai", "fresh graduate yang belum berkeluarga"]], flags.map { |f| [f["source"], f["quote"]] }
   end
 
-  test "saving records the change and the flags"  do
-    result = Screening::Config.stub(:enabled?, false) { Briefs::SaveAd.call(job: @job, actor: @hr, text: "Tentang posisi ini\n- Wanita, maksimal 25 tahun") }
+  test "saving records the change and the flags; a rule flag needs the writer's reason even on a draft (17 Oct 2026)" do
+    text = "Tentang posisi ini\n- Wanita, maksimal 25 tahun"
+    refused = Screening::Config.stub(:enabled?, false) { Briefs::SaveAd.call(job: @job, actor: @hr, text:) }
+    refute refused.ok?
+    assert refused.needs_reason, "no separate approval step any more, so the reason is asked at save"
+    assert_nil @job.reload.ad_text
+    result = Screening::Config.stub(:enabled?, false) { Briefs::SaveAd.call(job: @job, actor: @hr, text:, reason: "Test: reason.") }
     assert result.ok?
     assert_equal 1, @job.reload.ad_flags.size
     change = @job.brief_changes.where(step: "ad").last
-    assert_equal [nil, "Tentang posisi ini\n- Wanita, maksimal 25 tahun"], change.changes_made["ad_text"]
+    assert_equal [nil, text], change.changes_made["ad_text"]
+    assert_equal "Test: reason.", change.changes_made["ad_flags_reason"].last
 
   end
 
-  test "an approved ad (even one approved before it had a text): HR alone edits it, each save with the tick re-approves it" do
+  # Three-role model (17 Oct 2026): "HR" is the HR admin role (old HR PIC and consultant); the HR
+  # manager (old owner and reviewer) is the role still refused.
+  test "an approved ad (even one approved before it had a text): only an HR admin edits it, each save with the tick re-approves it" do
     @job.update!(ad_approved_at: 2.days.ago, ad_approved_by_id: staff_user("owner").id)
     assert @job.legacy_ad?
     Screening::Config.stub(:enabled?, false) do
-      refute Briefs::SaveAd.call(job: @job, actor: staff_user("consultant"), text: "Teks", confirmed: true).ok?, "only HR"
+      refute Briefs::SaveAd.call(job: @job, actor: staff_user("hr_manager"), text: "Teks", confirmed: true).ok?, "only HR admin"
       refute Briefs::SaveAd.call(job: @job, actor: @hr, text: "Teks").ok?, "the tick is required"
       assert Briefs::SaveAd.call(job: @job, actor: @hr, text: "Tentang posisi ini\nTeks.", confirmed: true).ok?
     end
     @job.reload
     assert_equal @hr.id, @job.ad_approved_by_id, "the save is HR's approval of the text"
     refute @job.legacy_ad?
-    refute Briefs::SaveAd.call(job: @job, actor: staff_user("consultant"), text: "lain", confirmed: true).ok?, "the consultant edits only before approval"
+    refute Briefs::SaveAd.call(job: @job, actor: staff_user("reviewer"), text: "lain", confirmed: true).ok?, "an HR manager never edits a live ad"
     refute Briefs::SaveAd.call(job: @job, actor: @hr, text: "lain").ok?, "a live ad changes only with the tick"
     Screening::Config.stub(:enabled?, false) { assert Briefs::SaveAd.call(job: @job, actor: @hr, text: "Teks baru", confirmed: true).ok? }
     assert_equal "Teks baru", @job.reload.ad_text

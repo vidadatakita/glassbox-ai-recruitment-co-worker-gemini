@@ -3,21 +3,35 @@
 <% content_for :title, "Application status" %>
 <% job = @status.job %>
 <%= render "candidate_shared/job_top", job: job %>
+<%# Restyled 17 Oct 2026 in the sign-in page's spirit, purpose unchanged: where the application
+    stands, what happens next and when, appointments, results, the offer, and withdrawing consent. %>
+<% steps = @status.steps %>
+<% position = (steps.index { |s| s.state == :current } || steps.rindex { |s| s.state == :done } || 0) + 1 %>
+<% done = steps.count { |s| s.state == :done } %>
+<div class="status-page">
+<p class="status-page__hello">Hello, <%= @status.candidate_name %></p>
 <h1>Application status</h1>
-<p class="small"><%= job.title %> · <%= @status.candidate_name %></p>
 
 <% if (upcoming = @status.upcoming_consent) %>
   <p class="flash alert">The terms for the use of your data change from <%= l(upcoming.effective_from.in_time_zone, format: :long_wib) %>.</p>
 <% end %>
 
-<div class="next">
-  <span class="small">Next</span>
-  <b><%= @status.next_line %></b>
+<div class="next status-next">
+  <span class="status-next__icon" aria-hidden="true">&#10148;</span>
+  <div class="status-next__text">
+    <span class="small">Next</span>
+    <b><%= @status.next_line %></b>
+    <span class="status-next__progress" aria-label="Stage <%= position %> of <%= steps.size %>">
+      <span class="status-next__bar"><span style="width: <%= (100.0 * done / steps.size).round %>%"></span></span>
+      <span class="status-next__step">Stage <%= position %> of <%= steps.size %></span>
+    </span>
+  </div>
 </div>
 
 <%= render "candidate_status/test", test: @status.technical_test, token: params[:token] %>
 
-<ol class="tl" aria-label="Application stages">
+<h2 class="status-page__h2">Your stages</h2>
+<ol class="tl status-tl" aria-label="Application stages">
   <% @status.steps.each_with_index do |step, index| %>
     <li class="<%= step.state %>">
       <span class="dot" aria-hidden="true"><%= step.state == :done ? "✓" : index + 1 %></span>
@@ -49,8 +63,11 @@
   <%= render "candidate_status/offer", status: @status, unlocked: @offer_unlocked %>
 <% end %>
 
-<details class="card">
+<p class="status-trust"><span aria-hidden="true">&#128274;</span> A person reviews every step of your application, and your data is used only for this recruitment.</p>
+
+<details class="card status-withdraw">
   <summary>Withdraw consent to the use of your data</summary>
   <p class="small">If you withdraw your consent, your application is stopped and this link stops working.</p>
   <%= link_to "Next", candidate_status_confirm_withdraw_path(params[:token]), class: "btn ghost" %>
 </details>
+</div>

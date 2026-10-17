@@ -5,9 +5,9 @@ module Staff
   #   approve_narratives  the job's consultant                       D62 h2
   #   user_recommendation HR PIC, naming the hiring manager           D62 h6
   class ScreeningReportActionsController < BaseController
-    before_action -> { require_role!(:reviewer) }, only: :label
-    before_action -> { require_role!(:consultant) }, only: :approve_narratives
-    before_action -> { require_role!(:hr_pic) }, only: :user_recommendation
+    before_action -> { require_role!(:hr_manager) }, only: :label
+    before_action -> { require_role!(:hr_admin) }, only: :approve_narratives
+    before_action -> { require_role!(:hr_admin) }, only: :user_recommendation
     before_action :load_row
 
     def label

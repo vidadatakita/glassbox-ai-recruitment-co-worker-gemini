@@ -55,9 +55,19 @@ class EngineAiReleaseScreensTest < ActionDispatch::IntegrationTest
     assert_equal 0, AiReleaseAction.count
   end
 
-  test "HR PIC, owner and consultants never reach the release list, the text, or an action" do
+  # Three roles (17 Oct 2026): both HR Admin people are refused everything; the HR Manager and the
+  # superadmin reach the list and the text (control, read only; their actions are tested elsewhere).
+  test "the HR Admin never reaches the release list, the text, or an action; the HR Manager and the superadmin read it" do
     participation, fake, release = hold!(@job)
-    %w[hr_pic owner consultant admin].each do |role|
+    %w[owner admin].each do |role|
+      sign_in_as staff_user(role)
+      get staff_job_ai_releases_path(@job)
+      assert_response :success, role
+      get staff_ai_release_path(release)
+      assert_response :success, role
+      assert_includes response.body, MARKER_LINE, role
+    end
+    %w[hr_pic consultant].each do |role|
       sign_in_as staff_user(role)
       get staff_job_ai_releases_path(@job)
       assert_redirected_to staff_jobs_path, role

@@ -105,13 +105,18 @@ class FairnessCheckScreenTest < ActionDispatch::IntegrationTest
     assert_house_rules
   end
 
-  test "the admin and the owner are sent back; an incomplete brief is refused with a plain message; AI off is a plain message" do
+  # Three roles (17 Oct 2026): the viewers are the HR Admin and the HR Manager, and the superadmin
+  # passes every role check, so no signed-in role is sent back any more; an anonymous visitor is.
+  test "the superadmin and the HR Manager open it, an anonymous visitor is sent to log in; an incomplete brief is refused with a plain message; AI off is a plain message" do
+    get staff_job_fairness_check_path(@job)
+    assert_response :redirect
+    refute_equal staff_job_fairness_check_path(@job), URI(response.location).path
     sign_in_as staff_user("admin")
     get staff_job_fairness_check_path(@job)
-    assert_redirected_to staff_jobs_path
+    assert_response :success
     sign_in_as staff_user("owner")
     get staff_job_fairness_check_path(@job)
-    assert_redirected_to staff_jobs_path
+    assert_response :success
 
     sign_in_as @hr
     @job.update_columns(brief_status: "draft")

@@ -10,12 +10,20 @@ module TestCases
     def problems(job)
       return [] unless applies?(job)
 
+      # Slice B (17 Oct 2026): an approved competency bank is a test in force on its own (applicants
+      # take it in the three-step form); the uploaded case remains the other way.
+      bank = QuestionBank.current_for(job)
+      return BankReadiness.orphan_problems(bank, bank.questions.to_a) if bank
+
       current = TechnicalTestCase.current_for(job)
       return orphan_problems(job, current) if current
 
       latest = TechnicalTestCase.latest_for(job)
-      if latest.nil?
-        ["The technical test has not been created. The consultant uploads the case study and its rubric in step 5, then HR approves it."]
+      latest_bank = QuestionBank.latest_for(job)
+      if latest_bank
+        ["Competency bank version #{latest_bank.version} is not approved yet: the HR Admin submits it in step 5 and the HR Manager approves it."]
+      elsif latest.nil?
+        ["The technical test has not been created. Build the competency bank in step 5 (or upload a case document), then have it approved."]
       else
         ["Technical test version #{latest.version} has not been approved by HR. HR approves it in step 5."]
       end

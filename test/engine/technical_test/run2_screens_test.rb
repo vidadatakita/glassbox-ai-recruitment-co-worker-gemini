@@ -155,9 +155,12 @@ class Engine07Run2ScreensTest < ActionDispatch::IntegrationTest
   end
 
   # ---- staff: scoring page ----------------------------------------------------------------------
-  test "scoring page: HR PIC and owner see Candidate NN, no download link, cannot post a score; reviewer sees the name" do
+  # Three roles (17 Oct 2026): before the gate closes the HR Admin and the HR Manager both see
+  # "Candidate NN" (blind screening); the HR Manager scores and downloads, the HR Admin does neither;
+  # the superadmin always sees the name.
+  test "scoring page: the HR Admin sees Candidate NN, no download link, cannot post a score; the HR Manager is blind but scores; the superadmin sees the name" do
     attempt = travel_to(@t0 + 1.hour) { r2_answer(@appl) }
-    %w[hr_pic owner].each do |role|
+    %w[hr_pic consultant].each do |role|
       sign_in_as staff_user(role)
       get staff_job_test_scorings_path(@job)
       assert_response :success
@@ -170,11 +173,16 @@ class Engine07Run2ScreensTest < ActionDispatch::IntegrationTest
     end
     sign_in_as r2_reviewer
     get staff_job_test_scorings_path(@job)
-    assert_includes response.body, "Rina Pratiwi Rdua"
+    refute_includes response.body, "Rina Pratiwi Rdua", "the HR Manager sees the name before the gate closes"
+    assert_match(/Candidate \d\d/, response.body)
+    refute_empty css_select("a[href*='/answer']"), "control: the HR Manager has the download link"
     house_rules("scoring reviewer")
+    sign_in_as staff_user("admin")
+    get staff_job_test_scorings_path(@job)
+    assert_includes response.body, "Rina Pratiwi Rdua", "control: the superadmin sees the name"
   end
 
-  test "answer download: reviewer and consultant with their own key; HR PIC with a reviewer's key refused; key expires in 5 min" do
+  test "answer download: each HR Manager with an own key; another person with that key refused; key expires in 5 min" do
     attempt = travel_to(@t0 + 1.hour) { r2_answer(@appl) }
     sign_in_as r2_reviewer
     get staff_job_test_scorings_path(@job)
@@ -183,17 +191,18 @@ class Engine07Run2ScreensTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match(/\Aattachment/, response.headers["Content-Disposition"])
     assert_equal "nosniff", response.headers["X-Content-Type-Options"]
-    %w[hr_pic owner admin].each do |role|
+    %w[hr_pic consultant admin].each do |role|
       sign_in_as staff_user(role)
       get link
       refute_equal 200, response.status, "#{role} downloaded an answer with a reviewer's key"
     end
-    sign_in_as staff_user("consultant")
+    # Three roles: the second person who downloads with an own key is another HR Manager.
+    sign_in_as staff_user("owner")
     get link
-    refute_equal 200, response.status, "the consultant used the reviewer's key"
+    refute_equal 200, response.status, "another HR Manager used the reviewer's key"
     get staff_job_test_scorings_path(@job)
     own = css_select("a[href*='/answer']").first&.[]("href")
-    assert own, "the consultant has no download link"
+    assert own, "the other HR Manager has no download link"
     get own
     assert_response :success
     sign_in_as r2_reviewer
@@ -260,6 +269,8 @@ class Engine07Run2ScreensTest < ActionDispatch::IntegrationTest
   # ---- F-02 on screen -----------------------------------------------------------------------------
   test "F-02 fix on screen: the approve form carries the digest; a stale click is refused with a sentence; a fresh one approves" do
     job = e7_brief
+    # The assigned consultant edits; another HR Admin gets the read-only version with the approve form.
+    job.update!(consultant: staff_user("consultant"))
     e7_save(job, instructions: "Versi yang dibaca HR")
     sign_in_as staff_user("hr_pic")
     get staff_job_test_case_step_path(job)

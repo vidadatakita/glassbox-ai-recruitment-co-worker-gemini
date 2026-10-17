@@ -5,6 +5,20 @@ module TestCases
   module Readiness
     module_function
 
+    # The portal-open hook (Portal::WindowChange#check_preconditions!, owned by the portal code):
+    # a vacancy whose package runs no technical test (packages 1 and 2) is always ready; otherwise a
+    # test must be in force: an approved competency bank (taken in the three-step application form,
+    # slice B, 17 Oct 2026) or an approved uploaded case (taken after CV screening).
+    def ready_for_open?(job)
+      !Requirement.applies?(job) || QuestionBank.current_for(job).present? || TechnicalTestCase.current_for(job).present?
+    end
+
+    def refusal(job)
+      return if ready_for_open?(job)
+
+      "The technical test of this vacancy has nothing approved yet: approve the competency bank or the case document in brief step 5 before opening the portal."
+    end
+
     def problems(test_case)
       list = []
       list << "Upload the case study file." unless test_case.case_file.attached? && test_case.case_file_blob_id

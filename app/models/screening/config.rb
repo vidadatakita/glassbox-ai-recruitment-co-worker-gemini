@@ -43,9 +43,11 @@ module Screening
     }.freeze
     # HIGH: a judgement a person acts on. MEDIUM: structured drafting a person edits. LOW: short text
     # and simple classification. The fairness check runs on the screening tier or its comparison is void.
+    # test_bank: competency questions drafted in brief step 5; the HR Admin edits them and the HR
+    # Manager approves the bank, so it is drafting (MEDIUM), not a judgement.
     TASK_TIERS = {
       screening: :high, test_scoring: :high, stage_advice: :high, salary: :high, fairness: :high,
-      brief: :medium, discrimination_check: :medium, red_flags: :medium,
+      brief: :medium, discrimination_check: :medium, red_flags: :medium, test_bank: :medium,
       ad: :low, ad_scan: :low, letter: :low, chat: :low, status_text: :low
     }.freeze
     # Rule 6: model ids are defaults, not facts. This is the allowlist the team confirmed in the Google

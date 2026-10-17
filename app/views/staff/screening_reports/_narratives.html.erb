@@ -38,11 +38,11 @@
       <% end %>
       <% if approval %>
         <p class="text-muted small mt-2 mb-0">Approved by <%= approval.approved_by.name %> · <%= wib(approval.created_at) %><%= " · #{approval.note}" if approval.note.present? %></p>
-      <% elsif current_user.role == "consultant" && (board.job.consultant_id.nil? || board.job.consultant_id == current_user.id) %>
+      <% elsif current_user.role.in?(%w[hr_admin superadmin]) && (board.job.consultant_id.nil? || board.job.consultant_id == current_user.id) %>
         <%= form_with url: staff_job_screening_report_narratives_path(board.job, row.application.id), method: :post, class: "report-inline-form mt-3", data: { turbo: false, submit_guard: true } do %>
           <label class="form-label" for="narasi_note">Note (optional)</label>
           <input type="text" class="form-control" id="narasi_note" name="note" maxlength="500">
-          <%= label_button "Approve narrative", "fa-check" %>
+          <div class="action-row mt-2"><%= label_button "Approve narrative", "fa-check" %></div>
         <% end %>
       <% end %>
     <% end %>

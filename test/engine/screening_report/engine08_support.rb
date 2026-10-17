@@ -4,7 +4,7 @@
 # INVENTED.
 #
 # S1 results are inserted DIRECTLY (ScoreEntry by the AI actor + ScreeningResult), the way
-# Screening::Run persists them, WITHOUT the pipeline: the D51 release-gate lane is editing run.rb
+# Screening::Run persists them, WITHOUT the pipeline: the D51 release-gate work was editing run.rb
 # and the enqueue path while this engine runs, and a test that goes through the pipeline could go
 # red for a reason that is not feature 08. Only pipeline_test.rb uses the stubbed pipeline.
 require "zip"

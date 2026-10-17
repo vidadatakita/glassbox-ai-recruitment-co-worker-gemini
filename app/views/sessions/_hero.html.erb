@@ -1,0 +1,33 @@
+<%# The sign-in hero (17 Oct 2026, team wording): the AiCoHire wordmark, the question it answers, the three
+    promises the product keeps, and a small preview of an AI advice card. Decorative preview only:
+    invented, no candidate data. Rendered by layouts/auth through content_for(:auth_hero). %>
+<div class="auth-hero__inner">
+  <div class="auth-hero__brand">
+    <%= image_tag "glassbox-mark.png", alt: "GlassBox", class: "auth-hero__mark", width: 244, height: 256 %>
+    <span class="auth-hero__names">
+      <span class="auth-hero__word" aria-label="AiCoHire"><span>AiCo</span><span class="auth-hero__word-accent">Hire</span></span>
+      <span class="auth-hero__by">by <span class="auth-hero__by-glass">Glass</span><span class="auth-hero__by-box">Box</span></span>
+    </span>
+  </div>
+
+  <h1 class="auth-hero__title">What if every hiring decision had a <span class="auth-hero__highlight">co&#8209;worker?</span></h1>
+  <p class="auth-hero__lead">Gemini reads every CV against the vacancy and shows its evidence. A named person on your team makes every decision.</p>
+
+  <ul class="auth-hero__points">
+    <li><i class="fa fa-quote-left" aria-hidden="true"></i><span><strong>Evidence you can see.</strong> Every score cites a verbatim line from the CV, checked before you see it.</span></li>
+    <li><i class="fa fa-user-circle-o" aria-hidden="true"></i><span><strong>Decisions someone owns.</strong> The AI advises; a person continues or stops, with a written reason.</span></li>
+    <li><i class="fa fa-shield" aria-hidden="true"></i><span><strong>Merit that counts.</strong> Name, gender, age and religion are removed before any model call.</span></li>
+  </ul>
+
+  <div class="auth-hero__preview" aria-hidden="true">
+    <div class="auth-hero__preview-head">
+      <span class="auth-hero__chip">AI advice</span>
+      <span class="auth-hero__preview-who">Candidate 07 · Accounting Supervisor</span>
+    </div>
+    <div class="auth-hero__preview-score"><strong>86</strong><span>/ 100</span><em>Continue</em></div>
+    <p class="auth-hero__preview-quote">"Prepared the general journal and monthly bank reconciliations for 3 years."</p>
+    <div class="auth-hero__preview-foot"><i class="fa fa-check-circle"></i> Quote found in the CV · <i class="fa fa-user"></i> Waiting for the HR Admin's decision</div>
+  </div>
+
+  <p class="auth-hero__foot">Gemini on Google Cloud · All demo data is invented</p>
+</div>

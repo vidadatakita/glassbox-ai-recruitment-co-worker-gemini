@@ -8,7 +8,7 @@ require "test_helper"
 # (ScreeningFactory::FakeGemini), so the answer below is parsed, checked and stored by the real
 # code path, not by a unit under test in isolation.
 #
-# Load-bearing proof (docs/builder2/C1-evidence-check.md): with the check disabled in
+# Load-bearing proof (docs/engineering-notes/C1-evidence-check.md): with the check disabled in
 # app/models/screening/quote_check.rb (`normalise(haystack).include?(q)` replaced by `true`, the
 # mutant A3 of script/mutation_check_06.rb) the first test goes red. The second test is the control:
 # a check that marked EVERYTHING unverified would pass the first test and fail this one.

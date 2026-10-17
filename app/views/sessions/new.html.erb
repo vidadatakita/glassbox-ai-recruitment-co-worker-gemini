@@ -1,6 +1,8 @@
-<% content_for :title, "Sign in · GlassBox" %>
-<h1 class="h5 fw-semibold mb-2 text-center">Sign in to GlassBox</h1>
-<p class="mb-4 text-muted fw-normal text-center">For the HR team and consultants. Applicants need no account; use the status link from the email.</p>
+<% content_for :title, "Sign in · AiCoHire" %>
+<% content_for :auth_hero do %><%= render "sessions/hero" %><% end %>
+<div class="auth-panel__eyebrow">Welcome back</div>
+<h2 class="auth-panel__title">Sign in to AiCoHire</h2>
+<p class="auth-panel__lead">For the HR team. Applicants need no account; they use the status link from their email.</p>
 <% if flash[:alert] %><div class="alert alert-warning" role="alert"><%= flash[:alert] %></div><% end %>
 <% if flash[:notice] %><div class="alert alert-success" role="status"><%= flash[:notice] %></div><% end %>
 <%= form_with url: session_path, data: { turbo: false, submit_guard: true } do |form| %>

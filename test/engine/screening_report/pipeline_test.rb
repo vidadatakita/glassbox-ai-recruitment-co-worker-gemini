@@ -4,8 +4,8 @@ require_relative "engine08_support"
 # Engine 08 through the REAL S1 pipeline (FakeGemini at the HTTP boundary): the
 # expected salary (D62 h5) and the domicile city never reach the outgoing request body and never
 # change a score, and the report block lands on the result. This file depends on the D51 release
-# gate (screen_and_release!, another lane): a red here that also shows in test/engine/screening is
-# that lane's, not feature 08's.
+# gate (screen_and_release!, another work stream): a red here that also shows in test/engine/screening is
+# that work stream's, not feature 08's.
 class Engine08PipelineTest < ActiveSupport::TestCase
   include ActiveJob::TestHelper
   include ScreeningFactory

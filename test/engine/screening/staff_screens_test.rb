@@ -59,42 +59,54 @@ class EngineScreeningStaffScreensTest < ActionDispatch::IntegrationTest
       refute_match(/53[,.]3/, response.body, "the AI score is visible to the consultant before judging on #{path}")
     end
     get staff_job_screening_calibration_path(@job)
-    assert_includes response.body, "Hidden until the consultant has judged"
+    assert_includes response.body, "Hidden until the HR Admin has judged"
     post staff_participation_calibration_path(participation), params: { outcome: "pass", commit: "Save judgement" }
     get staff_job_screening_calibration_path(@job)
     assert_match(/53,3/, response.body, "control: after judging, the AI answer is shown")
   end
 
-  # D13 blinds the consultant only (GlassBox Team 2026-10-13): the HR PIC reads the score of an unjudged
-  # calibration CV on the applicant page, while the consultant still sees it nowhere.
-  test "blind calibration: the HR PIC sees the AI score of an unjudged calibration CV" do
+  # D13 blinds the role that judges calibration. Three roles (17 Oct 2026): the hr_admin judges
+  # calibration, so every hr_admin (the consultant and the HR PIC alike) is blinded; the hr_manager
+  # does not judge and reads the score of an unjudged calibration CV on the applicant page.
+  # D13 blinds only the judge: the job's consultant (an HR Admin). Another HR Admin and the HR Manager do
+  # not judge calibration, so they see the score (2026-10-13 complaint; three roles, 17 Oct 2026).
+  test "blind calibration: only the judging consultant is blinded; another HR Admin and the HR Manager see the score" do
     participation, = screen_text!(@job, FIXTURE_CV, replies: [gemini_message(distinctive_criteria)])
     sign_in_as @job.consultant
     get staff_application_path(participation.job_application)
-    refute_match(/53[,.]3/, response.body, "control: still hidden from the consultant")
-    sign_in_as staff_user("hr_pic")
-    get staff_application_path(participation.job_application)
-    assert_response :success
-    assert_match(/53[,.]3/, response.body, "the HR PIC should see the AI score")
-    refute_includes response.body, "Hasil AI disembunyikan"
+    refute_match(/53[,.]3/, response.body, "control: hidden from the judging consultant")
+    [staff_user("hr_pic"), staff_user("owner")].each do |user|
+      sign_in_as user
+      get staff_application_path(participation.job_application)
+      assert_response :success
+      assert_match(/53[,.]3/, response.body, "#{user.email_address} (#{user.role}) does not judge and should see the AI score")
+      refute_includes response.body, "Hasil AI disembunyikan"
+    end
   end
 
-  test "Review Screening: non-reviewer roles get no screen and cannot post a review; the job's consultant neither" do
+  # Three roles (17 Oct 2026): the review belongs to the hr_manager; the hr_admin is refused; the
+  # superadmin passes every role check (allowed side pinned below with a GET only, so no review is written).
+  test "Review Screening: hr_admin roles get no screen and cannot post a review; the job's consultant neither" do
     calibrated_open_job!(@job, @fake)
     p, = screen_text!(@job, FIXTURE_CV, replies: [gemini_message(criteria_for(@job, wajib: "not_met"))], name: "Calon Layar")
     result = p.screening_results.sole
-    %w[consultant admin hr_pic owner].each do |role|
+    %w[consultant hr_pic].each do |role|
       sign_in_as staff_user(role)
       get staff_job_screening_review_path(@job)
       assert_redirected_to staff_jobs_path, role
       post staff_screening_result_review_path(result), params: { verdict: "confirm", commit: "Simpan review" }
       assert_redirected_to staff_jobs_path, role
     end
+    %w[owner admin].each do |role|
+      sign_in_as staff_user(role)
+      get staff_job_screening_review_path(@job)
+      assert_response :success, "control: #{role} (#{staff_user(role).role}) opens the review screen"
+    end
     reviewer = staff_user("reviewer")
     @job.update!(consultant: reviewer)
     sign_in_as reviewer
     get staff_job_screening_review_path(@job)
-    assert_includes response.body, "cannot be the reviewer of its screening"
+    assert_includes response.body, "cannot also review its screening"
     assert_select "form[action='#{staff_screening_result_review_path(result)}']", 0
     post staff_screening_result_review_path(result), params: { verdict: "confirm", commit: "Save review" }
     assert_equal "The reviewer cannot be the consultant of this vacancy.", flash[:alert]

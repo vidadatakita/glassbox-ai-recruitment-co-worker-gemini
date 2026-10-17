@@ -23,6 +23,6 @@
   </div>
   <label class="form-label" for="manual-note-<%= participation.id %>">Note</label>
   <textarea class="form-control mb-2" id="manual-note-<%= participation.id %>" name="note" rows="2" placeholder="Summary of the result from the test provider; avoid personal data."></textarea>
-  <%= label_button "Save score", "fa-save" %>
+  <div class="action-row"><%= label_button "Save score", "fa-save" %></div>
   <% if ai_on? %><span class="hris-field-hint d-block mt-1">Once saved, the AI prepares its advice: Continue or Do not continue.</span><% end %>
 <% end %>

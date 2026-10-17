@@ -85,8 +85,10 @@ class Engine08LabelsAndActorsTest < ActionDispatch::IntegrationTest
     assert confirm(label: "pertimbangkan").persisted?
   end
 
-  test "who confirms: reviewer only; never the job's consultant, even a reviewer-role user assigned as the job's consultant (service + trigger)" do
-    %w[consultant hr_pic owner admin].each do |role|
+  # Three roles (17 Oct 2026): the hr_manager (reviewer, owner) and the superadmin confirm; the
+  # hr_admin (consultant, HR PIC) is refused; the per-person rule (never the job's consultant) binds all.
+  test "who confirms: hr_manager or superadmin only; never the job's consultant, even an hr_manager assigned as the job's consultant (service + trigger)" do
+    %w[consultant hr_pic].each do |role|
       refused { ScreeningReport::ConfirmLabel.call(participation: @p1, reviewer: staff_user(role), label: "pertimbangkan") }
     end
     @job.update!(consultant: @reviewer)
@@ -114,13 +116,13 @@ class Engine08LabelsAndActorsTest < ActionDispatch::IntegrationTest
     sql_refused(insert_confirmation(label: "over_qualified", last: 6, result: bad))
   end
 
-  test "controller: reviewer's refused Over-qualified writes nothing and says why; consultant and HR PIC cannot post a label" do
+  test "controller: reviewer's refused Over-qualified writes nothing and says why; the hr_admin (consultant, HR PIC) cannot post a label" do
     sign_in_as @reviewer
     post staff_job_screening_report_label_path(@job, @ja.id), params: { label: "over_qualified", last_role_golongan: "5", note: "x" }
     assert_redirected_to staff_job_screening_report_candidate_path(@job, @ja.id, anchor: "label-analisa")
     assert_match(/at least 2 Grades/, flash[:alert])
     sign_out
-    %w[consultant hr_pic owner].each do |role|
+    %w[consultant hr_pic].each do |role|
       sign_in_as staff_user(role)
       post staff_job_screening_report_label_path(@job, @ja.id), params: { label: "pertimbangkan" }
       sign_out
@@ -210,14 +212,16 @@ class Engine08LabelsAndActorsTest < ActionDispatch::IntegrationTest
     assert_equal [false], attrs[:narratives]["strengths"].map { it["verified"] }
   end
 
-  test "Hiring manager's pick: HR PIC records for a blind 'Candidate NN' (h6 allows it) and it writes no Decision; others refused (service, trigger, controller)" do
+  # Three roles: the hiring manager's pick belongs to the hr_admin (and the superadmin); the
+  # hr_manager (owner, reviewer) is refused at the service, the trigger and the controller.
+  test "Hiring manager's pick: HR PIC records for a blind 'Candidate NN' (h6 allows it) and it writes no Decision; hr_manager refused (service, trigger, controller)" do
     hr = staff_user("hr_pic")
     assert ScreeningReport::Visibility.new(@job, hr).blind?, "fixture: the HR PIC cannot see the name yet"
     decisions = Decision.count
     rec = ScreeningReport::RecordUserRecommendation.call(application: @ja, user: hr, user_name: "Bu Manajer", pick: "lanjut")
     assert rec.persisted?
     assert_equal decisions, Decision.count, "a recommendation moved a candidate"
-    %w[consultant owner reviewer admin].each do |role|
+    %w[owner reviewer].each do |role|
       assert_raises(ScreeningReport::RecordUserRecommendation::Refused) do
         ScreeningReport::RecordUserRecommendation.call(application: @ja, user: staff_user(role), user_name: "X", pick: "lanjut")
       end

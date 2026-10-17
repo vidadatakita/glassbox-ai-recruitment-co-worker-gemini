@@ -2,7 +2,7 @@ require "test_helper"
 
 # Blueprint §7.1 recommended package per Golongan, and process card 3 (override needs a reason).
 class Briefs::PackageAdvisorTest < ActiveSupport::TestCase
-  SPEC = { 1 => [2, 3], 2 => [2, 3], 3 => [3], 4 => [4], 5 => [4], 6 => [4, 5], 7 => [4, 5], 8 => [4, 5] }.freeze
+  SPEC = { 1 => [2, 3], 2 => [2, 3], 3 => [3], 4 => [3], 5 => [3], 6 => [3], 7 => [3], 8 => [3] }.freeze
 
   test "the recommendation per Golongan matches §7.1" do
     SPEC.each { |golongan, packages| assert_equal packages, Briefs::PackageAdvisor.recommended(golongan), "G#{golongan}" }

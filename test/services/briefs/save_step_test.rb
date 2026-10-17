@@ -8,7 +8,7 @@ class Briefs::SaveStepTest < ActiveSupport::TestCase
     save_step!(job, "1", step1_params(title: "Operator Mesin Uji"), actor: consultant)
     change = job.brief_changes.order(:id).last
     assert_equal before + 1, job.brief_changes.count
-    assert_equal [consultant.id, "consultant", "1"], [change.actor_id, change.actor_role, change.step]
+    assert_equal [consultant.id, "hr_admin", "1"], [change.actor_id, change.actor_role, change.step]
     assert_equal ["Operator Uji", "Operator Mesin Uji"], change.changes_made["title"]
     save_step!(job, "1", step1_params(title: "Operator Mesin Uji"), actor: consultant)
     assert_equal before + 1, job.brief_changes.count, "an unchanged save is not a change"
@@ -82,7 +82,8 @@ class Briefs::SaveStepTest < ActiveSupport::TestCase
     job = briefed_job
     result = Briefs::SaveStep.call(job:, step: "2", params: step2_params(shares: [30, 20, 20, 15, 10]), actor: staff_user("hr_pic"))
     refute result.ok?
-    assert_includes result.errors, "The activity time shares add up to 95%; they must add up to exactly 100%."
+    # 17 Oct 2026: each line names its step (the gaps are often in other steps than the one saved).
+    assert_includes result.errors, "Step 2 (Activities & 90-day target): The activity time shares add up to 95%; they must add up to exactly 100%."
     assert_equal 15, job.activities.reload.last.share_percent
     assert job.reload.brief_complete?
   end

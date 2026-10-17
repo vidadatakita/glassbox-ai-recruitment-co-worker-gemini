@@ -1,5 +1,5 @@
 <%# Offer letters (E24): upload a PDF; the candidate answers in the portal. %>
-<div class="hris-form-card">
+<div class="hris-form-card" id="job-offer">
   <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-envelope-o"></i></div>
     <div><h3>Job offer</h3><p>Upload the offer letter (PDF) once the applicant has passed the last stage. The applicant opens it with the code from the email.</p></div></div>
   <div class="hris-form-card__body">
@@ -21,7 +21,37 @@
         </table>
       </div>
     <% end %>
-    <% if current_user.role == "consultant" && !offers.any?(&:accepted?) %>
+    <% if current_user.role.in?(%w[hr_admin superadmin]) && !offers.any?(&:accepted?) %>
+      <%# AI advice (17 Oct 2026): its own form BEFORE the upload form (never nested); the reply fills the
+          first-day note inside the shared [data-ai-scope]. The checklist is computed, not AI. %>
+      <div data-ai-scope>
+      <div class="progression-ai mb-3">
+        <div class="d-flex align-items-center gap-2 mb-1"><%= render "staff/shared/ai_sparkle", size: 18 %><strong>AI advice</strong>
+          <%= ai_tier_badge(:letter, job: application.job) %></div>
+        <p class="mb-2 small">Before sending, check:</p>
+        <% summary = Progression::OfferAdvice.approver_summary(application, local_assigns[:matrix] || ScoreMatrix.new(application, blinded: ->(p) { ai_result_blinded?(p) })) %>
+        <label class="form-label mt-1" for="approver-summary-<%= application.id %>"><strong>Offer summary for the approver</strong>
+          <span class="text-muted small">· from the recorded results and AI advice; edit, then copy it to whoever signs the offer</span></label>
+        <textarea class="form-control mb-3 offer-summary" id="approver-summary-<%= application.id %>" rows="7"><%= summary %></textarea>
+        <ul class="offer-checklist mb-2">
+          <% Progression::OfferAdvice.checklist(application).each do |check| %>
+            <li class="offer-checklist__item offer-checklist__item--<%= check.ok.nil? ? "todo" : (check.ok ? "ok" : "gap") %>">
+              <i class="fa <%= check.ok.nil? ? "fa-circle-o" : (check.ok ? "fa-check-circle" : "fa-exclamation-circle") %>" aria-hidden="true"></i>
+              <span><%= check.label %><% if check.hint && check.ok != true %> <span class="text-muted">· <%= check.hint %></span><% end %></span>
+            </li>
+          <% end %>
+        </ul>
+        <% if ai_on? %>
+          <%= form_with url: staff_application_offer_advice_path(application), method: :post, class: "action-row",
+                        data: { turbo: false, submit_guard: true, ai_fill: true } do %>
+            <span class="hris-field-hint me-auto">The AI drafts the first-day note from the vacancy brief only: no salary, no applicant data.</span>
+            <button type="submit" class="btn btn-outline-primary btn-sm ai-btn" name="commit" value="draft">
+              <%= render "staff/shared/ai_sparkle" %>
+              <span class="ai-btn__idle">Draft first-day note with AI</span><span class="ai-btn__busy" role="status">AI is writing…</span>
+            </button>
+          <% end %>
+        <% end %>
+      </div>
       <%= form_with url: staff_application_offers_path(application), method: :post, scope: :offer, multipart: true, data: { turbo: false, submit_guard: true } do |f| %>
         <div class="row g-3">
           <div class="col-md-6">
@@ -38,12 +68,13 @@
           </div>
           <div class="col-12">
             <%= f.label :day_one_notes, "First-day preparation", class: "form-label" %>
-            <%= f.text_area :day_one_notes, rows: 3, class: "form-control", required: true %>
+            <%= f.text_area :day_one_notes, rows: 5, class: "form-control", required: true, value: flash[:offer_day_one_draft] %>
             <span class="hris-field-hint">Shown to the applicant after they accept the offer.</span>
           </div>
         </div>
-        <div class="mt-3"><%= label_button(offers.any? ? "Upload new version" : "Upload offer", "fa-upload") %></div>
+        <div class="mt-3 action-row"><%= label_button(offers.any? ? "Upload new version" : "Upload offer", "fa-upload") %></div>
       <% end %>
+      </div>
     <% end %>
   </div>
 </div>

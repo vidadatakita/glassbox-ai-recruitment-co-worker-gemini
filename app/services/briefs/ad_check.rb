@@ -8,12 +8,13 @@ module Briefs
   #   - the AI (when configured): the sentences the rules miss ("fresh graduate, maks. 25", "cocok
   #     untuk ibu rumah tangga"), each with a reason. If the AI is off or fails, the rules stand.
   # A word can be innocent ("terbuka untuk pria maupun wanita"), so no flag blocks for good. Any flag
-  # makes HR tick "I have checked the flags above" before approving (JobsController#approve_ad),
+  # is shown on the ad page and on the vacancy page before the portal opens,
   # the same pattern as the CV release screen. A RULE flag names a protected attribute outright, so
   # (16 Oct test: "Female, max 28, attractive, unmarried" was approved and shown publicly) it also
   # needs a written reason from HR, recorded with the approval, like a flagged requirement kept in
   # the brief's discrimination test (Briefs::RequirementCheck); a live ad's save with one needs the
-  # reason too (Briefs::SaveAd). AI flags (proxies, a judgement call) still need the tick only.
+  # reason too (Briefs::SaveAd). AI flags (proxies, a judgement call) need no tick since 17 Oct 2026:
+  # they are shown on the ad page and the portal card before the portal opens.
   # Each flag: { "quote" (copied from the text), "reason", "source" => "rule" | "ai" }; a rule flag
   # also carries "categories", every attribute the line names.
   module AdCheck

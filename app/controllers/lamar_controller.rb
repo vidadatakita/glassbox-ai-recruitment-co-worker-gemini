@@ -14,10 +14,17 @@ class LamarController < CandidateController
              with: -> { render "lamar/too_many", status: :too_many_requests }
 
   before_action :load_job
+  # A posted two-step form for a vacancy that now has an approved bank must not create an application
+  # without the competency test: it is sent to the three-step form instead.
+  before_action -> { redirect_to(apply_start_path(@job.public_code, ch: params[:ch])) if @job && QuestionBank.current_for(@job) },
+                only: %i[check create]
 
   def show
     @window = ApplicationWindow.new(@job)
     return render("lamar/closed", status: :ok) unless @window.open?
+    # A vacancy with an approved competency bank applies through the three-step form (ApplyController,
+    # 17 Oct 2026); every other vacancy keeps this two-step form unchanged.
+    return redirect_to(apply_start_path(@job.public_code, ch: params[:ch])) if QuestionBank.current_for(@job)
 
     @answers = {}
   end

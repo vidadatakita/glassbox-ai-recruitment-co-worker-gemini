@@ -16,15 +16,28 @@
     <link href="/plugins/stylesheets/font-awesome.css" rel="stylesheet">
     <link href="/template/assets/css/hris-zynix.css" rel="stylesheet">
     <%= stylesheet_link_tag "brand" %>
+    <%= stylesheet_link_tag "auth" %>
     <%= javascript_include_tag "submit_guard", type: "module" %>
   </head>
+  <%# A page that provides :auth_hero (the sign-in) gets the split layout: hero beside the form. The
+      password-reset pages keep the single card below. %>
+  <% if content_for?(:auth_hero) %>
+  <body class="auth-split-body">
+    <main class="auth-split">
+      <section class="auth-hero"><%= yield :auth_hero %></section>
+      <section class="auth-panel"><div class="auth-panel__card"><%= yield %></div></section>
+    </main>
+  </body>
+  <% else %>
   <body class="authentication-background">
     <div class="container">
       <div class="row justify-content-center align-items-center authentication authentication-basic h-100">
         <div class="col-xxl-4 col-xl-5 col-lg-6 col-md-7 col-sm-9 col-12">
           <div class="card custom-card my-4">
             <div class="card-body p-4 p-sm-5">
-              <%= render "layouts/brand", variant: :auth %>
+              <%# A page that draws its own logo (the demo door, variant :demo) sets :brand_in_page, so the
+                  card does not show the logo twice. Views render before the layout, so the flag is set. %>
+              <%= render "layouts/brand", variant: :auth unless content_for?(:brand_in_page) %>
               <%= yield %>
             </div>
           </div>
@@ -32,4 +45,5 @@
       </div>
     </div>
   </body>
+  <% end %>
 </html>

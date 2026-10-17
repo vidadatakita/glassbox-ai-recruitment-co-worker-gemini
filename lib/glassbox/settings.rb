@@ -30,7 +30,7 @@ module Glassbox
       "DATABASE_HOST" => { required: false, about: "PostgreSQL host; default localhost" },
       "DATABASE_PORT" => { required: false, about: "PostgreSQL port; default 5432" },
       "DATABASE_USER" => { required: false, about: "PostgreSQL user; the password comes from ~/.pgpass or the server's own auth" },
-      "TEST_DATABASE" => { required: false, about: "test database name, so a second session runs the suite on its own database" },
+      "TEST_DATABASE" => { required: false, about: "test database name, so a parallel test run uses its own database" },
       "GLASSBOX_DATABASE_PASSWORD" => { required: false, about: "production database password (Rails generator default)" },
       # Framework settings written by the Rails 8.1 generator (Puma, Solid Queue, logging, CI).
       "RAILS_MAX_THREADS" => { required: false, about: "framework" },

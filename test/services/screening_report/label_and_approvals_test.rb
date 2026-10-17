@@ -89,30 +89,36 @@ class ScreeningReport::LabelAndApprovalsTest < ActiveSupport::TestCase
     assert_includes error.message, "already approved"
   end
 
+  # Three roles (17 Oct 2026): an hr_manager is refused by role; an hr_admin who is not the job's
+  # consultant (the HR PIC, another consultant) is refused by the per-person rule.
   test "the database refuses a narrative approval by anyone but the job's consultant" do
     assert_includes refused_by_database {
-      ScreeningNarrativeApproval.create!(screening_result: @result, approved_by: staff_user("hr_pic"), created_at: Time.current)
+      ScreeningNarrativeApproval.create!(screening_result: @result, approved_by: staff_user("reviewer"), created_at: Time.current)
     }.message, "is not a consultant"
+    assert_includes refused_by_database {
+      ScreeningNarrativeApproval.create!(screening_result: @result, approved_by: staff_user("hr_pic"), created_at: Time.current)
+    }.message, "only the job's consultant"
     assert_includes refused_by_database {
       ScreeningNarrativeApproval.create!(screening_result: @result, approved_by: staff_user("consultant", email: "k2@uji.example"), created_at: Time.current)
     }.message, "only the job's consultant"
     ScreeningNarrativeApproval.create!(screening_result: @result, approved_by: @job.consultant, created_at: Time.current) # control
   end
 
-  test "Hiring manager's pick: the HR PIC names the manager; nobody else; never a decision" do
+  # Three roles: the pick belongs to the hr_admin (and the superadmin); the hr_manager is refused.
+  test "Hiring manager's pick: the HR PIC (hr_admin) names the manager; the hr_manager cannot; never a decision" do
     application = @p.job_application
     decisions_before = Decision.count
     row = ScreeningReport::RecordUserRecommendation.call(application:, user: staff_user("hr_pic"), user_name: "Bapak Hendra (Manajer Gudang)", pick: "lanjut")
     assert_equal ["Bapak Hendra (Manajer Gudang)", "lanjut"], [row.user_name, row.pick]
     assert_equal decisions_before, Decision.count, "information only"
     assert_raises(ScreeningReport::RecordUserRecommendation::Refused) do
-      ScreeningReport::RecordUserRecommendation.call(application:, user: staff_user("consultant"), user_name: "X", pick: "lanjut")
+      ScreeningReport::RecordUserRecommendation.call(application:, user: staff_user("owner"), user_name: "X", pick: "lanjut")
     end
     assert_raises(ScreeningReport::RecordUserRecommendation::Refused) do
       ScreeningReport::RecordUserRecommendation.call(application:, user: staff_user("hr_pic"), user_name: " ", pick: "lanjut")
     end
     assert_includes refused_by_database {
-      UserRecommendation.create!(job_application: application, user_name: "X", pick: "lanjut", entered_by: staff_user("consultant"), created_at: Time.current)
+      UserRecommendation.create!(job_application: application, user_name: "X", pick: "lanjut", entered_by: staff_user("owner"), created_at: Time.current)
     }.message, "only the HR PIC"
   end
 end

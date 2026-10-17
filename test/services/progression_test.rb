@@ -85,8 +85,9 @@ class ProgressionTest < ActiveSupport::TestCase
     assert s3, "following the AI's Lanjut moves the candidate on"
   end
 
-  test "only the HR PIC chooses, once, on the step's S1 row; the database refuses another role too" do
-    assert_raises(Progression::Choose::Refused) { choose("lanjut", actor: staff_user("consultant")) }
+  test "only the HR Admin chooses, once, on the step's S1 row; the database refuses the HR Manager too" do
+    assert_raises(Progression::Choose::Refused) { choose("lanjut", actor: staff_user("reviewer")) }
+    assert_raises(Progression::Choose::Refused) { choose("lanjut", actor: staff_user("owner")) }
     assert_raises(Progression::Choose::Refused) { choose("lanjut", participation: s2_of(@application)) }
     choose("lanjut")
     assert_match(/already recorded/, assert_raises(Progression::Choose::Refused) { choose("lanjut") }.message)
@@ -94,7 +95,7 @@ class ProgressionTest < ActiveSupport::TestCase
     assert_raises(ActiveRecord::StatementInvalid) do
       ActiveRecord::Base.transaction(requires_new: true) do
         ProgressionChoice.create!(participation: s2_of(@application), choice: "lanjut", direction: "lanjut",
-                                  actor: staff_user("consultant"), created_at: Time.current)
+                                  actor: staff_user("reviewer"), created_at: Time.current)
       end
     end
     assert_raises(ActiveRecord::ReadOnlyRecord) { ProgressionChoice.last.update!(note: "ubah") }

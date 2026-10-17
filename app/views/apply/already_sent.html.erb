@@ -1,0 +1,8 @@
+<%# A three-step application's link after Submit: the application is sent; the status page is the
+    private link in the confirmation e-mail. %>
+<% content_for :title, "Application sent" %>
+<%= render "candidate_shared/job_top", job: @job %>
+<div class="closed">
+  <p class="big">This application has already been sent.</p>
+  <p>Follow its progress with the private status link in the confirmation e-mail. Lost it? <%= link_to "Request a new link", new_link_request_path %>.</p>
+</div>

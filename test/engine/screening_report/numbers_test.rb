@@ -145,7 +145,9 @@ class Engine08NumbersTest < ActionDispatch::IntegrationTest
       e8_decide(p2, o2) if o2
       e8_s2_score(p2, s2v) if s2v
     end
-    sign_in_as staff_user("consultant")
+    # The superadmin sees names before the gate closes (three roles, 17 Oct 2026); a blind role's
+    # rows read "Candidate NN", so the name comparison below would not be about names.
+    sign_in_as staff_user("admin")
     get staff_job_screening_report_path(job)
     screen = Nokogiri::HTML(response.body).css("table.report-table tbody tr").map do |tr|
       cell = ->(label) { tr.at("td[data-label='#{label}']") }

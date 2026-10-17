@@ -11,7 +11,7 @@ class ScreeningReportScreensTest < ActionDispatch::IntegrationTest
     publish_consent
     @open_job, @closed_job = DemoScreeningReport.run(company:, hr: staff_user("hr_pic"), consultant: staff_user("consultant"),
                                                      reviewer: staff_user("reviewer"))
-    @a = JobApplication.joins(:candidate).find_by!(job: @open_job, candidates: { name: "Kandidat Contoh A" })
+    @a = JobApplication.joins(:candidate).find_by!(job: @open_job, candidates: { name: "Sample Candidate A" })
   end
 
   def assert_house_form_rules
@@ -36,19 +36,20 @@ class ScreeningReportScreensTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "consultant: names, contacts, every SPEC column, sort by gate then AI score, band rule under the column" do
-    sign_in_as staff_user("consultant")
+  # Three roles (17 Oct 2026): the superadmin is the one role that sees names and contacts before the gate.
+  test "superadmin: names, contacts, every SPEC column, sort by gate then AI score, band rule under the column" do
+    sign_in_as staff_user("admin")
     get staff_job_screening_report_path(@open_job)
     assert_response :success
     ["No", "Name", "Last position", "AI score (S1)", "Technical test score (S2)", "CV screening result", "Expected salary", "Label", "Interview appointment", "Hiring manager's pick"].each do |head|
       assert_select "table.report-table th", text: /\A#{Regexp.escape(head).gsub("\\ ", "\\s*")}/
     end
     names = css_select("td.report-table__person").map { |td| td.text.strip.lines.first.strip }
-    assert_equal ["Kandidat Contoh C", "Kandidat Contoh A"], names.first(2), "Passed first; C (86,7) before A (73,3)"
-    assert_equal %w[B C E F I].map { |k| "Kandidat Contoh #{k}" }.sort - %w[Kandidat\ Contoh\ C], names.last(4).sort,
+    assert_equal ["Sample Candidate C", "Sample Candidate A"], names.first(2), "Passed first; C (86,7) before A (73,3)"
+    assert_equal %w[B C E F I].map { |k| "Sample Candidate #{k}" }.sort - %w[Sample\ Candidate\ C], names.last(4).sort,
                  "the four Not passed rows last"
     assert_includes response.body, ScreeningReport::Band::RULE
-    assert_includes response.body, "kandidat.a.#{@open_job.id}@contoh.example"
+    assert_includes response.body, "candidate.a.#{@open_job.id}@contoh.example"
     assert_includes response.body, "Ibu Ratna"
     assert_select "a[href=?] i.fa-plus", staff_job_screening_report_candidate_path(@open_job, @a.id)
     assert_includes response.body, "CONFIDENTIAL"
@@ -56,45 +57,54 @@ class ScreeningReportScreensTest < ActionDispatch::IntegrationTest
     assert_house_form_rules
   end
 
-  test "HR PIC and owner before the gate is confirmed: numbers only, no contacts, said why (D62 h7)" do
-    %w[hr_pic owner].each do |role|
+  test "the HR Admin and the HR Manager before the gate is confirmed: numbers only, no contacts, said why (D62 h7)" do
+    %w[hr_pic consultant owner reviewer].each do |role|
       sign_in_as staff_user(role)
       get staff_job_screening_report_path(@open_job)
       assert_response :success
-      refute_match(/Kandidat Contoh/, response.body, "#{role} saw a name")
+      refute_match(/Sample Candidate/, response.body, "#{role} saw a name")
       refute_includes response.body, "@contoh.example", "#{role} saw a contact"
       assert_select "td.report-table__person", text: /\ACandidate \d\d\z/
       assert_includes response.body, "masked"
       get staff_job_screening_report_candidate_path(@open_job, @a.id)
-      refute_match(/Kandidat Contoh A|0812-0000/, response.body)
+      refute_match(/Sample Candidate A|0812-0000/, response.body)
       sign_out
     end
   end
 
-  test "after the gate closes the HR PIC sees names and contacts; the owner names only; the reviewer never contacts" do
+  test "after the gate closes the HR Admin sees names and contacts; the HR Manager names only; the HR Manager is blind while open" do
     sign_in_as staff_user("hr_pic")
     get staff_job_screening_report_path(@closed_job)
-    assert_includes response.body, "Kandidat Contoh A"
+    assert_includes response.body, "Sample Candidate A"
     assert_includes response.body, "@contoh.example"
     assert_includes response.body, "Not scored", "S1-eliminated get gate_eliminated at close"
     sign_out
     sign_in_as staff_user("owner")
     get staff_job_screening_report_path(@closed_job)
-    assert_includes response.body, "Kandidat Contoh A"
+    assert_includes response.body, "Sample Candidate A"
     refute_includes response.body, "@contoh.example"
     sign_out
     sign_in_as staff_user("reviewer")
+    get staff_job_screening_report_path(@closed_job)
+    assert_includes response.body, "Sample Candidate A", "the HR Manager sees names after the gate closes"
+    refute_includes response.body, "@contoh.example"
     get staff_job_screening_report_path(@open_job)
-    assert_includes response.body, "Kandidat Contoh A", "DataKita staff see names"
+    refute_includes response.body, "Sample Candidate A", "the HR Manager is blind while the gate is open"
     refute_includes response.body, "@contoh.example"
   end
 
-  test "admin has no access to the report (BP §1.2, test engine F13 rule)" do
+  # Three roles: the superadmin passes every role check, so it now reads the report; no signed-in
+  # role is refused, and the refusal half is the anonymous visitor.
+  test "the superadmin reads the report and its export; an anonymous visitor is sent to log in" do
     sign_in_as staff_user("admin")
     get staff_job_screening_report_path(@open_job)
-    assert_redirected_to staff_jobs_path
+    assert_response :success
     get staff_job_screening_report_export_path(@open_job)
-    assert_redirected_to staff_jobs_path
+    assert_response :success
+    sign_out
+    get staff_job_screening_report_path(@open_job)
+    assert_response :redirect
+    refute_equal staff_job_screening_report_path(@open_job), URI(response.location).path
   end
 
   test "detail page: header figures, criteria with quotes, AI draft, rubric lines, footer" do
@@ -102,13 +112,13 @@ class ScreeningReportScreensTest < ActionDispatch::IntegrationTest
     get staff_job_screening_report_candidate_path(@open_job, @a.id)
     assert_response :success
     assert_includes response.body, "Criteria scoring table"
-    assert_includes response.body, "Menyusun jurnal umum dan rekonsiliasi bank bulanan"
+    assert_includes response.body, "Prepared the general journal and monthly bank reconciliations"
     assert_includes response.body, "Approved by the consultant", "A's narratives are approved in the seed"
     assert_includes response.body, "No quote", "a claim without a quote is shown as such, not hidden"
-    assert_includes response.body, "Menemukan kesalahan jurnal", "rubric line from the reviewer's scoring"
+    assert_includes response.body, "Finds the journal errors", "rubric line from the reviewer's scoring"
     assert_includes response.body, "Within band"
     refute_includes response.body, Screening::PROMPT_VERSION, "no prompt version on screen (owner, 2026-10-11)"
-    d = JobApplication.joins(:candidate).find_by!(job: @open_job, candidates: { name: "Kandidat Contoh D" })
+    d = JobApplication.joins(:candidate).find_by!(job: @open_job, candidates: { name: "Sample Candidate D" })
     get staff_job_screening_report_candidate_path(@open_job, d.id)
     assert_includes response.body, "AI draft"
     assert_select "form[action=?]", staff_job_screening_report_narratives_path(@open_job, d.id)
@@ -117,7 +127,7 @@ class ScreeningReportScreensTest < ActionDispatch::IntegrationTest
   end
 
   test "reviewer confirms Over-qualified through the screen only with the Golongan rule; refusal is said" do
-    d = JobApplication.joins(:candidate).find_by!(job: @open_job, candidates: { name: "Kandidat Contoh D" })
+    d = JobApplication.joins(:candidate).find_by!(job: @open_job, candidates: { name: "Sample Candidate D" })
     sign_in_as staff_user("reviewer")
     post staff_job_screening_report_label_path(@open_job, d.id), params: { label: "over_qualified", last_role_golongan: "5", note: "Posisi terakhir lebih tinggi" }
     follow_redirect!
@@ -128,8 +138,8 @@ class ScreeningReportScreensTest < ActionDispatch::IntegrationTest
     assert_equal "pertimbangkan", ScreeningLabelConfirmation.where(participation: d.participations).last.label
   end
 
-  test "HR PIC records the hiring manager's pick naming the manager; a consultant cannot" do
-    sign_in_as staff_user("consultant")
+  test "HR PIC records the hiring manager's pick naming the manager; the HR Manager cannot" do
+    sign_in_as staff_user("owner")
     post staff_job_screening_report_user_recommendation_path(@open_job, @a.id), params: { user_name: "X", pick: "lanjut" }
     assert_redirected_to staff_jobs_path
     sign_out
@@ -139,12 +149,12 @@ class ScreeningReportScreensTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Bapak Hendra"
   end
 
-  test "xlsx for the consultant: same columns plus contacts, every text cell escaped, band as a live formula, footer" do
+  test "xlsx for the superadmin: same columns plus contacts, every text cell escaped, band as a live formula, footer" do
     hostile = { "D" => "=1+1", "E" => "+cmd|' /C calc'!A0", "F" => "-2+3", "G" => "@SUM(1)", "H" => "\tTab", "I" => "\rCR" }
     hostile.each do |key, name|
-      Candidate.joins(:job_applications).find_by!(job_applications: { job_id: @open_job.id }, name: "Kandidat Contoh #{key}").update_columns(name:)
+      Candidate.joins(:job_applications).find_by!(job_applications: { job_id: @open_job.id }, name: "Sample Candidate #{key}").update_columns(name:)
     end
-    sign_in_as staff_user("consultant")
+    sign_in_as staff_user("admin")
     get staff_job_screening_report_export_path(@open_job)
     assert_response :success
     assert_equal "attachment", response.headers["Content-Disposition"].split(";").first
@@ -156,9 +166,9 @@ class ScreeningReportScreensTest < ActionDispatch::IntegrationTest
     # An XML parser reads a raw CR back as LF (XML 1.0 §2.11), so the CR case is compared after that
     # normalisation; the quote prefix is what is being checked.
     hostile.each_value { |name| assert_includes names, "'#{name.tr("\r", "\n")}", "#{name.inspect} must be prefixed with a quote" }
-    assert_includes names, "Kandidat Contoh A", "control: a benign text cell is untouched"
+    assert_includes names, "Sample Candidate A", "control: a benign text cell is untouched"
     refute data.flatten.compact.any? { |v| v.start_with?("=1+1", "+cmd", "-2+3", "@SUM", "\t", "\r") }
-    a_row = data.find { |r| r[1] == "Kandidat Contoh A" }
+    a_row = data.find { |r| r[1] == "Sample Candidate A" }
     assert_equal "=IF(D#{4 + data.index(a_row) + 1}=\"\",\"\",MIN(5,INT(D#{4 + data.index(a_row) + 1}/20)+1))|4", a_row[4]
     assert_equal 82.0, Float(a_row[5]), "S2 score is a NUMBER cell"
     assert sheet.at("pane[state='frozen']"), "header frozen"
@@ -177,7 +187,7 @@ class ScreeningReportScreensTest < ActionDispatch::IntegrationTest
     rows, = xlsx_cells(response.body)
     assert_equal ScreeningReport::BuildWorkbook::COLUMNS.map(&:first), rows[3], "no Email / WhatsApp number columns"
     assert rows[4, 9].all? { |r| r[1].match?(/\ACandidate \d\d\z/) }
-    refute_match(/Kandidat Contoh|contoh\.example|0812-0000/, rows.flatten.compact.join(" "))
+    refute_match(/Sample Candidate|contoh\.example|0812-0000/, rows.flatten.compact.join(" "))
     sign_out
     sign_in_as staff_user("hr_pic")
     get staff_job_screening_report_export_path(@closed_job)

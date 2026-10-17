@@ -12,7 +12,8 @@
 </div>
 <% waiting = gate.result_count(:open) %>
 <% if gate.total.zero? %>
-  <p class="text-muted mb-3">No applicants in this gate yet. Applicants enter CV screening and the technical test together when their application is sent.</p>
+  <p class="text-muted mb-3">No applicants in this gate yet.</p>
 <% elsif waiting.positive? %>
-  <p class="portal-insight mb-3"><i class="fa fa-exclamation-circle me-1" aria-hidden="true"></i><%= waiting %> <%= "applicant".pluralize(waiting) %> still waiting for a decision. The gate can be closed once every applicant is decided in both stages; those eliminated at CV screening are recorded as not assessed in the technical test when the gate closes.</p>
+  <%# One line (17 Oct 2026, "too much wording"): what is waiting and what it blocks. %>
+  <p class="portal-insight mb-3"><i class="fa fa-exclamation-circle me-1" aria-hidden="true"></i><%= waiting %> <%= "applicant".pluralize(waiting) %> waiting for a decision; the gate closes when everyone is decided.</p>
 <% end %>

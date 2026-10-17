@@ -16,7 +16,7 @@ module ScreeningReport
     end
 
     def call
-      refuse("Only the HR owner records the hiring manager's pick.") unless @user.role == "hr_pic"
+      refuse("Only the HR Admin records the hiring manager's pick.") unless @user.role.in?(%w[hr_admin superadmin])
       refuse("Write the name of the hiring manager who made the pick.") if @user_name.empty?
       refuse("Choose Continue or Do not continue.") unless UserRecommendation::PICKS.key?(@pick)
 

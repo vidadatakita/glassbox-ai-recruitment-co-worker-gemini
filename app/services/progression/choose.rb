@@ -32,7 +32,7 @@ module Progression
     end
 
     def call
-      refuse!("Only the HR owner chooses Continue or Do not continue.") unless @actor&.role == CHOOSER
+      refuse!("Only the HR Admin chooses Continue or Do not continue.") unless Progression.chooser?(@actor)
       refuse!("The choice for this stage is recorded on CV screening.") unless Progression.step?(@participation)
       refuse!("The choice for this stage is already recorded.") if @participation.progression_choice
       refuse!("Unknown choice.") unless ProgressionChoice::CHOICES.key?(@choice)

@@ -12,10 +12,10 @@ module Staff
   #   cv_text        consultant pastes the text of an unreadable CV (§4.3)
   class ScreeningsController < BaseController
     before_action :load_job, only: %i[start retry_failed review calibration]
-    before_action -> { require_role!(:consultant) }, only: %i[start judge cv_text save_cv_text]
-    before_action -> { require_role!(:hr_pic, :reviewer) }, only: :retry_failed
-    before_action -> { require_role!(:reviewer) }, only: %i[review create_review]
-    before_action -> { require_role!(:consultant, :reviewer) }, only: :calibration
+    before_action -> { require_role!(:hr_admin) }, only: %i[start judge cv_text save_cv_text]
+    before_action -> { require_role!(:hr_admin, :hr_manager) }, only: :retry_failed
+    before_action -> { require_role!(:hr_manager) }, only: %i[review create_review]
+    before_action -> { require_role!(:hr_admin, :hr_manager) }, only: :calibration
 
     def start
       unless Screening::Config.enabled?

@@ -1,0 +1,22 @@
+<%# The summary matrix. Each row is a <details> disclosure (no script): click it to see the same
+    figure per vacancy, each with a link to the feature page holding the records behind it. %>
+<div class="card custom-card impact-matrix">
+  <div class="card-header impact-matrix__header">
+    <div>
+      <h2 class="card-title mb-1">Summary matrix</h2>
+      <p class="text-muted mb-0">Click a row to see the source records per vacancy.</p>
+    </div>
+    <ul class="impact-legend" aria-label="Legend">
+      <li><span class="impact-legend__swatch impact-legend__swatch--before"></span>Before (your figure)</li>
+      <li><span class="impact-legend__swatch impact-legend__swatch--after"></span>With AiCoHire (measured)</li>
+    </ul>
+  </div>
+  <div class="card-body p-0">
+    <div class="impact-matrix__head" aria-hidden="true">
+      <span>Measure</span><span>Before</span><span>With AiCoHire</span><span>Change</span>
+    </div>
+    <% rows.each do |row| %>
+      <%= render "staff/impacts/matrix_row", row: row, by_job: by_job, baseline: baseline %>
+    <% end %>
+  </div>
+</div>

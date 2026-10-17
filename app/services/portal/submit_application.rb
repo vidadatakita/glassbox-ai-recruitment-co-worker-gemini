@@ -30,11 +30,15 @@ module Portal
     def self.call(**kwargs) = new(**kwargs).call
 
     # params: name, email, phone, consent ("1"), knockout ({ question_id => "ya" | "tidak" }), cv (upload)
-    def initialize(job:, params:, channel_code: nil, now: Time.current)
+    # draft: an ApplicationDraft from the three-step form (17 Oct 2026). Its consent was recorded at
+    # step 1 (template, retention days, time) and its CV checked at step 2, so those come from the
+    # draft instead of the signed token and the upload; every other check runs as for the form.
+    def initialize(job:, params:, channel_code: nil, now: Time.current, draft: nil)
       @job = job
       @params = params
       @channel_code = channel_code.to_s[0, 40].presence
       @now = now
+      @draft = draft
     end
 
     def call
@@ -47,7 +51,7 @@ module Portal
         @job.lock!
         raise Closed, "window closed" unless ApplicationWindow.new(@job, now: @now).open?
 
-        consent, retention = shown_consent
+        consent, retention = @draft ? [@draft.consent_template, @draft.consent_retention_days] : shown_consent
         # Without a verifiable record of what the candidate was shown, nothing is stored: a consent
         # that cannot say what it covered is not a consent (Pasal 22(1)). The form is shown again.
         raise ConsentUnverifiable if consent.nil? || retention.nil?
@@ -56,13 +60,17 @@ module Portal
                                       phone: @params[:phone].strip)
         application = @job.job_applications.create!(
           candidate:, channel_code: @channel_code, knockout_answers: knockout_answers,
-          consent_at: @now, consent_template: consent, consent_retention_days: retention,
+          consent_at: @draft&.consent_at || @now, consent_template: consent, consent_retention_days: retention,
           status: knocked_out? ? "eliminated" : "active",
           # Feature 08 (D62 h5): optional, never sent to the AI, never scored.
           expected_salary_min: expected_salary.min, expected_salary_max: expected_salary.max,
           domicile_city: domicile_city.value # D54, optional, city only, never sent to the AI
         )
-        application.cv.attach(cv) if cv.present?
+        if @draft
+          application.cv.attach(@draft.cv.blob)
+        elsif cv.present?
+          application.cv.attach(cv)
+        end
         enter_first_stage(application)
         _link, token = OneTimeLink.issue!(subject: application, purpose: "candidate_status")
         Result.new(application:, token:, errors: [], knocked_out: knocked_out?, field_errors: {})
@@ -71,37 +79,49 @@ module Portal
 
     private
 
-    # Returns { field => message } in form order; empty when valid.
+    # Returns { field => message } in form order; empty when valid. The person's fields are checked by
+    # the same rules in the three-step form's step 1 (self.person_errors), one owner per rule.
     def validate
+      errors = self.class.person_errors(@params, questions)
+      unless knocked_out? || @draft
+        cv_error = self.class.cv_problem(cv)
+        errors[:cv] = cv_error if cv_error
+      end
+      errors.delete(:consent) if @draft # recorded at the draft's step 1
+      errors
+    end
+
+    def self.person_errors(params, questions)
       errors = {}
-      errors[:knockout] = "Answer every requirement question with Yes or No." unless questions.all? { |q| ANSWERS.include?(raw_answers[q.id.to_s]) }
-      errors[:name] = "Full name is required." if @params[:name].to_s.strip.empty?
-      phone = @params[:phone].to_s.gsub(/[\s-]/, "")
+      answers = (params[:knockout] || {}).to_h.transform_keys(&:to_s)
+      errors[:knockout] = "Answer every requirement question with Yes or No." unless questions.all? { |q| ANSWERS.include?(answers[q.id.to_s]) }
+      errors[:name] = "Full name is required." if params[:name].to_s.strip.empty?
+      phone = params[:phone].to_s.gsub(/[\s-]/, "")
       if phone.empty?
         errors[:phone] = "WhatsApp number is required."
       elsif !phone.match?(/\A(\+62|62|0)8\d{7,12}\z/)
         errors[:phone] = "The WhatsApp number is not valid. Example: 0812 3456 7890."
       end
-      email = @params[:email].to_s.strip
+      email = params[:email].to_s.strip
       if email.empty?
         errors[:email] = "E-mail is required."
       elsif !email.match?(URI::MailTo::EMAIL_REGEXP)
         errors[:email] = "The e-mail address is not valid. Example: name@example.com."
       end
-      cv_error = cv_errors.first unless knocked_out?
-      errors[:cv] = cv_error if cv_error
-      errors[:expected_salary] = expected_salary.error if expected_salary.error
-      errors[:domicile_city] = domicile_city.error if domicile_city.error
-      errors[:consent] = "You need to agree to the use of your data to apply." unless @params[:consent] == "1"
+      salary = ScreeningReport::ExpectedSalary.parse(params[:expected_salary_min], params[:expected_salary_max])
+      errors[:expected_salary] = salary.error if salary.error
+      city = ScreeningReport::DomicileCity.parse(params[:domicile_city])
+      errors[:domicile_city] = city.error if city.error
+      errors[:consent] = "You need to agree to the use of your data to apply." unless params[:consent] == "1"
       errors
     end
 
-    def cv_errors
-      return ["A CV is required (PDF or Word .docx, 5 MB at most)."] if cv.blank?
-      return ["The CV is larger than 5 MB."] if cv.size > MAX_CV_BYTES
+    # nil when the upload is an acceptable CV; otherwise the sentence to show.
+    def self.cv_problem(file)
+      return "A CV is required (PDF or Word .docx, 5 MB at most)." if file.blank?
+      return "The CV is larger than 5 MB." if file.size > MAX_CV_BYTES
 
-      problem = cv_format_problem(cv)
-      problem ? [problem] : []
+      cv_format_problem(file)
     end
 
     # By the file's CONTENT, never only its name or the browser's type (both the sender controls):
@@ -110,7 +130,7 @@ module Portal
     # with a way out: it often carries macros and has no safe text reader here.
     OLE = "\xD0\xCF\x11\xE0".b
 
-    def cv_format_problem(file)
+    def self.cv_format_problem(file)
       head = file.read(8).to_s.b
       file.rewind
       return if head.start_with?("%PDF-")

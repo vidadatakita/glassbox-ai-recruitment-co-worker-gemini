@@ -42,14 +42,18 @@ class JobFormTest < ActionDispatch::IntegrationTest
     assert_select "button[name=lanjut]", 0
   end
 
-  test "job ad: written and checked on its page, approved with the flags ticked, then shown on Lamar" do
+  test "job ad: written and checked on its page, a rule flag saved only with a reason, then shown on Lamar once the portal opens" do
     job = briefed_job(complete: true)
     job.update_columns(ad_approved_at: nil, ad_approved_by_id: nil)
     sign_in_as staff_user("hr_pic")
     Screening::Config.stub(:enabled?, false) do
       post staff_job_ad_path(job), params: { ad_text: "Tentang posisi ini\n- Pria, usia maksimal 30 tahun" }
+      assert_response :unprocessable_content, "a sentence that names a protected attribute needs a written reason at save"
+      assert_select "textarea[name=flags_reason][required]"
+      post staff_job_ad_path(job), params: { ad_text: "Tentang posisi ini\n- Pria, usia maksimal 30 tahun", flags_reason: "Uji: alasan tertulis." }
     end
-    assert_redirected_to staff_job_ad_path(job)
+    assert_redirected_to staff_job_path(job, anchor: "applicant-portal")
+    assert_equal ["age, gender", "Uji: alasan tertulis."], job.brief_changes.where(step: "ad").last.changes_made["ad_flags_reason"]
     fake = Struct.new(:text) { def generate(**) = Screening::AiClient::Reply.new(model: "uji", text:, input_tokens: 1, output_tokens: 1) }.new({ ad_text: "Versi AI." }.to_json)
     Screening::Config.stub(:enabled?, true) do
       Screening::Config.stub(:client, fake) { post staff_job_ad_path(job), params: { ai: "1", ad_text: "draf", instruksi: "lebih singkat" } }
@@ -62,25 +66,19 @@ class JobFormTest < ActionDispatch::IntegrationTest
     end
     assert_equal({ "ad_text" => "Versi AI kedua." }, JSON.parse(response.body)["fields"], "from the page script: the text, no reload")
     assert_equal "Versi AI.", suggestion.ad_text
-    patch approve_ad_staff_job_path(job)
-    assert_nil job.reload.ad_approved_at, "a flagged ad is not approved without the tick"
-    # The saved line names age and gender (rule flags): the tick alone is not enough, a reason is.
-    get staff_job_ad_path(job)
-    assert_select "textarea[name=flags_reason][required]"
-    patch approve_ad_staff_job_path(job), params: { flags_checked: "1" }
-    assert_nil job.reload.ad_approved_at, "a sentence that names a protected attribute needs a written reason"
-    assert_match(/names a protected attribute \(age, gender\)/, flash[:alert])
-    patch approve_ad_staff_job_path(job), params: { flags_checked: "1", flags_reason: "Uji: alasan tertulis." }
-    assert job.reload.ad_approved_at
-    assert_equal ["age, gender", "Uji: alasan tertulis."], job.brief_changes.where(step: "ad").last.changes_made["ad_flags_reason"]
+    # 17 Oct 2026: no separate approval step. Opening the portal approves the ad, under the opener's name.
+    assert_nil job.reload.ad_approved_at, "the ad is not live before the portal opens"
     open_portal(job)
+    assert job.reload.ad_approved_at, "opening the portal approved the ad"
     get lamar_path(job.public_code)
     assert_includes response.body, "About this vacancy"
   end
 
-  test "owner, reviewer and admin cannot create or edit a brief, but can read it" do
+  # Three-role model (17 Oct 2026): owner and reviewer are both HR managers. Superadmin passes every
+  # role check, so it is no longer in the refused list; the allowed side is asserted below.
+  test "HR managers cannot create or edit a brief, but can read it; superadmin may open the form" do
     job = briefed_job(complete: false)
-    %w[owner reviewer admin].each do |role|
+    %w[owner reviewer].each do |role|
       sign_in_as staff_user(role)
       get staff_new_job_path
       assert_redirected_to staff_jobs_path, "#{role} new"
@@ -94,9 +92,14 @@ class JobFormTest < ActionDispatch::IntegrationTest
       assert_select "a[href=?]", staff_job_brief_step_path(job, 1), 0
       sign_out
     end
+    sign_in_as staff_user("superadmin")
+    get staff_new_job_path
+    assert_response :success, "superadmin passes every role check"
   end
 
-  test "hr_pic and consultant both write a brief end to end; every save is recorded" do
+  # hr_pic and consultant are two HR admin persons since the three-role model, so every change
+  # records the role "hr_admin".
+  test "both HR admin persons write a brief end to end; every save is recorded" do
     { "hr_pic" => "Operator HR", "consultant" => "Operator Konsultan" }.each do |role, title|
       sign_in_as staff_user(role)
       post staff_create_job_path, params: form_params(step1_params(title:))
@@ -115,8 +118,10 @@ class JobFormTest < ActionDispatch::IntegrationTest
       assert_redirected_to staff_job_brief_path(job)
       assert job.reload.brief_complete?
       assert_equal %w[1 2 3 4 5 5 complete], job.brief_changes.order(:id).pluck(:step)
-      assert_equal [role], job.brief_changes.where.not(step: "5").pluck(:actor_role).uniq
-      assert_equal %w[consultant hr_pic], job.brief_changes.where(step: "5").order(:id).pluck(:actor_role)
+      assert_equal ["hr_admin"], job.brief_changes.where.not(step: "5").pluck(:actor_role).uniq
+      # Step 5 is still two different persons: one HR admin uploads the case, another approves it.
+      assert_equal [staff_user("consultant").id, staff_user("hr_pic").id], job.brief_changes.where(step: "5").order(:id).pluck(:actor_id)
+      assert_equal %w[hr_admin hr_admin], job.brief_changes.where(step: "5").order(:id).pluck(:actor_role)
       sign_out
     end
   end
@@ -193,32 +198,51 @@ class JobFormTest < ActionDispatch::IntegrationTest
     refute_includes response.body, "Bekasi, Karawang", "never a comma-joined multi-value on a staff screen"
   end
 
-  test "the ad of a draft brief cannot be approved, and the screen says why" do
+  test "a draft brief: the vacancy page says the portal waits for the brief, and offers no approval step" do
     job = briefed_job(complete: false)
     job.update!(client_company: company, ad_text: "Tentang posisi ini\nIklan uji.")
     sign_in_as staff_user("hr_pic")
     get staff_job_path(job)
-    assert_includes response.body, "The job ad cannot be approved yet because the vacancy brief is incomplete."
-    assert_select "form[action=?]", approve_ad_staff_job_path(job), 0
+    assert_match(/The applicant portal opens once the vacancy brief is complete|All brief steps are filled in/, response.body)
+    assert_select "a.portal-missing__fix", minimum: 1
+    assert_no_match(/Approve job ad/, response.body, "the approval step is taken down")
     assert_select "a[title='View vacancy brief details'] i.fa-plus"
-    patch approve_ad_staff_job_path(job), params: { commit: "Setujui iklan" }
-    assert_nil job.reload.ad_approved_at
-    follow_redirect!
-    assert_includes response.body, "vacancy brief is incomplete"
-    Briefs::Complete.call(job:, actor: staff_user("hr_pic"))
-    patch approve_ad_staff_job_path(job), params: { commit: "Setujui iklan" }
-    assert job.reload.ad_approved_at, "control: a complete brief can be approved"
   end
 
-  test "an ad without a text cannot be approved: the box says to write it first" do
+  test "an ad without a text: the box says to write it first, and the portal refuses to open" do
     job = briefed_job(ad: false)
     sign_in_as staff_user("hr_pic")
     get staff_job_path(job)
     assert_includes response.body, "The job ad has not been written yet."
-    assert_select "form[action=?]", approve_ad_staff_job_path(job), 0
-    patch approve_ad_staff_job_path(job)
+    set_retention
+    publish_consent
+    error = assert_raises(Portal::WindowChange::Refused) { Portal::WindowChange.open!(job:, actor: staff_user("hr_pic")) }
+    assert_match(/job ad has not been written yet/, error.message)
+  end
+
+  test "saving a draft ad goes straight to the portal card; opening the portal approves the ad under the opener's name" do
+    job = briefed_job(ad: false)
+    set_retention
+    publish_consent
+    hr = staff_user("hr_pic")
+    sign_in_as hr
+    post staff_job_ad_path(job), params: { ad_text: "About this role\nWe need an accounting supervisor." }
+    assert_redirected_to staff_job_path(job, anchor: "applicant-portal")
     assert_nil job.reload.ad_approved_at
-    assert_redirected_to staff_job_ad_path(job)
+    Portal::WindowChange.open!(job:, actor: hr)
+    assert_equal hr.id, job.reload.ad_approved_by_id
+    assert job.brief_changes.where(step: "ad").last.changes_made.key?("ad_approved_at"), "the approval is recorded in the brief history"
+  end
+
+  test "a draft ad that names a protected attribute is saved only with a written reason" do
+    job = briefed_job(ad: false)
+    sign_in_as staff_user("hr_pic")
+    post staff_job_ad_path(job), params: { ad_text: "Female, max 28 years old." }
+    assert_response :unprocessable_content
+    assert_nil job.reload.ad_text
+    post staff_job_ad_path(job), params: { ad_text: "Female, max 28 years old.", flags_reason: "Test: written reason." }
+    assert_equal "Female, max 28 years old.", job.reload.ad_text
+    assert_equal "Test: written reason.", job.brief_changes.where(step: "ad").last.changes_made["ad_flags_reason"].last
   end
 
   test "the knockout questions entered in step 3 are the ones Lamar asks" do

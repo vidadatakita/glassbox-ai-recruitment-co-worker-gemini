@@ -16,7 +16,7 @@ SET row_security = off;
 CREATE FUNCTION public.ai_release_person_allowed(person bigint, release_job bigint) RETURNS boolean
     LANGUAGE sql STABLE
     AS $$
-    SELECT EXISTS (SELECT 1 FROM users WHERE id = person AND role = 'reviewer')
+    SELECT EXISTS (SELECT 1 FROM users WHERE id = person AND role IN ('hr_manager', 'superadmin'))
        AND NOT EXISTS (SELECT 1 FROM jobs WHERE id = release_job AND consultant_id = person)
   $$;
 
@@ -148,6 +148,110 @@ END;
 
 
 --
+-- Name: enforce_application_draft(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enforce_application_draft() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF OLD.test_started_at IS NOT NULL AND (NEW.draw <> OLD.draw OR NEW.test_started_at <> OLD.test_started_at
+      OR NEW.test_due_at <> OLD.test_due_at OR NEW.time_limit_minutes <> OLD.time_limit_minutes
+      OR NEW.question_bank_id <> OLD.question_bank_id OR NEW.grace_seconds <> OLD.grace_seconds) THEN
+    RAISE EXCEPTION 'application_drafts: the draw and the deadline never change once the test started'
+      USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF OLD.submitted_at IS NOT NULL AND (NEW.submitted_at IS DISTINCT FROM OLD.submitted_at
+      OR NEW.job_application_id IS DISTINCT FROM OLD.job_application_id) THEN
+    RAISE EXCEPTION 'application_drafts: a submitted draft stays linked to its application'
+      USING ERRCODE = 'restrict_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: enforce_bank_question_freeze(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enforce_bank_question_freeze() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE bank_id bigint;
+BEGIN
+  bank_id := CASE WHEN TG_OP = 'INSERT' THEN NEW.question_bank_id ELSE OLD.question_bank_id END;
+  IF EXISTS (SELECT 1 FROM question_banks b WHERE b.id = bank_id AND b.approved_at IS NOT NULL) THEN
+    RAISE EXCEPTION 'bank_questions: the bank is approved and final; make a new version' USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF EXISTS (SELECT 1 FROM question_banks b WHERE b.id = bank_id AND b.submitted_at IS NOT NULL) THEN
+    RAISE EXCEPTION 'bank_questions: the bank is submitted for approval; return it to draft before any change'
+      USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF TG_OP = 'UPDATE' AND NEW.question_bank_id <> OLD.question_bank_id THEN
+    RAISE EXCEPTION 'bank_questions: a question never moves to another bank' USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: enforce_draft_answer(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enforce_draft_answer() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE d application_drafts%ROWTYPE;
+BEGIN
+  SELECT * INTO d FROM application_drafts WHERE id = NEW.application_draft_id;
+  -- Only the correct flag may be written after submit (the scoring at Submit itself).
+  IF TG_OP = 'UPDATE' AND NEW.choice_index IS NOT DISTINCT FROM OLD.choice_index
+     AND NEW.answer_text IS NOT DISTINCT FROM OLD.answer_text AND NEW.saved_at = OLD.saved_at THEN
+    RETURN NEW;
+  END IF;
+  IF d.submitted_at IS NOT NULL THEN
+    RAISE EXCEPTION 'draft_answers: the application is submitted; answers are final' USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF d.test_started_at IS NULL OR NOT (NEW.bank_question_id = ANY (d.draw)) THEN
+    RAISE EXCEPTION 'draft_answers: only a question drawn for this applicant, after the test started'
+      USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF NEW.saved_at > d.test_due_at + make_interval(secs => d.grace_seconds) THEN
+    RAISE EXCEPTION 'draft_answers: the time for the test is over' USING ERRCODE = 'restrict_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: enforce_draft_answer_review(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enforce_draft_answer_review() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE reviewer_role text; job_consultant bigint;
+BEGIN
+  IF NEW.reviewed_by_id IS NULL OR NEW.reviewed_by_id IS NOT DISTINCT FROM OLD.reviewed_by_id AND NEW.review_rating IS NOT DISTINCT FROM OLD.review_rating THEN
+    RETURN NEW;
+  END IF;
+  SELECT role INTO reviewer_role FROM users WHERE id = NEW.reviewed_by_id;
+  SELECT jobs.consultant_id INTO job_consultant FROM application_drafts d JOIN jobs ON jobs.id = d.job_id
+   WHERE d.id = NEW.application_draft_id;
+  IF COALESCE(reviewer_role, '') NOT IN ('hr_manager', 'superadmin') OR (job_consultant IS NOT NULL AND job_consultant = NEW.reviewed_by_id) THEN
+    RAISE EXCEPTION 'draft_answers: a written answer is confirmed by a reviewer who is not the job''s consultant'
+      USING ERRCODE = 'restrict_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: enforce_gate_eliminated(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -265,7 +369,7 @@ BEGIN
     RAISE EXCEPTION 'narrative approval refused: no such screening result'
       USING ERRCODE = 'check_violation';
   END IF;
-  IF approver_role IS DISTINCT FROM 'consultant' THEN
+  IF COALESCE(approver_role, '') NOT IN ('hr_admin', 'superadmin') THEN
     RAISE EXCEPTION 'narrative approval refused: user % is not a consultant', NEW.approved_by_id
       USING ERRCODE = 'check_violation';
   END IF;
@@ -290,12 +394,86 @@ CREATE FUNCTION public.enforce_progression_chooser() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  IF (SELECT role FROM users WHERE id = NEW.actor_id) IS DISTINCT FROM 'hr_pic' THEN
+  IF COALESCE((SELECT role FROM users WHERE id = NEW.actor_id), '') NOT IN ('hr_admin', 'superadmin') THEN
     RAISE EXCEPTION 'progression choice refused: only the HR PIC chooses (AI Builder Cup step 06)'
       USING ERRCODE = 'check_violation';
   END IF;
   IF NOT user_in_job_company(NEW.actor_id, (SELECT s.job_id FROM participations p JOIN stages s ON s.id = p.stage_id WHERE p.id = NEW.participation_id)) THEN
     RAISE EXCEPTION 'progression choice refused: the HR PIC belongs to another company' USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: enforce_question_bank_freeze(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enforce_question_bank_freeze() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE approver_role varchar; technical_count integer; role_count integer; incomplete integer;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'question_banks: a version is never deleted' USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF OLD.approved_at IS NOT NULL THEN
+    RAISE EXCEPTION 'question_banks: version % is approved and final; make a new version', OLD.version
+      USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF NEW.job_id <> OLD.job_id OR NEW.version <> OLD.version OR NEW.created_by_id <> OLD.created_by_id THEN
+    RAISE EXCEPTION 'question_banks: job, version and creator never change' USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF OLD.submitted_at IS NOT NULL AND NEW.submitted_at IS NOT NULL
+     AND (NEW.technical_draw <> OLD.technical_draw OR NEW.role_draw <> OLD.role_draw
+          OR NEW.time_limit_minutes <> OLD.time_limit_minutes) THEN
+    RAISE EXCEPTION 'question_banks: version % is submitted for approval; return it to draft before changing it', OLD.version
+      USING ERRCODE = 'restrict_violation';
+  END IF;
+  IF NEW.approved_at IS NOT NULL THEN
+    SELECT role INTO approver_role FROM users WHERE id = NEW.approved_by_id;
+    -- NULL-safe on purpose: a missing user must not pass a NOT IN.
+    IF COALESCE(approver_role, '') NOT IN ('hr_manager', 'superadmin') THEN
+      RAISE EXCEPTION 'question_banks: only the HR Manager approves a question bank' USING ERRCODE = 'restrict_violation';
+    END IF;
+    IF approver_role <> 'superadmin' AND NEW.approved_by_id IN (NEW.created_by_id, NEW.submitted_by_id) THEN
+  RAISE EXCEPTION 'question_banks: the person who created or submitted the bank cannot approve it' USING ERRCODE = 'restrict_violation';
+END IF;
+
+    SELECT count(*) FILTER (WHERE section = 'technical'), count(*) FILTER (WHERE section = 'role'),
+           count(*) FILTER (WHERE (section = 'technical' AND activity_id IS NULL)
+                               OR (section = 'role' AND competency_id IS NULL)
+                               OR (kind = 'written' AND (length(btrim(COALESCE(anchor_1, ''))) = 0
+                                                         OR length(btrim(COALESCE(anchor_3, ''))) = 0
+                                                         OR length(btrim(COALESCE(anchor_5, ''))) = 0)))
+      INTO technical_count, role_count, incomplete
+      FROM bank_questions WHERE question_bank_id = NEW.id;
+    IF technical_count < 2 * NEW.technical_draw OR role_count < 2 * NEW.role_draw THEN
+      RAISE EXCEPTION 'question_banks: the bank needs at least twice the draw per section (technical %/% , role %/%)',
+        technical_count, 2 * NEW.technical_draw, role_count, 2 * NEW.role_draw USING ERRCODE = 'restrict_violation';
+    END IF;
+    IF incomplete > 0 THEN
+      RAISE EXCEPTION 'question_banks: % question(s) lack their brief link or scoring anchors', incomplete
+        USING ERRCODE = 'restrict_violation';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: enforce_question_bank_inserted_as_draft(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.enforce_question_bank_inserted_as_draft() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.approved_at IS NOT NULL OR NEW.approved_by_id IS NOT NULL OR NEW.submitted_at IS NOT NULL THEN
+    RAISE EXCEPTION 'question_banks: a version is inserted as a draft; the HR Admin submits it and the HR Manager approves it'
+      USING ERRCODE = 'restrict_violation';
   END IF;
   RETURN NEW;
 END;
@@ -310,7 +488,7 @@ CREATE FUNCTION public.enforce_salary_decider() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  IF (SELECT role FROM users WHERE id = NEW.decided_by_id) IS DISTINCT FROM 'owner' THEN
+  IF COALESCE((SELECT role FROM users WHERE id = NEW.decided_by_id), '') NOT IN ('hr_manager', 'superadmin') THEN
     RAISE EXCEPTION 'salary agreement refused: only the owner decides (AI Builder Cup step 08)'
       USING ERRCODE = 'check_violation';
   END IF;
@@ -355,7 +533,7 @@ DECLARE
   job_consultant bigint;
 BEGIN
   SELECT role INTO reviewer_role FROM users WHERE id = NEW.reviewer_id;
-  IF reviewer_role IS DISTINCT FROM 'reviewer' THEN
+  IF COALESCE(reviewer_role, '') NOT IN ('hr_manager', 'superadmin') THEN
     RAISE EXCEPTION 'screening review refused: user % is not a reviewer', NEW.reviewer_id
       USING ERRCODE = 'check_violation';
   END IF;
@@ -619,7 +797,7 @@ BEGIN
   END IF;
   IF NEW.approved_at IS NOT NULL THEN
     SELECT role INTO approver_role FROM users WHERE id = NEW.approved_by_id;
-    IF approver_role IS DISTINCT FROM 'hr_pic' THEN
+    IF COALESCE(approver_role, '') NOT IN ('hr_admin', 'superadmin') THEN
       RAISE EXCEPTION 'test_cases: only HR PIC approves a test version' USING ERRCODE = 'restrict_violation';
     END IF;
     SELECT coalesce(sum(weight), 0), count(*) INTO weight_sum, criteria_count FROM test_case_criteria WHERE test_case_id = NEW.id;
@@ -669,7 +847,7 @@ BEGIN
     RAISE EXCEPTION 'test_reviews is append-only' USING ERRCODE = 'restrict_violation';
   END IF;
   SELECT role INTO reviewer_role FROM users WHERE id = NEW.reviewer_id;
-  IF reviewer_role IS DISTINCT FROM 'reviewer' THEN
+  IF COALESCE(reviewer_role, '') NOT IN ('hr_manager', 'superadmin') THEN
     RAISE EXCEPTION 'test review refused: user % is not a reviewer', NEW.reviewer_id USING ERRCODE = 'restrict_violation';
   END IF;
   SELECT jobs.consultant_id INTO job_consultant
@@ -710,7 +888,7 @@ BEGIN
   SELECT jobs.consultant_id INTO job_consultant
     FROM participations p JOIN stages st ON st.id = p.stage_id JOIN jobs ON jobs.id = st.job_id
    WHERE p.id = NEW.participation_id;
-  IF author_role IS DISTINCT FROM 'reviewer' OR (job_consultant IS NOT NULL AND job_consultant = NEW.entered_by_id) THEN
+  IF COALESCE(author_role, '') NOT IN ('hr_manager', 'superadmin') OR (job_consultant IS NOT NULL AND job_consultant = NEW.entered_by_id) THEN
     RAISE EXCEPTION 'score_entries: a technical test answer is scored by a reviewer who is not the job''s consultant'
       USING ERRCODE = 'restrict_violation';
   END IF;
@@ -727,7 +905,7 @@ CREATE FUNCTION public.enforce_user_recommendation_actor() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  IF (SELECT role FROM users WHERE id = NEW.entered_by_id) IS DISTINCT FROM 'hr_pic' THEN
+  IF COALESCE((SELECT role FROM users WHERE id = NEW.entered_by_id), '') NOT IN ('hr_admin', 'superadmin') THEN
     RAISE EXCEPTION 'user recommendation refused: only the HR PIC enters it (D62 h6)'
       USING ERRCODE = 'check_violation';
   END IF;
@@ -1195,6 +1373,66 @@ ALTER SEQUENCE public.ai_releases_id_seq OWNED BY public.ai_releases.id;
 
 
 --
+-- Name: application_drafts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.application_drafts (
+    id bigint NOT NULL,
+    job_id bigint NOT NULL,
+    token_digest character varying NOT NULL,
+    name character varying,
+    email character varying,
+    phone character varying,
+    domicile_city character varying,
+    expected_salary_min bigint,
+    expected_salary_max bigint,
+    knockout_answers jsonb DEFAULT '{}'::jsonb NOT NULL,
+    consent_template_id bigint NOT NULL,
+    consent_retention_days integer NOT NULL,
+    consent_at timestamp(6) without time zone NOT NULL,
+    channel_code character varying,
+    question_bank_id bigint NOT NULL,
+    draw bigint[] DEFAULT '{}'::bigint[] NOT NULL,
+    time_limit_minutes integer NOT NULL,
+    grace_seconds integer DEFAULT 120 NOT NULL,
+    test_started_at timestamp(6) without time zone,
+    test_due_at timestamp(6) without time zone,
+    submitted_at timestamp(6) without time zone,
+    job_application_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    ai_status character varying,
+    ai_error text,
+    CONSTRAINT application_drafts_ai_status CHECK (((ai_status IS NULL) OR ((ai_status)::text = ANY ((ARRAY['pending'::character varying, 'done'::character varying, 'failed'::character varying])::text[])))),
+    CONSTRAINT application_drafts_due_from_limit CHECK (((test_started_at IS NULL) OR (test_due_at = (test_started_at + make_interval(mins => time_limit_minutes))))),
+    CONSTRAINT application_drafts_grace_range CHECK (((grace_seconds >= 0) AND (grace_seconds <= 600))),
+    CONSTRAINT application_drafts_started_has_draw CHECK (((test_started_at IS NULL) OR (cardinality(draw) >= 1))),
+    CONSTRAINT application_drafts_submitted_has_application CHECK (((submitted_at IS NULL) = (job_application_id IS NULL))),
+    CONSTRAINT application_drafts_test_pair CHECK (((test_started_at IS NULL) = (test_due_at IS NULL))),
+    CONSTRAINT application_drafts_time_limit_range CHECK (((time_limit_minutes >= 1) AND (time_limit_minutes <= 60)))
+);
+
+
+--
+-- Name: application_drafts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.application_drafts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: application_drafts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.application_drafts_id_seq OWNED BY public.application_drafts.id;
+
+
+--
 -- Name: application_window_events; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1323,6 +1561,58 @@ CREATE TABLE public.ar_internal_metadata (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
+
+
+--
+-- Name: bank_questions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.bank_questions (
+    id bigint NOT NULL,
+    question_bank_id bigint NOT NULL,
+    section character varying NOT NULL,
+    kind character varying NOT NULL,
+    "position" integer NOT NULL,
+    activity_id bigint,
+    activity_text text,
+    competency_id bigint,
+    competency_name character varying,
+    prompt text NOT NULL,
+    options text[] DEFAULT '{}'::text[] NOT NULL,
+    correct_index integer,
+    anchor_1 text,
+    anchor_3 text,
+    anchor_5 text,
+    source character varying DEFAULT 'manual'::character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT bank_questions_kind CHECK (((kind)::text = ANY (ARRAY[('multiple_choice'::character varying)::text, ('written'::character varying)::text]))),
+    CONSTRAINT bank_questions_link_matches_section CHECK (((((section)::text = 'technical'::text) AND (competency_id IS NULL)) OR (((section)::text = 'role'::text) AND (activity_id IS NULL)))),
+    CONSTRAINT bank_questions_position_positive CHECK (("position" >= 1)),
+    CONSTRAINT bank_questions_prompt_present CHECK ((length(btrim(prompt)) > 0)),
+    CONSTRAINT bank_questions_section CHECK (((section)::text = ANY (ARRAY[('technical'::character varying)::text, ('role'::character varying)::text]))),
+    CONSTRAINT bank_questions_shape CHECK (((((kind)::text = 'multiple_choice'::text) AND ((cardinality(options) >= 2) AND (cardinality(options) <= 6)) AND (correct_index IS NOT NULL) AND (correct_index >= 0) AND (correct_index < cardinality(options))) OR (((kind)::text = 'written'::text) AND (cardinality(options) = 0) AND (correct_index IS NULL)))),
+    CONSTRAINT bank_questions_source CHECK (((source)::text = ANY (ARRAY[('manual'::character varying)::text, ('ai'::character varying)::text, ('import'::character varying)::text])))
+);
+
+
+--
+-- Name: bank_questions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.bank_questions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: bank_questions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.bank_questions_id_seq OWNED BY public.bank_questions.id;
 
 
 --
@@ -1663,6 +1953,57 @@ CREATE SEQUENCE public.decisions_id_seq
 --
 
 ALTER SEQUENCE public.decisions_id_seq OWNED BY public.decisions.id;
+
+
+--
+-- Name: draft_answers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.draft_answers (
+    id bigint NOT NULL,
+    application_draft_id bigint NOT NULL,
+    bank_question_id bigint NOT NULL,
+    choice_index integer,
+    answer_text text,
+    correct boolean,
+    saved_at timestamp(6) without time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    ai_rating integer,
+    ai_quote text,
+    ai_reason text,
+    ai_quote_verified boolean,
+    ai_model character varying,
+    ai_prompt_version character varying,
+    ai_rated_at timestamp(6) without time zone,
+    review_rating integer,
+    reviewed_by_id bigint,
+    reviewed_at timestamp(6) without time zone,
+    CONSTRAINT draft_answers_ai_rating_range CHECK (((ai_rating IS NULL) OR ((ai_rating >= 1) AND (ai_rating <= 5)))),
+    CONSTRAINT draft_answers_choice_range CHECK (((choice_index IS NULL) OR ((choice_index >= 0) AND (choice_index <= 5)))),
+    CONSTRAINT draft_answers_one_kind CHECK (((choice_index IS NULL) OR (answer_text IS NULL))),
+    CONSTRAINT draft_answers_review_complete CHECK ((((review_rating IS NULL) = (reviewed_by_id IS NULL)) AND ((reviewed_by_id IS NULL) = (reviewed_at IS NULL)))),
+    CONSTRAINT draft_answers_review_rating_range CHECK (((review_rating IS NULL) OR ((review_rating >= 1) AND (review_rating <= 5))))
+);
+
+
+--
+-- Name: draft_answers_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.draft_answers_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: draft_answers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.draft_answers_id_seq OWNED BY public.draft_answers.id;
 
 
 --
@@ -2259,6 +2600,54 @@ CREATE SEQUENCE public.progression_choices_id_seq
 --
 
 ALTER SEQUENCE public.progression_choices_id_seq OWNED BY public.progression_choices.id;
+
+
+--
+-- Name: question_banks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.question_banks (
+    id bigint NOT NULL,
+    job_id bigint NOT NULL,
+    version integer NOT NULL,
+    technical_draw integer DEFAULT 5 NOT NULL,
+    role_draw integer DEFAULT 3 NOT NULL,
+    time_limit_minutes integer DEFAULT 30 NOT NULL,
+    new_version_reason text,
+    created_by_id bigint NOT NULL,
+    submitted_by_id bigint,
+    submitted_at timestamp(6) without time zone,
+    approved_by_id bigint,
+    approved_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT question_banks_approval_pair CHECK (((approved_at IS NULL) = (approved_by_id IS NULL))),
+    CONSTRAINT question_banks_approved_was_submitted CHECK (((approved_at IS NULL) OR (submitted_at IS NOT NULL))),
+    CONSTRAINT question_banks_draws_range CHECK (((technical_draw >= 1) AND (technical_draw <= 20) AND ((role_draw >= 1) AND (role_draw <= 20)))),
+    CONSTRAINT question_banks_new_version_has_reason CHECK (((version = 1) OR (length(btrim(COALESCE(new_version_reason, ''::text))) > 0))),
+    CONSTRAINT question_banks_submission_pair CHECK (((submitted_at IS NULL) = (submitted_by_id IS NULL))),
+    CONSTRAINT question_banks_time_limit_range CHECK (((time_limit_minutes >= 1) AND (time_limit_minutes <= 60))),
+    CONSTRAINT question_banks_version_positive CHECK ((version >= 1))
+);
+
+
+--
+-- Name: question_banks_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.question_banks_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: question_banks_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.question_banks_id_seq OWNED BY public.question_banks.id;
 
 
 --
@@ -3228,10 +3617,10 @@ CREATE TABLE public.users (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     name character varying DEFAULT ''::character varying NOT NULL,
-    role character varying DEFAULT 'hr_pic'::character varying NOT NULL,
+    role character varying DEFAULT 'hr_admin'::character varying NOT NULL,
     client_company_id bigint,
-    CONSTRAINT users_client_roles_have_company CHECK ((((role)::text <> ALL (ARRAY[('hr_pic'::character varying)::text, ('owner'::character varying)::text])) OR (client_company_id IS NOT NULL))),
-    CONSTRAINT users_role CHECK (((role)::text = ANY (ARRAY[('owner'::character varying)::text, ('hr_pic'::character varying)::text, ('consultant'::character varying)::text, ('reviewer'::character varying)::text, ('admin'::character varying)::text])))
+    CONSTRAINT users_client_roles_have_company CHECK ((((role)::text <> ALL (ARRAY[('hr_admin'::character varying)::text, ('hr_manager'::character varying)::text])) OR (client_company_id IS NOT NULL))),
+    CONSTRAINT users_role CHECK (((role)::text = ANY (ARRAY[('superadmin'::character varying)::text, ('hr_admin'::character varying)::text, ('hr_manager'::character varying)::text])))
 );
 
 
@@ -3304,6 +3693,13 @@ ALTER TABLE ONLY public.ai_releases ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: application_drafts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.application_drafts ALTER COLUMN id SET DEFAULT nextval('public.application_drafts_id_seq'::regclass);
+
+
+--
 -- Name: application_window_events id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -3322,6 +3718,13 @@ ALTER TABLE ONLY public.appointment_changes ALTER COLUMN id SET DEFAULT nextval(
 --
 
 ALTER TABLE ONLY public.appointments ALTER COLUMN id SET DEFAULT nextval('public.appointments_id_seq'::regclass);
+
+
+--
+-- Name: bank_questions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bank_questions ALTER COLUMN id SET DEFAULT nextval('public.bank_questions_id_seq'::regclass);
 
 
 --
@@ -3385,6 +3788,13 @@ ALTER TABLE ONLY public.data_questions ALTER COLUMN id SET DEFAULT nextval('publ
 --
 
 ALTER TABLE ONLY public.decisions ALTER COLUMN id SET DEFAULT nextval('public.decisions_id_seq'::regclass);
+
+
+--
+-- Name: draft_answers id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.draft_answers ALTER COLUMN id SET DEFAULT nextval('public.draft_answers_id_seq'::regclass);
 
 
 --
@@ -3490,6 +3900,13 @@ ALTER TABLE ONLY public.participations ALTER COLUMN id SET DEFAULT nextval('publ
 --
 
 ALTER TABLE ONLY public.progression_choices ALTER COLUMN id SET DEFAULT nextval('public.progression_choices_id_seq'::regclass);
+
+
+--
+-- Name: question_banks id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.question_banks ALTER COLUMN id SET DEFAULT nextval('public.question_banks_id_seq'::regclass);
 
 
 --
@@ -3724,6 +4141,14 @@ ALTER TABLE ONLY public.ai_releases
 
 
 --
+-- Name: application_drafts application_drafts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.application_drafts
+    ADD CONSTRAINT application_drafts_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: application_window_events application_window_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3753,6 +4178,14 @@ ALTER TABLE ONLY public.appointments
 
 ALTER TABLE ONLY public.ar_internal_metadata
     ADD CONSTRAINT ar_internal_metadata_pkey PRIMARY KEY (key);
+
+
+--
+-- Name: bank_questions bank_questions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bank_questions
+    ADD CONSTRAINT bank_questions_pkey PRIMARY KEY (id);
 
 
 --
@@ -3825,6 +4258,14 @@ ALTER TABLE ONLY public.data_questions
 
 ALTER TABLE ONLY public.decisions
     ADD CONSTRAINT decisions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: draft_answers draft_answers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.draft_answers
+    ADD CONSTRAINT draft_answers_pkey PRIMARY KEY (id);
 
 
 --
@@ -3945,6 +4386,14 @@ ALTER TABLE ONLY public.participations
 
 ALTER TABLE ONLY public.progression_choices
     ADD CONSTRAINT progression_choices_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: question_banks question_banks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.question_banks
+    ADD CONSTRAINT question_banks_pkey PRIMARY KEY (id);
 
 
 --
@@ -4163,6 +4612,13 @@ CREATE UNIQUE INDEX decisions_one_first_decision ON public.decisions USING btree
 
 
 --
+-- Name: idx_on_application_draft_id_bank_question_id_9391c0fb3f; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_on_application_draft_id_bank_question_id_9391c0fb3f ON public.draft_answers USING btree (application_draft_id, bank_question_id);
+
+
+--
 -- Name: index_active_storage_attachments_on_blob_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4261,6 +4717,41 @@ CREATE UNIQUE INDEX index_ai_releases_on_supersedes_id ON public.ai_releases USI
 
 
 --
+-- Name: index_application_drafts_on_consent_template_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_application_drafts_on_consent_template_id ON public.application_drafts USING btree (consent_template_id);
+
+
+--
+-- Name: index_application_drafts_on_job_application_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_application_drafts_on_job_application_id ON public.application_drafts USING btree (job_application_id);
+
+
+--
+-- Name: index_application_drafts_on_job_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_application_drafts_on_job_id ON public.application_drafts USING btree (job_id);
+
+
+--
+-- Name: index_application_drafts_on_question_bank_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_application_drafts_on_question_bank_id ON public.application_drafts USING btree (question_bank_id);
+
+
+--
+-- Name: index_application_drafts_on_token_digest; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_application_drafts_on_token_digest ON public.application_drafts USING btree (token_digest);
+
+
+--
 -- Name: index_application_window_events_on_job_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4279,6 +4770,20 @@ CREATE INDEX index_appointment_changes_on_appointment_id ON public.appointment_c
 --
 
 CREATE UNIQUE INDEX index_appointments_on_participation_id ON public.appointments USING btree (participation_id);
+
+
+--
+-- Name: index_bank_questions_on_question_bank_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_bank_questions_on_question_bank_id ON public.bank_questions USING btree (question_bank_id);
+
+
+--
+-- Name: index_bank_questions_on_question_bank_id_and_position; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_bank_questions_on_question_bank_id_and_position ON public.bank_questions USING btree (question_bank_id, "position");
 
 
 --
@@ -4377,6 +4882,27 @@ CREATE INDEX index_decisions_on_participation_id ON public.decisions USING btree
 --
 
 CREATE UNIQUE INDEX index_decisions_on_supersedes_id ON public.decisions USING btree (supersedes_id);
+
+
+--
+-- Name: index_draft_answers_on_application_draft_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_draft_answers_on_application_draft_id ON public.draft_answers USING btree (application_draft_id);
+
+
+--
+-- Name: index_draft_answers_on_bank_question_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_draft_answers_on_bank_question_id ON public.draft_answers USING btree (bank_question_id);
+
+
+--
+-- Name: index_draft_answers_on_reviewed_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_draft_answers_on_reviewed_by_id ON public.draft_answers USING btree (reviewed_by_id);
 
 
 --
@@ -4573,6 +5099,41 @@ CREATE UNIQUE INDEX index_progression_choices_on_participation_id ON public.prog
 --
 
 CREATE INDEX index_progression_choices_on_stage_recommendation_id ON public.progression_choices USING btree (stage_recommendation_id);
+
+
+--
+-- Name: index_question_banks_on_approved_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_question_banks_on_approved_by_id ON public.question_banks USING btree (approved_by_id);
+
+
+--
+-- Name: index_question_banks_on_created_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_question_banks_on_created_by_id ON public.question_banks USING btree (created_by_id);
+
+
+--
+-- Name: index_question_banks_on_job_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_question_banks_on_job_id ON public.question_banks USING btree (job_id);
+
+
+--
+-- Name: index_question_banks_on_job_id_and_version; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_question_banks_on_job_id_and_version ON public.question_banks USING btree (job_id, version);
+
+
+--
+-- Name: index_question_banks_on_submitted_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_question_banks_on_submitted_by_id ON public.question_banks USING btree (submitted_by_id);
 
 
 --
@@ -5003,6 +5564,13 @@ CREATE TRIGGER ai_releases_no_truncate BEFORE TRUNCATE ON public.ai_releases FOR
 
 
 --
+-- Name: application_drafts application_drafts_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER application_drafts_guard BEFORE UPDATE ON public.application_drafts FOR EACH ROW EXECUTE FUNCTION public.enforce_application_draft();
+
+
+--
 -- Name: application_window_events application_window_events_append_only; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -5028,6 +5596,13 @@ CREATE TRIGGER appointment_changes_append_only BEFORE DELETE OR UPDATE ON public
 --
 
 CREATE TRIGGER appointment_changes_no_truncate BEFORE TRUNCATE ON public.appointment_changes FOR EACH STATEMENT EXECUTE FUNCTION public.forbid_truncate();
+
+
+--
+-- Name: bank_questions bank_questions_freeze; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER bank_questions_freeze BEFORE INSERT OR DELETE OR UPDATE ON public.bank_questions FOR EACH ROW EXECUTE FUNCTION public.enforce_bank_question_freeze();
 
 
 --
@@ -5143,6 +5718,20 @@ CREATE TRIGGER decisions_same_participation BEFORE INSERT ON public.decisions FO
 
 
 --
+-- Name: draft_answers draft_answers_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER draft_answers_guard BEFORE INSERT OR UPDATE ON public.draft_answers FOR EACH ROW EXECUTE FUNCTION public.enforce_draft_answer();
+
+
+--
+-- Name: draft_answers draft_answers_review_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER draft_answers_review_guard BEFORE UPDATE ON public.draft_answers FOR EACH ROW EXECUTE FUNCTION public.enforce_draft_answer_review();
+
+
+--
 -- Name: google_integration_events google_integration_events_append_only; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -5203,6 +5792,20 @@ CREATE TRIGGER progression_choices_hr_pic BEFORE INSERT ON public.progression_ch
 --
 
 CREATE TRIGGER progression_choices_no_truncate BEFORE TRUNCATE ON public.progression_choices FOR EACH STATEMENT EXECUTE FUNCTION public.forbid_truncate();
+
+
+--
+-- Name: question_banks question_banks_freeze; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER question_banks_freeze BEFORE DELETE OR UPDATE ON public.question_banks FOR EACH ROW EXECUTE FUNCTION public.enforce_question_bank_freeze();
+
+
+--
+-- Name: question_banks question_banks_inserted_as_draft; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER question_banks_inserted_as_draft BEFORE INSERT ON public.question_banks FOR EACH ROW EXECUTE FUNCTION public.enforce_question_bank_inserted_as_draft();
 
 
 --
@@ -5598,6 +6201,14 @@ CREATE TRIGGER user_recommendations_no_truncate BEFORE TRUNCATE ON public.user_r
 
 
 --
+-- Name: draft_answers fk_rails_00440600a4; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.draft_answers
+    ADD CONSTRAINT fk_rails_00440600a4 FOREIGN KEY (application_draft_id) REFERENCES public.application_drafts(id);
+
+
+--
 -- Name: screening_reviews fk_rails_08dfe02abe; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5627,6 +6238,14 @@ ALTER TABLE ONLY public.screening_results
 
 ALTER TABLE ONLY public.test_ai_suggestions
     ADD CONSTRAINT fk_rails_0ceea278d7 FOREIGN KEY (actor_id) REFERENCES public.users(id);
+
+
+--
+-- Name: question_banks fk_rails_0e23dada4b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.question_banks
+    ADD CONSTRAINT fk_rails_0e23dada4b FOREIGN KEY (approved_by_id) REFERENCES public.users(id);
 
 
 --
@@ -5694,11 +6313,27 @@ ALTER TABLE ONLY public.stage_recommendations
 
 
 --
+-- Name: draft_answers fk_rails_2592406a30; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.draft_answers
+    ADD CONSTRAINT fk_rails_2592406a30 FOREIGN KEY (bank_question_id) REFERENCES public.bank_questions(id);
+
+
+--
 -- Name: consent_templates fk_rails_27effac501; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.consent_templates
     ADD CONSTRAINT fk_rails_27effac501 FOREIGN KEY (client_company_id) REFERENCES public.client_companies(id);
+
+
+--
+-- Name: bank_questions fk_rails_2a650172c2; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bank_questions
+    ADD CONSTRAINT fk_rails_2a650172c2 FOREIGN KEY (question_bank_id) REFERENCES public.question_banks(id);
 
 
 --
@@ -5758,6 +6393,14 @@ ALTER TABLE ONLY public.test_attempts
 
 
 --
+-- Name: application_drafts fk_rails_32d3627049; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.application_drafts
+    ADD CONSTRAINT fk_rails_32d3627049 FOREIGN KEY (job_id) REFERENCES public.jobs(id);
+
+
+--
 -- Name: jobs fk_rails_337fe738b9; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5790,6 +6433,14 @@ ALTER TABLE ONLY public.knockout_questions
 
 
 --
+-- Name: question_banks fk_rails_4158dcf492; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.question_banks
+    ADD CONSTRAINT fk_rails_4158dcf492 FOREIGN KEY (created_by_id) REFERENCES public.users(id);
+
+
+--
 -- Name: ai_release_actions fk_rails_429e41ce6d; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5803,6 +6454,14 @@ ALTER TABLE ONLY public.ai_release_actions
 
 ALTER TABLE ONLY public.test_reviews
     ADD CONSTRAINT fk_rails_482100b96c FOREIGN KEY (participation_id) REFERENCES public.participations(id);
+
+
+--
+-- Name: draft_answers fk_rails_53aeb03aa9; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.draft_answers
+    ADD CONSTRAINT fk_rails_53aeb03aa9 FOREIGN KEY (reviewed_by_id) REFERENCES public.users(id);
 
 
 --
@@ -5875,6 +6534,14 @@ ALTER TABLE ONLY public.link_requests
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT fk_rails_6ebadf0aca FOREIGN KEY (client_company_id) REFERENCES public.client_companies(id);
+
+
+--
+-- Name: application_drafts fk_rails_6f7f67051e; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.application_drafts
+    ADD CONSTRAINT fk_rails_6f7f67051e FOREIGN KEY (consent_template_id) REFERENCES public.consent_templates(id);
 
 
 --
@@ -6062,11 +6729,27 @@ ALTER TABLE ONLY public.requirements
 
 
 --
+-- Name: application_drafts fk_rails_aa698f9cff; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.application_drafts
+    ADD CONSTRAINT fk_rails_aa698f9cff FOREIGN KEY (job_application_id) REFERENCES public.job_applications(id);
+
+
+--
 -- Name: stage_recommendations fk_rails_acca7f3ecb; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.stage_recommendations
     ADD CONSTRAINT fk_rails_acca7f3ecb FOREIGN KEY (participation_id) REFERENCES public.participations(id);
+
+
+--
+-- Name: application_drafts fk_rails_afc66c2364; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.application_drafts
+    ADD CONSTRAINT fk_rails_afc66c2364 FOREIGN KEY (question_bank_id) REFERENCES public.question_banks(id);
 
 
 --
@@ -6123,6 +6806,14 @@ ALTER TABLE ONLY public.test_reviews
 
 ALTER TABLE ONLY public.stage_text_erasures
     ADD CONSTRAINT fk_rails_c18c269c89 FOREIGN KEY (actor_id) REFERENCES public.users(id);
+
+
+--
+-- Name: question_banks fk_rails_c2b3f502a7; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.question_banks
+    ADD CONSTRAINT fk_rails_c2b3f502a7 FOREIGN KEY (job_id) REFERENCES public.jobs(id);
 
 
 --
@@ -6310,6 +7001,14 @@ ALTER TABLE ONLY public.test_cases
 
 
 --
+-- Name: question_banks fk_rails_f29eee3975; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.question_banks
+    ADD CONSTRAINT fk_rails_f29eee3975 FOREIGN KEY (submitted_by_id) REFERENCES public.users(id);
+
+
+--
 -- Name: ai_releases fk_rails_f2d352ad63; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6372,6 +7071,11 @@ ALTER TABLE ONLY public.ai_releases
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261017130000'),
+('20261017120000'),
+('20261017113000'),
+('20261017110000'),
+('20261017100000'),
 ('20261016091000'),
 ('20261016090000'),
 ('20261016081000'),

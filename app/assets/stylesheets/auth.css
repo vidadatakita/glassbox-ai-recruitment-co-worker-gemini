@@ -1,0 +1,133 @@
+/* The split sign-in (sessions/new, 17 Oct 2026): a navy hero beside the form. Colours from the brand
+   (brand.css): navy #0b1f3f ground, orange accent. Contrast on navy: white 16:1, #c9d6ea 10.6:1,
+   orange #f5a04a 7.1:1. System fonts only, no remote assets. Below 992px the hero sits above the form,
+   shortened (no preview card). */
+.auth-split { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); background: #f4f6fb; }
+
+.auth-hero {
+  position: relative; overflow: hidden; color: #fff; display: flex; align-items: center;
+  padding: clamp(2rem, 5vw, 4.5rem);
+  background:
+    radial-gradient(60rem 40rem at 110% -10%, rgba(245, 160, 74, .28), transparent 60%),
+    radial-gradient(40rem 30rem at -10% 110%, rgba(56, 120, 220, .35), transparent 60%),
+    linear-gradient(160deg, #0b1f3f 0%, #10305f 55%, #0b1f3f 100%);
+}
+.auth-hero::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .18;
+  background-image: linear-gradient(rgba(255, 255, 255, .25) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255, 255, 255, .25) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at 30% 40%, #000 20%, transparent 75%);
+}
+.auth-hero__inner { position: relative; max-width: 34rem; }
+
+.auth-hero__brand { display: inline-flex; align-items: center; gap: .8rem; margin-bottom: 2.25rem; }
+/* The GlassBox cube (the team's logo) beside the product name, with the "by GlassBox" line in the
+   logo's own colours: white "Glass", orange "Box" on navy. */
+.auth-hero__mark {
+  width: 3.1rem; height: 3.1rem; border-radius: .85rem; object-fit: cover; background: #0b1f3f;
+  border: 1px solid rgba(255, 255, 255, .18); box-shadow: 0 10px 28px rgba(3, 10, 25, .45);
+}
+.auth-hero__names { display: flex; flex-direction: column; line-height: 1.05; }
+.auth-hero__word { font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; }
+.auth-hero__word-accent { color: #f5a04a; }
+.auth-hero__by { font-size: .8rem; font-weight: 600; color: #9fb0cc; margin-top: .2rem; letter-spacing: .02em; }
+.auth-hero__by-glass { color: #fff; font-weight: 800; }
+.auth-hero__by-box { color: #f5a04a; font-weight: 800; }
+
+.auth-hero__title { font-size: clamp(1.9rem, 3.4vw, 2.9rem); line-height: 1.12; font-weight: 800; letter-spacing: -.02em; margin: 0 0 1rem; color: #fff; }
+/* "co-worker?" is one unbreakable unit (a non-breaking hyphen in the view), filled with the brand's
+   orange gradient; no underline, no box (17 Oct 2026: the underline read as heavy). Falls back to plain
+   orange where background-clip text is unsupported. */
+.auth-hero__highlight { white-space: nowrap; color: #f5a04a; }
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .auth-hero__highlight {
+    background: linear-gradient(90deg, #ffc27a 0%, #f5a04a 45%, #e87d1e 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+}
+.auth-hero__lead { font-size: 1.05rem; line-height: 1.6; color: #c9d6ea; margin: 0 0 1.75rem; max-width: 30rem; }
+
+.auth-hero__points { list-style: none; padding: 0; margin: 0 0 2rem; display: grid; gap: .85rem; }
+.auth-hero__points li { display: flex; gap: .8rem; align-items: flex-start; color: #c9d6ea; line-height: 1.5; }
+.auth-hero__points strong { color: #fff; }
+.auth-hero__points i {
+  flex: 0 0 auto; width: 2rem; height: 2rem; border-radius: .6rem; display: grid; place-items: center;
+  background: rgba(255, 255, 255, .08); color: #f5a04a; border: 1px solid rgba(255, 255, 255, .12);
+}
+
+.auth-hero__preview {
+  background: rgba(255, 255, 255, .96); color: #0b1f3f; border-radius: 1rem; padding: 1rem 1.15rem; max-width: 26rem;
+  box-shadow: 0 24px 48px rgba(3, 10, 25, .45);
+}
+.auth-hero__preview-head { display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-bottom: .55rem; }
+.auth-hero__chip { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: .2rem .55rem; border-radius: 999px; background: #fff1e3; color: #9a4a06; }
+.auth-hero__preview-who { font-size: .8rem; color: #4b5563; font-weight: 600; }
+.auth-hero__preview-score { display: flex; align-items: baseline; gap: .35rem; margin-bottom: .4rem; }
+.auth-hero__preview-score strong { font-size: 1.9rem; font-weight: 800; line-height: 1; }
+.auth-hero__preview-score span { color: #4b5563; font-size: .85rem; }
+.auth-hero__preview-score em { margin-left: auto; font-style: normal; font-weight: 700; font-size: .8rem; color: #0f6b3a; background: #e3f6ea; padding: .2rem .6rem; border-radius: 999px; }
+.auth-hero__preview-quote { font-size: .88rem; line-height: 1.5; border-left: 3px solid #e87d1e; padding-left: .65rem; margin: 0 0 .55rem; color: #1f2937; }
+.auth-hero__preview-foot { font-size: .75rem; color: #4b5563; }
+.auth-hero__preview-foot .fa-check-circle { color: #0f6b3a; }
+
+.auth-hero__foot { margin: 2rem 0 0; font-size: .8rem; color: #9fb0cc; }
+
+.auth-panel { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; padding: clamp(1.5rem, 4vw, 3rem) 1rem; }
+.auth-panel__card { width: 100%; max-width: 26rem; background: #fff; border-radius: 1.25rem; padding: clamp(1.5rem, 3vw, 2.5rem); box-shadow: 0 10px 40px rgba(11, 31, 63, .08); border: 1px solid #e6eaf2; }
+.auth-panel__eyebrow { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #c2610f; margin-bottom: .35rem; }
+.auth-panel__title { font-size: 1.6rem; font-weight: 800; color: #0b1f3f; letter-spacing: -.01em; margin: 0 0 .4rem; }
+.auth-panel__lead { color: #4b5563; margin: 0 0 1.5rem; font-size: .95rem; }
+.auth-panel .form-control:focus { border-color: #e87d1e; box-shadow: 0 0 0 .2rem rgba(232, 125, 30, .25); }
+/* The theme paints .btn-primary from --primary-color / --primary-rgb with !important (styles.css,
+   hris-zynix.css), so the panel redefines those variables for its own subtree: the button turns brand
+   navy without fighting each rule. Hover is a fixed blue !important in hris-zynix.css, hence the one
+   !important below. */
+.auth-panel { --primary-color: #0b1f3f; --primary-rgb: 11, 31, 63; --primary-border: #0b1f3f; }
+.auth-panel .btn-primary { font-weight: 700; }
+.auth-panel .btn-primary:hover, .auth-panel .btn-primary:focus { background-color: #16376b !important; border-color: #16376b !important; }
+.auth-panel .btn-primary:focus-visible { outline: 3px solid #e87d1e; outline-offset: 2px; }
+
+/* Narrow screens (17 Oct 2026, "ugly when smaller"): the whole page takes the navy ground, the hero
+   text and the card share one centred column of the card's width, and the card floats on the navy, so
+   there is no cut between a navy band and an empty grey page. */
+@media (max-width: 991.98px) {
+  .auth-split {
+    grid-template-columns: 1fr; grid-template-rows: auto 1fr; align-content: start;
+    background:
+      radial-gradient(40rem 30rem at 110% -10%, rgba(245, 160, 74, .25), transparent 60%),
+      linear-gradient(170deg, #0b1f3f 0%, #10305f 60%, #0b1f3f 100%);
+  }
+  .auth-hero { background: none; padding: 2rem 1.25rem 1.5rem; justify-content: center; }
+  .auth-hero__inner, .auth-panel__card { width: 100%; max-width: 26rem; margin: 0 auto; }
+  .auth-hero__brand { margin-bottom: 1.25rem; }
+  .auth-hero__title { font-size: 1.7rem; }
+  .auth-hero__lead { font-size: .98rem; margin-bottom: 0; }
+  .auth-hero__points, .auth-hero__preview { display: none; }
+  .auth-hero__foot { display: block; margin-top: 1.25rem; }
+  .auth-panel { align-items: flex-start; padding: 0 1.25rem 2.5rem; }
+  .auth-panel__card { box-shadow: 0 24px 48px rgba(3, 10, 25, .45); border: 0; }
+}
+
+
+/* Large screens (17 Oct 2026, "ugly when bigger"): the hero content is centred in its half and scales
+   up, so it no longer hugs the left edge with an empty strip beside it; the card grows a little. */
+@media (min-width: 1400px) {
+  .auth-hero { justify-content: center; }
+  .auth-hero__inner { max-width: 40rem; }
+}
+/* The larger type only where the screen is tall enough to hold it without scrolling. */
+@media (min-width: 1400px) and (min-height: 980px) {
+  .auth-hero__brand { margin-bottom: 2.75rem; }
+  .auth-hero__mark { width: 3.5rem; height: 3.5rem; }
+  .auth-hero__word { font-size: 1.85rem; }
+  .auth-hero__title { font-size: 3.5rem; }
+  .auth-hero__lead { font-size: 1.2rem; max-width: 36rem; }
+  .auth-hero__points li { font-size: 1.05rem; }
+  .auth-hero__preview { max-width: 30rem; padding: 1.2rem 1.35rem; }
+  .auth-panel__card { max-width: 29rem; padding: 2.75rem; }
+  .auth-panel__title { font-size: 1.85rem; }
+}
+
+/* The split sign-in owns the whole viewport: no vendor body margin or light strip above the hero. */
+.auth-split-body { margin: 0; padding: 0; background: #041E42; }

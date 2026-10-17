@@ -1,9 +1,9 @@
 <% cal = board.calibration %>
 <div class="row loan-index-summary">
-  <%= render "staff/shared/metric", variant: "primary", icon: "fa-user", label: "Judged by the consultant",
+  <%= render "staff/shared/metric", variant: "primary", icon: "fa-user", label: "Judged by the HR Admin",
              value: "#{cal.judged_count} / #{Screening::Calibration::SIZE}", caption: "first CVs of this vacancy" %>
   <%= render "staff/shared/metric", variant: "info", icon: "fa-magic", label: "Judged by both",
-             value: "#{cal.pairs.size} / #{Screening::Calibration::SIZE}", caption: "consultant and AI" %>
+             value: "#{cal.pairs.size} / #{Screening::Calibration::SIZE}", caption: "HR Admin and AI" %>
   <%= render "staff/shared/metric", variant: (cal.status == :failed ? "danger" : "warning"), icon: "fa-exchange", label: "Different",
              value: cal.disagreements, caption: "limit #{Screening::Calibration::MAX_DISAGREEMENT_PERCENT}%: at most 3 of 20" %>
   <%= render "staff/shared/metric", variant: (cal.passed? ? "success" : "warning"), icon: "fa-balance-scale", label: "Status",

@@ -27,7 +27,7 @@ module TechnicalTests
     end
 
     def call
-      refuse!("Only a reviewer can score the technical test.") unless @reviewer.role == "reviewer"
+      refuse!("Only a reviewer can score the technical test.") unless @reviewer.role.in?(%w[hr_manager superadmin])
       refuse!("The reviewer must not be the consultant of this vacancy.") if @job.consultant_id.present? && @job.consultant_id == @reviewer.id
 
       ActiveRecord::Base.transaction do

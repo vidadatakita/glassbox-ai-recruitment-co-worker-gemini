@@ -3,7 +3,7 @@
 <div class="hris-form-card" id="tes-teknis">
   <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-file-excel-o" aria-hidden="true"></i></div>
     <div><h3>Technical test</h3><p>Scored by the reviewer with the rubric of the test version the candidate took. Score 0–100.</p></div>
-    <div class="hris-form-card__action"><%= report_test_score(row.test) %></div></div>
+    <div class="hris-form-card__action"><%= render "staff/screening_reports/test_score", cell: row.test %></div></div>
   <div class="hris-form-card__body">
     <% if !block.applicable? %>
       <p class="text-muted mb-0">This vacancy's package has no technical test.</p>
@@ -36,7 +36,7 @@
           reviewer and consultant always, HR owner once the gate is closed); the signed per-user link
           is feature 07's helper answer_link, so this view never rebuilds its key format. %>
       <% if block.answered_at && !block.attempt.repo_link? && TechnicalTests.answer_downloadable_by?(current_user, board.job) && respond_to?(:answer_link) %>
-        <div class="btn-list mt-2"><%= label_link "Download answer", "fa-download", answer_link(block.attempt), purpose: :neutral %></div>
+        <div class="btn-list mt-2 action-row"><%= label_link "Download answer", "fa-download", answer_link(block.attempt), purpose: :neutral %></div>
       <% end %>
     <% end %>
   </div>

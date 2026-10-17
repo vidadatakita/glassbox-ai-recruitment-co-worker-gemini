@@ -25,6 +25,7 @@ module BriefFactory
   end
 
   def step4_params(package: 3, golongan: 2, layers: ALL_LAYERS, reason: nil, weights: nil, threshold: "60")
+    reason = "Full stage set kept for this test." if reason.nil? && package.to_i >= 4
     codes = Briefs::StagePlan.scored_codes(package)
     weights ||= Briefs::StagePlan.default_weights(package)
     stage = codes.first

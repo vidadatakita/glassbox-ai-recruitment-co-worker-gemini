@@ -3,8 +3,7 @@
   <% [[gate.s1, "CV screening", "AI score against the requirements in the brief"], [gate.s2, "Technical test", "Case study scored by the reviewer"]].each do |stage, label, note| %>
     <% c = gate.counts_for(stage) %>
     <section class="gate-stage" aria-label="<%= label %>">
-      <h4><%= label %> <small class="text-muted">· pass score <%= number_with_precision(stage.threshold, precision: 0) %></small></h4>
-      <p class="text-muted"><%= note %></p>
+      <h4 title="<%= note %>"><%= label %> <small class="text-muted">· pass score <%= number_with_precision(stage.threshold, precision: 0) %></small></h4>
       <dl class="gate-stage__figures">
         <div><dt>Entered</dt><dd><%= c.entered %></dd></div>
         <div><dt>Passed</dt><dd><%= c.passed %></dd></div>

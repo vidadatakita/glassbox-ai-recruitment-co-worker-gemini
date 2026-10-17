@@ -1,0 +1,24 @@
+<%# One recorded brief change on the history timeline: when (Jakarta time and how long ago), who
+    and in which role, the wizard step, then each changed field as before -> after. %>
+<li class="brief-history__item">
+  <span class="brief-history__dot"><i class="fa fa-pencil" aria-hidden="true"></i></span>
+  <div class="brief-history__card">
+    <div class="brief-history__meta">
+      <span><strong><%= wib(change.created_at) %></strong> <span class="text-muted">· <%= time_ago_in_words(change.created_at) %> ago</span></span>
+      <span class="brief-history__actor"><i class="fa fa-user-o me-1" aria-hidden="true"></i><%= change.actor.name %>
+        <small>(<%= User::ROLE_LABELS[change.actor_role] || change.actor_role %>)</small></span>
+    </div>
+    <span class="brief-history__step"><%= JobBriefChange::STEP_LABELS[change.step] || change.step %></span>
+    <ul class="brief-history__fields">
+      <% change.changes_made.each do |key, value| %>
+        <% before, after = brief_change_pair(value) %>
+        <li>
+          <span class="brief-history__field"><%= brief_field_label(key) %></span>
+          <span class="brief-history__chip brief-history__chip--before"><%= brief_change_value(before) %></span>
+          <i class="fa fa-long-arrow-right text-muted" aria-hidden="true"></i><span class="visually-hidden">to</span>
+          <span class="brief-history__chip brief-history__chip--after"><%= brief_change_value(after) %></span>
+        </li>
+      <% end %>
+    </ul>
+  </div>
+</li>

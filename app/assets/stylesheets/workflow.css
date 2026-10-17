@@ -1,0 +1,290 @@
+/* Vacancy workflow (17 Oct 2026): the hiring-progress stepper and the approval chain, in the sign-in
+   page's theme: navy #0b1f3f for done (14:1 on white), the brand orange #e87d1e ring for the current
+   step (its text in #c2610f, 4.6:1), grey for waiting. Below 768px the track scrolls sideways inside its card, so the page
+   itself never scrolls horizontally. */
+.hiring-progress__badge { display: inline-block; padding: .35rem .9rem; border-radius: 999px; font-weight: 800; font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; }
+.hiring-progress__badge--done { background: #0b1f3f; color: #fff; }
+.hiring-progress__badge--open { background: #fff1e3; color: #9a4a06; }
+
+.hiring-progress__track { list-style: none; margin: 0; padding: .75rem 0 .25rem; display: flex; overflow-x: auto; scrollbar-width: thin; }
+.hiring-progress__step { position: relative; flex: 1 0 7.5rem; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 .35rem; min-width: 7.5rem; }
+.hiring-progress__step::before { content: ""; position: absolute; top: 1.4rem; left: -50%; width: 100%; height: 4px; background: #e2e6ee; z-index: 0; }
+.hiring-progress__step:first-child::before { display: none; }
+.hiring-progress__step--done::before, .hiring-progress__step--current::before { background: linear-gradient(90deg, #0b1f3f, #16376b); }
+.hiring-progress__dot { position: relative; z-index: 1; width: 2.8rem; height: 2.8rem; border-radius: 50%; display: grid; place-items: center; font-size: 1.1rem; background: #eef1f6; color: #8a94a6; border: 3px solid #fff; box-shadow: 0 0 0 1px #e2e6ee; }
+.hiring-progress__step--done .hiring-progress__dot { background: linear-gradient(135deg, #16376b, #0b1f3f); color: #f5a04a; box-shadow: 0 4px 12px rgba(11, 31, 63, .3); }
+.hiring-progress__step--current .hiring-progress__dot { background: #fff; color: #c2610f; box-shadow: 0 0 0 3px #e87d1e, 0 6px 16px rgba(232, 125, 30, .3); }
+.hiring-progress__label { margin-top: .6rem; font-size: .72rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #1f2937; line-height: 1.25; }
+.hiring-progress__step--todo .hiring-progress__label { color: #6b7280; }
+.hiring-progress__when { margin-top: .4rem; font-size: .74rem; font-weight: 600; color: #0b1f3f; white-space: nowrap; }
+.hiring-progress__step--current .hiring-progress__when { color: #c2610f; }
+.hiring-progress__step--todo .hiring-progress__when { color: #6b7280; font-weight: 500; }
+/* Names wrap to two lines at most instead of being cut (the full name is also the hover title). */
+.hiring-progress__who { margin-top: .15rem; font-size: .74rem; color: #374151; max-width: 9rem; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; }
+
+.approval-chain__list { list-style: none; margin: 0; padding: 0; }
+.approval-chain__item { display: flex; align-items: center; gap: .85rem; padding: .7rem 0; border-bottom: 1px solid #eef1f6; }
+.approval-chain__item:last-child { border-bottom: 0; }
+.approval-chain__avatar { flex: 0 0 auto; width: 2.6rem; height: 2.6rem; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 1rem; }
+.approval-chain__avatar--0 { background: #0b1f3f; } .approval-chain__avatar--1 { background: #c2610f; }
+.approval-chain__avatar--2 { background: #16376b; } .approval-chain__avatar--3 { background: #9a4a06; }
+.approval-chain__avatar--4 { background: #2a4f86; } .approval-chain__avatar--5 { background: #b4530a; }
+.approval-chain__text { display: flex; flex-direction: column; min-width: 0; }
+.approval-chain__role { font-size: .7rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #6b7280; }
+.approval-chain__name { font-weight: 700; color: #111827; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.approval-chain__hint { font-size: .75rem; color: #6b7280; }
+
+/* Vacancy page: the page content and the approval chain side by side from 1200px. */
+.vacancy-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+@media (min-width: 1200px) {
+  .vacancy-layout { grid-template-columns: minmax(0, 1fr) 20rem; align-items: start; }
+  .vacancy-layout__side { position: sticky; top: 5rem; }
+}
+
+/* Vacancy list: each vacancy's applications with its share of the total and a proportion bar. */
+.job-share { min-width: 9rem; }
+.job-share__pct { margin-left: .4rem; font-size: .78rem; color: #63666A; }
+.job-share__bar { display: block; height: 6px; margin-top: .35rem; border-radius: 999px; background: #eceef2; overflow: hidden; }
+.job-share__bar > span { display: block; height: 100%; border-radius: 999px; background: #041E42; }
+
+/* Phones (Vida, 17 Oct 2026): the stepper turns VERTICAL below 576px: icon on the left with the line
+   running down, label, time and person on the right, names in full. Tablet and desktop keep the
+   horizontal track above. */
+@media (max-width: 575.98px) {
+  .hiring-progress__track { flex-direction: column; overflow: visible; padding: .25rem 0; }
+  .hiring-progress__step {
+    flex: 0 0 auto; min-width: 0; padding: 0 0 1.1rem 3.6rem; text-align: left; align-items: flex-start;
+    display: grid; grid-template-columns: 1fr; row-gap: .1rem; min-height: 3.6rem;
+  }
+  .hiring-progress__step:last-child { padding-bottom: 0; }
+  .hiring-progress__step::before { top: 2.8rem; left: 1.32rem; width: 4px; height: calc(100% - 2.8rem); }
+  .hiring-progress__step:first-child::before { display: block; }
+  .hiring-progress__step:last-child::before { display: none; }
+  .hiring-progress__step + .hiring-progress__step::before { top: 2.8rem; }
+  .hiring-progress__dot { position: absolute; left: 0; top: 0; }
+  .hiring-progress__label { margin-top: .35rem; font-size: .8rem; }
+  .hiring-progress__when, .hiring-progress__who { margin-top: 0; white-space: normal; max-width: none; overflow: visible; }
+}
+
+/* Tablet and small laptops: rows of five instead of a hidden horizontal scroll, so every step stays in
+   view; the connector does not run into the empty space before the first step of a new row. */
+@media (min-width: 576px) and (max-width: 1199.98px) {
+  .hiring-progress__track { flex-wrap: wrap; overflow: visible; row-gap: 1.25rem; }
+  .hiring-progress__step { flex: 0 0 20%; min-width: 0; }
+  .hiring-progress__step:nth-child(5n + 1)::before { display: none; }
+}
+
+/* Metric rows: every card in a row is the height of the tallest (a wrapping caption made one card
+   taller than its neighbours). */
+.loan-index-summary { align-items: stretch; }
+.loan-index-summary > [class*="col-"] { display: flex; margin-bottom: 1rem; }
+.loan-index-summary > [class*="col-"] > .loan-index-metric { flex: 1 1 auto; height: 100%; margin-bottom: 0; }
+
+/* Action rows on the applicant page (Vida, 17 Oct 2026): every decision and save button sits on the
+   right, the explanatory text stays left/above. Presentational only: names and values unchanged. */
+.action-row { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; align-items: center; }
+
+/* Score matrix (applicant page): navy bar for the score, a tick at the pass score, red when below. */
+.score-matrix__total { font-size: .9rem; color: #53565A; } .score-matrix__total strong { font-size: 1.4rem; color: #041E42; margin-left: .3rem; }
+.score-matrix__table th { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: #63666A; }
+.score-matrix__bar { position: relative; display: block; width: 100%; min-width: 6rem; height: 6px; margin-top: .3rem; border-radius: 999px; background: #eceef2; }
+.score-matrix__bar > span { display: block; height: 100%; border-radius: 999px; background: #041E42; }
+.score-matrix__bar > span.is-below { background: #b42318; }
+.score-matrix__bar > i { position: absolute; top: -3px; width: 2px; height: 12px; background: #E87722; }
+.score-matrix__outcome { font-size: .78rem; font-weight: 700; padding: .2rem .55rem; border-radius: 999px; }
+.score-matrix__outcome--pass { background: #e5f2e3; color: #2f6b2a; }
+.score-matrix__outcome--eliminate { background: #fde8e7; color: #b42318; }
+.score-matrix__outcome--review { background: #fdf0e6; color: #A9431E; }
+.score-matrix__subtitle { font-size: 1rem; font-weight: 700; color: #041E42; margin: .5rem 0 .75rem; }
+.score-matrix__subtitle span { font-size: .8rem; font-weight: 500; color: #63666A; margin-left: .4rem; }
+.score-matrix__criteria { list-style: none; padding: 0; margin: 0; }
+.score-matrix__criteria li { display: flex; gap: .85rem; align-items: flex-start; padding: .65rem 0; border-top: 1px solid #eef1f6; }
+.score-matrix__rating { flex: 0 0 4.2rem; text-align: center; font-weight: 800; font-size: .82rem; padding: .3rem 0; border-radius: .5rem; }
+.score-matrix__rating--good { background: #041E42; color: #fff; }
+.score-matrix__rating--gap { background: #fde8e7; color: #b42318; }
+.score-matrix__req { line-height: 1.45; } .score-matrix__req q { display: block; margin-top: .2rem; color: #374151; font-style: italic; }
+.score-matrix__req q.is-unverified { color: #9a4a06; }
+.score-matrix__tier { font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #A9431E; margin-right: .3rem; }
+
+/* Access links (applicant page): a copyable address with its open button beside it. */
+.access-links__row { display: flex; gap: .5rem; align-items: center; }
+.access-links__row .form-control { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82rem; background: #f7f8fa; }
+
+/* Offer pre-send checklist: done in navy, a gap in red, still to fill in grey. */
+.offer-checklist { list-style: none; padding: 0; margin: 0; }
+.offer-checklist__item { display: flex; gap: .5rem; align-items: baseline; padding: .15rem 0; font-size: .88rem; }
+.offer-checklist__item--ok i { color: #041E42; } .offer-checklist__item--gap i { color: #b42318; } .offer-checklist__item--todo i { color: #75787B; }
+
+/* The floating "Ask AI" button sits bottom-right; with the action buttons now right-aligned, a page's
+   last button could end up under it. Room at the end of every staff page lets it scroll clear. */
+.portal-page { padding-bottom: 5.5rem; }
+.offer-summary { font-size: .88rem; line-height: 1.5; background: #fbfbfc; }
+
+/* CV screening card (vacancy page): tile groups, calibration callout, attention cards, action bar. */
+.screening-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.screening-tiles__group { border: 1px solid #e6eaf2; border-radius: .9rem; padding: .85rem 1rem; background: #fff; }
+.screening-tiles__head { display: flex; justify-content: space-between; gap: .5rem; font-size: .78rem; color: #63666A; margin-bottom: .45rem; }
+.screening-tiles__head > span:first-child { font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #041E42; }
+.screening-tiles__bar { display: block; height: 6px; border-radius: 999px; background: #eceef2; overflow: hidden; margin-bottom: .7rem; }
+.screening-tiles__bar > span { display: block; height: 100%; background: #041E42; border-radius: 999px; }
+.screening-tiles__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; }
+.screening-tile { display: flex; flex-direction: column; align-items: flex-start; gap: .1rem; padding: .55rem .6rem; border-radius: .6rem; background: #f6f7fa; }
+.screening-tile i { color: #75787B; font-size: .85rem; }
+.screening-tile strong { font-size: 1.35rem; line-height: 1.1; color: #041E42; }
+.screening-tile span { font-size: .72rem; color: #53565A; line-height: 1.2; }
+.screening-tile--alert { background: #fdf0ef; } .screening-tile--alert i, .screening-tile--alert strong { color: #b42318; }
+.screening-callout { border-radius: .8rem; padding: .75rem 1rem; margin-bottom: 1rem; background: #f6f7fa; border-left: 4px solid #75787B; }
+.screening-callout--ok { border-left-color: #44883E; } .screening-callout--bad { border-left-color: #b42318; } .screening-callout--todo { border-left-color: #E87722; }
+.screening-callout__head { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-bottom: .4rem; }
+.screening-callout__meta { margin-left: auto; font-size: .78rem; color: #63666A; }
+.screening-callout .screening-tiles__bar { margin-bottom: .45rem; } .screening-callout--todo .screening-tiles__bar > span { background: #E87722; }
+.screening-section-title { font-size: .95rem; font-weight: 800; color: #041E42; margin: .25rem 0 .5rem; }
+.screening-section-title span { font-size: .78rem; font-weight: 500; color: #63666A; margin-left: .35rem; }
+.screening-failure-card { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between; padding: .7rem .9rem; margin-bottom: .5rem; border: 1px solid #f3d3cf; border-left: 4px solid #b42318; border-radius: .7rem; background: #fffafa; }
+.screening-failure-card .screening-failures__text { flex: 1 1 18rem; min-width: 0; }
+.screening-note { font-size: .88rem; color: #53565A; background: #f8f9fb; border-radius: .7rem; padding: .7rem .9rem; }
+.screening-actions { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between; border-top: 1px solid #eef1f6; padding-top: .9rem; }
+.screening-actions__links, .screening-actions__buttons { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.screening-actions__buttons { margin-left: auto; }
+@media (max-width: 575.98px) { .screening-tiles__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Applicants handled per step: a small navy pill under the step label. */
+.hiring-progress__count { margin-top: .3rem; font-size: .72rem; font-weight: 700; color: #041E42; background: #eef1f8; border-radius: 999px; padding: .1rem .5rem; white-space: nowrap; }
+.hiring-progress__step--todo .hiring-progress__count { color: #63666A; background: #f3f4f6; }
+
+/* ===== Phone layout (Vida, 17 Oct 2026: "make it responsive; it looks bad on mobile") ===== */
+@media (max-width: 767.98px) {
+  /* Header: icon-only user and sign-out, nothing wraps onto the logo. */
+  .header-user__text { display: none; }
+  .header-user { display: inline-grid; place-items: center; width: 2.2rem; height: 2.2rem; border-radius: 50%; background: #f1f3f7; }
+  .header-user .fa { margin: 0 !important; }
+}
+@media (max-width: 575.98px) {
+  .header-signout__text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .header-content-right form .btn { padding: .4rem .6rem; }
+  .brand--header .brand__word { font-size: 1rem; }
+
+  /* Metric cards: a slim icon strip instead of a wide coloured column; tighter padding. */
+  .loan-index-metric { min-height: 0; }
+  .loan-index-metric__icon { flex: 0 0 3.2rem !important; width: 3.2rem !important; min-width: 3.2rem !important; font-size: 1.1rem; }
+  .loan-index-metric > div { padding: .7rem .85rem !important; }
+  .loan-index-metric strong { font-size: 1.35rem !important; }
+  .loan-index-summary > [class*="col-"] { margin-bottom: .6rem; }
+
+  /* Tables inside cards become stacked row cards: the first cell is the row's title, every other cell
+     shows its column name above its value (data-label), two per line. */
+  .impact-sources thead, .table-stack thead { display: none; }
+  .impact-sources tr, .table-stack tr { display: grid; grid-template-columns: 1fr 1fr; gap: .45rem .9rem; padding: .75rem .1rem; border-bottom: 1px solid #eef1f6; }
+  .impact-sources td, .table-stack td { display: block; border: 0 !important; padding: 0 !important; text-align: left !important; min-width: 0; }
+  .impact-sources td:first-child, .table-stack td:first-child { grid-column: 1 / -1; font-weight: 700; }
+  .table-stack td[data-label]:not(:first-child)::before { content: attr(data-label); display: block; font-size: .66rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #63666A; margin-bottom: .1rem; }
+  .table-stack td.hris-table-actions { grid-column: 1 / -1; text-align: right !important; }
+  .table-stack .job-share { min-width: 0; }
+  .impact-sources td:last-child .btn { white-space: nowrap; }
+  .card-body.table-responsive:has(> .table-stack) { overflow-x: visible; }
+
+  /* The floating "Ask AI" button shrinks to an icon so it covers less of the page. */
+  .data-chat__fab { width: 3.25rem; height: 3.25rem; padding: 0 !important; border-radius: 50% !important; display: grid !important; place-items: center; }
+  .data-chat__fab-open { display: grid; place-items: center; }
+  .data-chat__fab .ai-sparkle, .data-chat__fab svg { margin: 0 !important; color: #EDA04F; }
+  .data-chat__fab .data-chat__fab-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  /* Page gutters: 12px each side, cards keep their radius. */
+  .portal-page .content { padding-left: .25rem; padding-right: .25rem; }
+}
+
+/* The floating "Ask AI" button at every size: navy with a soft navy shadow (the orange glow read as a
+   blur), an orange ring on focus. */
+.data-chat__fab { background: linear-gradient(135deg, #1D428A, #041E42) !important; box-shadow: 0 10px 24px rgba(4, 30, 66, .35) !important; border: 2px solid rgba(255, 255, 255, .9); }
+.data-chat__fab:hover { background: linear-gradient(135deg, #2a55a6, #0a2a57) !important; box-shadow: 0 14px 30px rgba(4, 30, 66, .45) !important; }
+.data-chat__fab:focus-visible { outline: 3px solid #E87722; outline-offset: 3px; }
+
+/* Pages with a sticky action bar at the bottom (the brief wizard, the job ad, step 5): the floating
+   "Ask AI" button rises above the bar instead of covering its Save button (17 Oct 2026). */
+body:has(.hris-form-actions:not(.hris-form-actions--static)) .data-chat__fab { bottom: 6.25rem; }
+@media (max-width: 575.98px) {
+  body:has(.hris-form-actions:not(.hris-form-actions--static)) .data-chat__fab { bottom: 7.5rem; }
+}
+
+/* AI loading overlay (ai_overlay.js): blurred navy backdrop, a card with a turning orange ring around
+   the sparkle, the steps in turn, an indeterminate bar and the seconds elapsed. Motion is reduced for
+   people who ask for it. */
+.ai-overlay { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 1rem;
+  background: rgba(4, 30, 66, .55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; transition: opacity .25s ease; }
+.ai-overlay.is-open { opacity: 1; }
+.ai-overlay__card { width: 100%; max-width: 26rem; background: #fff; border-radius: 1.25rem; padding: 2rem 1.75rem 1.5rem; text-align: center;
+  box-shadow: 0 30px 70px rgba(4, 30, 66, .45); transform: translateY(8px) scale(.98); transition: transform .3s ease; }
+.ai-overlay.is-open .ai-overlay__card { transform: none; }
+.ai-overlay__orb { position: relative; width: 5rem; height: 5rem; margin: 0 auto 1rem; display: grid; place-items: center;
+  border-radius: 50%; background: radial-gradient(circle at 30% 30%, #1D428A, #041E42); box-shadow: 0 10px 28px rgba(4, 30, 66, .35); }
+.ai-overlay__ring { position: absolute; inset: -6px; border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 55%, #EDA04F 75%, #E87722 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  animation: ai-overlay-spin 1.4s linear infinite; }
+.ai-overlay__spark { color: #EDA04F; font-size: 2rem; line-height: 1; animation: ai-overlay-pulse 1.6s ease-in-out infinite; }
+.ai-overlay__eyebrow { margin: 0; font-size: .7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #A9431E; }
+.ai-overlay__title { margin: .25rem 0 1rem; font-size: 1.25rem; font-weight: 800; color: #041E42; }
+.ai-overlay__steps { list-style: none; padding: 0; margin: 0 0 1rem; text-align: left; display: grid; gap: .45rem; }
+.ai-overlay__steps li { position: relative; padding-left: 1.6rem; font-size: .9rem; color: #75787B; transition: color .3s ease; }
+.ai-overlay__steps li::before { content: ""; position: absolute; left: 0; top: .2rem; width: .95rem; height: .95rem; border-radius: 50%; border: 2px solid #D9D9D6; }
+.ai-overlay__steps li.is-active { color: #041E42; font-weight: 700; }
+.ai-overlay__steps li.is-active::before { border-color: #E87722; border-top-color: transparent; animation: ai-overlay-spin .9s linear infinite; }
+.ai-overlay__steps li.is-done { color: #44883E; }
+.ai-overlay__steps li.is-done::before { border-color: #44883E; background: #44883E; box-shadow: inset 0 0 0 2px #fff; }
+.ai-overlay__bar { height: 6px; border-radius: 999px; background: #eceef2; overflow: hidden; margin-bottom: .75rem; }
+.ai-overlay__bar > span { display: block; width: 35%; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #041E42, #E87722); animation: ai-overlay-slide 1.6s ease-in-out infinite; }
+.ai-overlay__time { margin: 0; font-size: .78rem; color: #63666A; }
+@keyframes ai-overlay-spin { to { transform: rotate(360deg); } }
+@keyframes ai-overlay-pulse { 50% { transform: scale(1.18); opacity: .8; } }
+@keyframes ai-overlay-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+@media (prefers-reduced-motion: reduce) {
+  .ai-overlay__ring, .ai-overlay__spark, .ai-overlay__bar > span, .ai-overlay__steps li.is-active::before { animation: none; }
+}
+
+/* AI-drafted questions: a sticky bar with Tick all, the live count and the add button, and a hint that
+   the page's own Save does not store these questions. */
+.question-bank-ai__bar { position: sticky; top: 4.5rem; z-index: 5; display: flex; flex-wrap: wrap; gap: .6rem 1rem; align-items: center;
+  padding: .6rem .9rem; margin-bottom: .5rem; border-radius: .75rem; background: #f3f5f9; border: 1px solid #e3e7ef; }
+.question-bank-ai__all { display: inline-flex; gap: .4rem; align-items: center; font-weight: 700; color: #041E42; margin: 0; }
+.question-bank-ai__count { font-size: .85rem; color: #53565A; }
+.question-bank-ai__bar .question-bank-ai__add { margin-left: auto; }
+.question-bank-ai__hint { font-size: .85rem; color: #A9431E; background: #fdf0e6; border-radius: .6rem; padding: .5rem .75rem; margin-bottom: .75rem; }
+.question-bank-ai__add, .question-bank-ai__add span { display: inline-flex; align-items: center; white-space: nowrap; }
+.question-bank-ai__add [data-tick-n] { display: inline; margin: 0 .3rem; }
+
+/* Folded details (vacancy page): technical lines and the gate's per-applicant table stay one click away. */
+.tech-details, .gate-details { border-radius: .6rem; }
+.tech-details > summary, .gate-details > summary { cursor: pointer; font-size: .82rem; font-weight: 700; color: #1D428A; list-style: none; padding: .35rem 0; }
+.tech-details > summary::before, .gate-details > summary::before { content: "\25B8"; display: inline-block; margin-right: .4rem; transition: transform .15s ease; }
+.tech-details[open] > summary::before, .gate-details[open] > summary::before { transform: rotate(90deg); }
+.tech-details > summary::-webkit-details-marker, .gate-details > summary::-webkit-details-marker { display: none; }
+.tech-details { font-size: .82rem; color: #53565A; }
+.gate-details { margin-top: .5rem; }
+
+/* What needs a person, under the applicant header. */
+.attention-card { display: flex; flex-wrap: wrap; gap: .75rem 1rem; align-items: center; padding: .9rem 1.1rem; margin-bottom: 1rem;
+  border-radius: .9rem; background: #fff6f5; border: 1px solid #f3d3cf; border-left: 5px solid #b42318; }
+.attention-card__icon { color: #b42318; font-size: 1.3rem; }
+.attention-card__text { flex: 1 1 18rem; min-width: 0; display: flex; flex-direction: column; gap: .15rem; color: #41464d; }
+.attention-card__text strong { color: #b42318; }
+.attention-card__actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-left: auto; }
+.score-matrix--empty .hris-form-card__header { border-bottom: 0; }
+
+/* Stepper on phones: finished steps before the last finished one fold to a single line (label only),
+   so the stepper is short; the last finished, the current and the waiting steps keep their detail. */
+@media (max-width: 575.98px) {
+  .hiring-progress__step--done:not(.is-last-done) { min-height: 2.9rem; padding-bottom: .55rem; }
+  .hiring-progress__step--done:not(.is-last-done) .hiring-progress__when,
+  .hiring-progress__step--done:not(.is-last-done) .hiring-progress__who,
+  .hiring-progress__step--done:not(.is-last-done) .hiring-progress__count { display: none; }
+  .hiring-progress__step--done:not(.is-last-done) .hiring-progress__label { margin-top: .75rem; }
+}
+
+/* Portal card: what the brief still misses, step by step, each with a button to that step. */
+.portal-missing { list-style: none; padding: 0; margin: 0 0 .9rem; display: grid; gap: .5rem; }
+.portal-missing li { display: flex; flex-wrap: wrap; gap: .4rem .8rem; align-items: center; padding: .55rem .8rem; border-radius: .6rem; background: #fdf0e6; border-left: 4px solid #E87722; }
+.portal-missing__step { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #A9431E; }
+.portal-missing__items { flex: 1 1 16rem; font-size: .86rem; color: #41464d; }
+.portal-missing__fix { margin-left: auto; }

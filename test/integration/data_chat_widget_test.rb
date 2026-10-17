@@ -1,7 +1,8 @@
 require "test_helper"
 
 # "Ask AI" lives in a chat window behind a button at the bottom right of every staff page, not
-# in a menu; it talks JSON. Shown only to the roles that see job data, and only with an AI provider.
+# in a menu; it talks JSON. Shown to every staff role (all of them see job data), and only with an
+# AI provider.
 class DataChatWidgetTest < ActionDispatch::IntegrationTest
   Fake = Struct.new(:answers) do
     def generate(system:, schema:, content:)
@@ -11,7 +12,10 @@ class DataChatWidgetTest < ActionDispatch::IntegrationTest
 
   def on(&) = Screening::Config.stub(:enabled?, true, &)
 
-  test "the button and window are on staff pages for the HR PIC, not in the menu; not without AI or for a reviewer" do
+  # Three-role model (17 Oct 2026): the old reviewer (excluded before) and the old owner (included)
+  # merged into HR manager, and every one of the three roles sees job data, so no role is refused any
+  # more. The remaining refusal is "no AI provider, no button"; every role is asserted on the allowed side.
+  test "the button and window are on staff pages for every role, not in the menu; not without AI" do
     sign_in_as staff_user("hr_pic")
     on { get staff_jobs_path }
     doc = Nokogiri::HTML(response.body)
@@ -23,11 +27,13 @@ class DataChatWidgetTest < ActionDispatch::IntegrationTest
     Screening::Config.stub(:enabled?, false) { get staff_jobs_path }
     assert_nil Nokogiri::HTML(response.body).at_css(".data-chat__fab")
 
-    sign_in_as staff_user("reviewer")
-    on { get staff_jobs_path }
-    assert_nil Nokogiri::HTML(response.body).at_css(".data-chat__fab")
-    post staff_data_chat_path, params: { question: "Berapa pelamar?" }, as: :json
-    assert_response :forbidden
+    %w[reviewer owner superadmin].each do |role|
+      sign_in_as staff_user(role)
+      on { get staff_jobs_path }
+      assert Nokogiri::HTML(response.body).at_css(".data-chat__fab"), "#{role} has no Ask AI button"
+      sign_out
+    end
+    assert_equal %w[hr_admin hr_manager superadmin], DataChat::ROLES.sort, "every role, so no role is refused"
   end
 
   test "a question is answered as JSON, with the data and links; the history comes back" do

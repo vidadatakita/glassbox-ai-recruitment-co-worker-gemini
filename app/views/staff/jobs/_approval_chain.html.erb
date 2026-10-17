@@ -1,0 +1,23 @@
+<%# Who holds each role on THIS vacancy (17 Oct 2026): the person who acted, or the role that will act.
+    The maker is never the checker: the person who prepares the vacancy never sends its CVs to Gemini. %>
+<% progress = local_assigns.fetch(:progress) %>
+<div class="hris-form-card approval-chain" id="approval-chain">
+  <div class="hris-form-card__header">
+    <div class="hris-form-card__icon"><i class="fa fa-users" aria-hidden="true"></i></div>
+    <div><h3>Approval chain</h3><p>Who acts at each step of this vacancy.</p></div>
+  </div>
+  <div class="hris-form-card__body">
+    <ul class="approval-chain__list">
+      <% progress.chain.each_with_index do |link, i| %>
+        <li class="approval-chain__item">
+          <span class="approval-chain__avatar approval-chain__avatar--<%= i % 6 %>" aria-hidden="true"><%= (link.person&.name || link.role).to_s.strip[0].to_s.upcase %></span>
+          <span class="approval-chain__text">
+            <span class="approval-chain__role"><%= link.label %></span>
+            <span class="approval-chain__name"><%= link.person&.name || "Not yet" %></span>
+            <span class="approval-chain__hint"><%= link.role %></span>
+          </span>
+        </li>
+      <% end %>
+    </ul>
+  </div>
+</div>

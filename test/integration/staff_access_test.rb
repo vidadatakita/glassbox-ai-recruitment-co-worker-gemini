@@ -40,7 +40,7 @@ class StaffAccessTest < ActionDispatch::IntegrationTest
     post staff_job_portal_open_path(@job), params: { closes_at: "2030-10-24T17:00", quota: "120", commit: "Buka Portal" }
     assert_redirected_to staff_job_path(@job)
     event = @job.application_window_events.last
-    assert_equal ["open", "hr_pic", 120], [event.action, event.actor_role, event.quota]
+    assert_equal ["open", "hr_admin", 120], [event.action, event.actor_role, event.quota]
     assert_equal Time.utc(2030, 10, 24, 10, 0), event.closes_at, "17.00 WIB typed, 10.00 UTC stored"
   end
 
@@ -80,18 +80,21 @@ class StaffAccessTest < ActionDispatch::IntegrationTest
 
   # Team lead's live click, 16 Oct 2026: the admin opened a vacancy, clicked an applicant, and was
   # sent back with "You do not have access". The link must not render for a role that cannot open the
-  # page; the access rule itself is unchanged (control: the HR owner still gets the link).
-  test "the job page renders applicant links only for roles that may open an applicant" do
+  # page. Three roles (17 Oct 2026): every role may open an applicant now (the superadmin passes every
+  # role check), so the link renders for each and each rendered link must open, never bounce.
+  test "the job page renders applicant links only for roles that may open an applicant, and each link opens" do
     open_portal(@job)
     submit!(@job)
-    sign_in_as staff_user("admin")
-    get staff_job_path(@job)
-    assert_response :success
-    assert_select "a[href^='/staff/applications/']", count: 0
-    sign_out
-    sign_in_as staff_user("hr_pic")
-    get staff_job_path(@job)
-    assert_select "a[href^='/staff/applications/']", minimum: 1
+    %w[admin hr_pic owner].each do |role|
+      sign_in_as staff_user(role)
+      get staff_job_path(@job)
+      assert_response :success
+      links = css_select("a[href^='/staff/applications/']")
+      assert links.any?, "#{role} gets the applicant link"
+      get links.first["href"]
+      assert_response :success, "#{role}: the rendered applicant link opens"
+      sign_out
+    end
   end
 
   test "a setting key that is not a screen setting is refused (ONP-3)" do
@@ -102,17 +105,19 @@ class StaffAccessTest < ActionDispatch::IntegrationTest
     assert_equal 0, SettingChange.count
   end
 
-  test "hr_pic cannot upload an offer or answer an objection" do
+  # Three roles (17 Oct 2026): the offer upload belongs to the hr_admin, so the hr_manager is refused.
+  # Answering an objection is open to hr_admin and hr_manager alike (and the superadmin), so no
+  # signed-in role is refused it any more; its allowed side is pinned in the portal engine test.
+  test "an hr_manager cannot upload an offer" do
     open_portal(@job)
     application, = submit!(@job)
-    objection = s1_objection_for(application)
-    sign_in_as staff_user("hr_pic")
-    post staff_application_offers_path(application), params: { offer: { day_one_notes: "x" } }
-    assert_redirected_to staff_jobs_path
+    %w[owner reviewer].each do |role|
+      sign_in_as staff_user(role)
+      post staff_application_offers_path(application), params: { offer: { day_one_notes: "x" } }
+      assert_redirected_to staff_jobs_path, role
+      sign_out
+    end
     assert_equal 0, OfferDocument.count
-    post staff_objection_answer_path(objection), params: { outcome: "upheld", answer: "diterima" }
-    assert_redirected_to staff_jobs_path
-    assert_nil objection.reload.answered_at
   end
 
   test "the person who decided the S1 elimination cannot answer the objection against it (D40)" do

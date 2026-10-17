@@ -39,12 +39,5 @@
       <textarea class="form-control" id="test_case_instructions" name="test_case[instructions]" rows="4"><%= form.value("instructions") %></textarea>
       <span class="hris-field-hint">Write what must be done and the form of the answer, for example: "Find the stock differences on the Stock Card sheet, write the cause and the correction on the Answer sheet."</span>
     </div>
-    <% if form.mode == :new_version %>
-      <div class="col-12">
-        <label class="form-label" for="test_case_new_version_reason">Reason for the new version</label>
-        <textarea class="form-control" id="test_case_new_version_reason" name="test_case[new_version_reason]" rows="2"><%= form.value("new_version_reason") %></textarea>
-        <span class="hris-field-hint">Required. Saved with version <%= form.version_number %> and shown in the version list.</span>
-      </div>
-    <% end %>
   </div>
 <% end %>

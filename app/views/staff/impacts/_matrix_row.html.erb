@@ -1,0 +1,55 @@
+<%# One matrix row. The summary carries both sides with a bar on a shared scale; the body lists
+    the vacancies behind the figure. Per-vacancy figures come from the same impact_rows, so a row
+    and its breakdown can never use two definitions. %>
+<details class="impact-row" id="impact-<%= row.key %>">
+  <summary class="impact-row__summary">
+    <span class="impact-row__measure">
+      <span class="impact-row__icon"><i class="fa <%= row.icon %>" aria-hidden="true"></i></span>
+      <span><strong><%= row.measure %></strong><small><%= row.basis %></small></span>
+    </span>
+    <span class="impact-row__side impact-row__side--before">
+      <span class="impact-row__label">Before</span>
+      <strong class="<%= "impact-empty" if row.before.nil? %>"><%= row.before_text %></strong>
+      <span class="impact-bar"><span style="width: <%= impact_bar(row.before, row.scale) %>%"></span></span>
+    </span>
+    <span class="impact-row__side impact-row__side--after">
+      <span class="impact-row__label">With AiCoHire</span>
+      <strong class="<%= "impact-empty" if row.after.nil? %>"><%= row.after_text %></strong>
+      <span class="impact-bar"><span style="width: <%= impact_bar(row.after, row.scale) %>%"></span></span>
+    </span>
+    <%# A chip only for a real difference; "-" (one side missing) stays quiet text so it does not read as a result. %>
+    <span class="impact-row__change"><% if row.change == "-" %><span class="impact-empty" title="Needs both figures">-</span><% else %><span class="impact-chip impact-chip--<%= row.tone %>"><%= row.change %></span><% end %></span>
+    <i class="fa fa-chevron-down impact-row__toggle" aria-hidden="true"></i>
+  </summary>
+  <div class="impact-row__body">
+    <% if by_job.empty? %>
+      <p class="text-muted mb-0">No vacancy has applications yet, so there is no source to show.</p>
+    <% else %>
+      <table class="table table-sm mb-0 impact-sources">
+        <thead><tr><th scope="col">Vacancy</th><th scope="col">With AiCoHire</th><th scope="col">Counted</th><th scope="col">Source</th></tr></thead>
+        <tbody>
+          <% by_job.each do |job, impact| %>
+            <% job_row = impact_rows(impact, baseline).find { |r| r.key == row.key } %>
+            <% label, path = impact_source(row.key, job) %>
+            <tr>
+              <td data-label="Vacancy"><%= job.title %></td>
+              <td data-label="With AiCoHire"><strong><%= job_row.after_text %></strong></td>
+              <td data-label="Counted"><%= job_row.count %></td>
+              <td data-label="Source">
+                <%= link_to path, class: "btn btn-sm btn-outline-primary", title: "Open the #{label.downcase} of #{job.title}" do %>
+                  <i class="fa fa-plus" aria-hidden="true"></i> <%= label %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+    <% if row.key != :read && row.key != :agreement %>
+      <p class="impact-row__before-source">
+        Before figure: entered by an admin in Settings.
+        <% if (settings = impact_settings_path) %><%= link_to "Open Settings", settings %><% end %>
+      </p>
+    <% end %>
+  </div>
+</details>

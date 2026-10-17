@@ -61,11 +61,13 @@ class GoogleScreensTest < ActionDispatch::IntegrationTest
     assert_no_match "Calendar invitation", response.body
   end
 
-  test "only the consultant can resend an invite" do
+  # Three roles (17 Oct 2026): appointments belong to the hr_admin (old consultant and HR PIC); the
+  # hr_manager (old owner and reviewer) is refused.
+  test "only an hr_admin can resend an invite; an hr_manager is refused" do
     appointment = @participation.create_appointment!(starts_at: 1.day.from_now, ends_at: 1.day.from_now + 1.hour, mode: "onsite",
                                                      place_or_link: "Kantor", contact: "Rangga", confirmation: "pending")
     appointment.update_columns(calendar_status: "failed")
-    sign_in_as(staff_user("hr_pic"))
+    sign_in_as(staff_user("owner"))
     with_calendar_env { post calendar_staff_appointment_path(appointment) }
     assert_equal "You do not have access to this action.", flash[:alert]
     assert_equal "failed", appointment.reload.calendar_status

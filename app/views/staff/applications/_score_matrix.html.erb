@@ -1,0 +1,69 @@
+<%# The applicant's score matrix (17 Oct 2026): every stage with weight, score, pass score, result and its
+    weighted share of the cumulative score, then the CV screening's rating per requirement with the
+    CV quote it rests on. A blinded stage (D13 calibration) shows "hidden", as on the stage panel. %>
+<% matrix = local_assigns.fetch(:matrix) %>
+<% if matrix.rows.none? { |r| r.score || r.outcome || r.hidden } %>
+<div class="hris-form-card score-matrix score-matrix--empty" id="score-matrix">
+  <div class="hris-form-card__header">
+    <div class="hris-form-card__icon"><i class="fa fa-table" aria-hidden="true"></i></div>
+    <div><h3>Score matrix</h3><p>No stage scored yet. Each stage appears here with its weight and pass score once it is scored.</p></div>
+  </div>
+</div>
+<% else %>
+<div class="hris-form-card score-matrix" id="score-matrix">
+  <div class="hris-form-card__header">
+    <div class="hris-form-card__icon"><i class="fa fa-table" aria-hidden="true"></i></div>
+    <div><h3>Score matrix</h3>
+      <p>Each stage's score against its pass score, and its weighted share of the cumulative score (weights re-normalised over the stages scored so far).</p></div>
+    <div class="hris-form-card__action"><span class="score-matrix__total">Cumulative <strong><%= matrix.cumulative ? matrix.cumulative.to_f : "-" %></strong></span></div>
+  </div>
+  <div class="hris-form-card__body">
+    <div class="table-responsive">
+      <table class="table align-middle mb-3 score-matrix__table table-stack">
+        <thead><tr><th>Stage</th><th class="text-end">Weight</th><th class="text-end">Score</th><th class="text-end">Pass score</th><th>Result</th><th class="text-end">Share of cumulative</th></tr></thead>
+        <tbody>
+          <% matrix.rows.each do |row| %>
+            <% below = row.score && row.score < row.threshold %>
+            <tr>
+              <td data-label="Stage"><strong><%= row.label %></strong></td>
+              <td class="text-end" data-label="Weight"><%= row.weight %>%</td>
+              <td class="text-end" data-label="Score">
+                <% if row.hidden %><span class="text-muted">hidden</span>
+                <% elsif row.score %>
+                  <strong class="<%= below ? "text-danger" : "" %>"><%= row.score.to_f %></strong>
+                  <span class="score-matrix__bar" aria-hidden="true"><span class="<%= below ? "is-below" : "" %>" style="width: <%= [row.score.to_f, 100].min %>%"></span><i style="left: <%= row.threshold.to_f %>%"></i></span>
+                <% else %><span class="text-muted">not scored</span><% end %>
+              </td>
+              <td class="text-end" data-label="Pass score"><%= row.threshold.to_f %></td>
+              <td data-label="Result"><% if row.outcome %><span class="score-matrix__outcome score-matrix__outcome--<%= row.outcome %>"><%= ScoreMatrix::OUTCOME_LABELS.fetch(row.outcome, row.outcome) %></span><% else %><span class="text-muted">-</span><% end %></td>
+              <td class="text-end" data-label="Share of cumulative"><%= row.contribution ? Scoring::StageScore.round1(row.contribution).to_f : "-" %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <% if matrix.any_hidden? %>
+      <p class="small text-muted mb-3">A hidden score is an unjudged calibration CV: the HR Admin judging it sees it after giving their own scoring.</p>
+    <% end %>
+
+    <% criteria = matrix.criteria %>
+    <h4 class="score-matrix__subtitle">CV screening by requirement <span><%= criteria.size %> <%= "requirement".pluralize(criteria.size) %>, each with the CV line it rests on</span></h4>
+    <% if criteria.any? %>
+      <ul class="score-matrix__criteria">
+        <% criteria.each do |c| %>
+          <% scale = c.judgement.to_s.match?(/\A\d\z/) %>
+          <% good = c.judgement == "met" || (scale && c.judgement.to_i >= 2) %>
+          <li>
+            <span class="score-matrix__rating score-matrix__rating--<%= good ? "good" : "gap" %>"><%= scale ? "#{c.judgement}/3" : (c.judgement == "met" ? "Met" : "Not met") %></span>
+            <span class="score-matrix__req"><span class="score-matrix__tier"><%= c.tier %></span> <%= c.text %>
+              <% if c.quote.present? %><q class="<%= c.verified ? "" : "is-unverified" %>"><%= c.quote %></q>
+                <span class="small <%= c.verified ? "text-success" : "text-warning" %>"><i class="fa <%= c.verified ? "fa-check-circle" : "fa-exclamation-triangle" %>" aria-hidden="true"></i> <%= c.verified ? "found in the CV" : "not found in the CV" %></span><% end %></span>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="text-muted mb-0">No CV screening result to show yet<%= matrix.any_hidden? ? " (hidden until calibration is judged)" : "" %>.</p>
+    <% end %>
+  </div>
+</div>
+<% end %>

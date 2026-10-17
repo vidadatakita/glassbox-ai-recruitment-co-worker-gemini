@@ -1,0 +1,22 @@
+/* Layout pass, 17 Oct 2026 (Vida: every layout proper, responsive, not too much information).
+   Presentational rules only for the scoring screens (staff/test_scorings/**, staff/bank_scorings/**).
+   Loaded by layouts/staff.html.erb after workflow.css so they apply without !important. */
+
+/* The antivirus scan badge before "Download answer": a not-clean file reads as an orange warning in
+   the house accent (orange text #A9431E on a pale orange ground, about 5.6:1), not the template's
+   yellow, so it is noticed before the file is opened. A clean file keeps the success badge. */
+.test-scoring-item .test-scoring-scan.portal-state--warning { background: #FDF1E7; color: #A9431E; border: 1px solid #E87722; font-weight: 600; }
+
+/* An action row: badge, button, then a short helper. On a wide screen they share one line. */
+.test-scoring-item__action { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; }
+
+@media (max-width: 575.98px) {
+  /* On a phone the helper wrapped under the button mid-sentence; it now takes its own full line
+     below the button, so it reads as one sentence. */
+  .test-scoring-item__helper { flex-basis: 100%; }
+
+  /* The Scored table stacks (workflow.css .table-stack); its wrapper is a nested .table-responsive,
+     not the ".card-body.table-responsive" that rule releases, so release the scroll here too.
+     Stacked rows fit the width, and a scroll box would only clip the focus ring. */
+  .test-scoring-page .table-responsive:has(> .table-stack) { overflow-x: visible; }
+}

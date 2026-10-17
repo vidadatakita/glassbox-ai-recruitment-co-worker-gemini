@@ -5,7 +5,7 @@ module Briefs
   # finds nothing (shares 100, sebaiknya weights 100, stage weights 100, thresholds 0-100, 2-3
   # knockout questions, the §2.3 coverage for the Golongan, the package override reason). Then the
   # Stage rows are written (Briefs::SyncStages) and the completion is recorded (D49 (5)).
-  # Only a complete brief lets HR approve the ad (Staff::JobsController#approve_ad).
+  # Only a complete brief lets the applicant portal open (Portal::WindowChange).
   module Complete
     Result = Data.define(:ok, :problems) do
       def ok? = ok

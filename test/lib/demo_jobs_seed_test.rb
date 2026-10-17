@@ -6,8 +6,8 @@ require Rails.root.join("db/seeds/demo_jobs")
 class DemoJobsSeedTest < ActiveSupport::TestCase
   test "the six demo jobs complete through the brief services, on the house Golongan template" do
     jobs = DemoJobs.run(company:, actor: staff_user("hr_pic"))
-    assert_equal [["Operator Produksi", 2], ["Team Leader Gudang", 3], ["Supervisor Produksi", 4], ["Manager HR", 6],
-                  ["General Manager Operasional", 7], ["Direktur Operasional", 8]], jobs.map { |j| [j.title, j.golongan] }
+    assert_equal [["Production Operator", 2], ["Warehouse Team Leader", 3], ["Production Supervisor", 4], ["HR Manager", 6],
+                  ["General Manager, Operations", 7], ["Operations Director", 8]], jobs.map { |j| [j.title, j.golongan] }
     jobs.each do |job|
       assert job.brief_complete?, job.title
       assert_empty Briefs::BriefCheck.new(job).problems, job.title

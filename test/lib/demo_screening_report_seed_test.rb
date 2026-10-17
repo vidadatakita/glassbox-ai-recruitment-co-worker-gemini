@@ -15,7 +15,7 @@ class DemoScreeningReportSeedTest < ActiveSupport::TestCase
   test "SPEC §3 rows, every label and state, both visibility states; a second run writes nothing" do
     open_job, closed_job = seed!
     board = ScreeningReportBoard.new(open_job, staff_user("consultant"))
-    by = board.rows.index_by { |r| r.candidate.name.delete_prefix("Kandidat Contoh ") }
+    by = board.rows.index_by { |r| r.candidate.name.delete_prefix("Sample Candidate ") }
     spec = { "A" => [4, "82", :passed, [7_000_000, 8_000_000], "direkomendasikan"],
              "B" => [4, "58", :failed_test, [6_000_000, 7_000_000], "pertimbangkan_terbatas"],
              "C" => [5, "91", :passed, [14_000_000, 18_000_000], "over_qualified"] }

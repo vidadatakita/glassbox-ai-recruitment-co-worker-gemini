@@ -12,7 +12,7 @@ class GoogleLoginTest < ActionDispatch::IntegrationTest
     # Rate-limit counters live in the controllers' memory cache and survive between test classes in
     # one worker. The engine's flood tests (31 GETs to /auth/failure, 11 callbacks) left the counters
     # full, so a later test here was refused by the limiter and wrote no sign_in_events row:
-    # "undefined method 'reason' for nil" (main seat 19:0x; reproduced with --seed 12 and 14).
+    # "undefined method 'reason' for nil" (team lead 19:0x; reproduced with --seed 12 and 14).
     GoogleSessionsController.cache_store.clear
     SessionsController.cache_store.clear
     @hr = staff_user("hr_pic", email: "dewi@uji.example")
@@ -186,7 +186,7 @@ class GoogleLoginTest < ActionDispatch::IntegrationTest
     assert_nil session[:return_to_after_authenticating], "nothing from the old session is carried over"
   end
 
-  # Same rule for the password login (feature 02 finding, fixed under the main seat's 18:5x approval).
+  # Same rule for the password login (feature 02 finding, fixed under the team lead's 18:5x approval).
   test "the password login starts a fresh Rails session and still returns to the page asked for" do
     get staff_jobs_path
     assert_redirected_to new_session_path

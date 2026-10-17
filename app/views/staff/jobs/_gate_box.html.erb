@@ -8,7 +8,7 @@
     <div class="hris-form-card__icon"><i class="fa fa-columns" aria-hidden="true"></i></div>
     <div>
       <h3><%= gate.name %> <%= gate_status_badge(gate.s1) %></h3>
-      <p>One gate: an applicant continues only after passing CV screening (weight <%= gate.s1.weight %>%) and the technical test (weight <%= gate.s2.weight %>%). Both stages open and close together.</p>
+      <p>Passing needs both: CV screening (<%= gate.s1.weight %>%) and the technical test (<%= gate.s2.weight %>%).</p>
     </div>
     <div class="hris-form-card__action"><span class="gate-box__total"><strong><%= gate.total %></strong> <%= "applicant".pluralize(gate.total) %></span>
       <%# D60 slice 5: the reviewer's rubric scoring of the answers. %>
@@ -17,7 +17,10 @@
   <div class="hris-form-card__body">
     <%= render "staff/jobs/gate_summary", gate: gate %>
     <%= render "staff/jobs/gate_stages", gate: gate %>
-    <%= render "staff/jobs/gate_applicants", gate: gate %>
+    <details class="gate-details">
+      <summary>Each applicant's gate result (<%= gate.total %>)</summary>
+      <%= render "staff/jobs/gate_applicants", gate: gate %>
+    </details>
   </div>
 </div>
 <% end %>

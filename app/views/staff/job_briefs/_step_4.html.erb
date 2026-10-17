@@ -5,7 +5,7 @@
 <%= render layout: "staff/job_briefs/card", locals: { icon: "fa-cubes", title: "Selection package",
            text: "Recommended for #{job.golongan_label}: #{recommended.map { |p| package_label(p) }.join(' or ')}. #{Briefs::PackageAdvisor.reason(job.golongan)}" } do %>
   <div class="job-brief-packages" role="radiogroup" aria-label="Selection package">
-    <% (1..5).each do |package| %>
+    <% ([1, 2, 3] | [chosen].compact).each do |package| %>
       <label class="job-brief-package<%= " job-brief-package--recommended" if recommended.include?(package) %>">
         <input type="radio" name="brief[package]" value="<%= package %>" <%= "checked" if chosen == package %> data-package-choice>
         <span class="job-brief-package__body">

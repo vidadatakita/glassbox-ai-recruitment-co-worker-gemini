@@ -1,0 +1,43 @@
+/* Layout pass, 17 Oct 2026 (Vida: every layout proper, responsive, not too much information).
+   Presentational rules only; loaded after workflow.css so they apply without !important. */
+
+/* Brief wizard stepper. staff.css lays it out as a fixed 4-column grid (2 below 992px), so the fifth
+   step ("Technical test", only for packages with a test) wrapped onto a row of its own. One equal column
+   per step instead, whatever the count is (4 or 5). The extra .job-brief-page class outranks the
+   staff.css media rule without !important. */
+.job-brief-page .job-brief-stepper ol { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+
+@media (max-width: 575.98px) {
+  /* Phone: one compact strip, so the form starts right under it instead of ~270px down. It scrolls
+     sideways inside itself if a label is ever too long; the page itself never overflows. */
+  .job-brief-page .job-brief-stepper { margin-bottom: .9rem; }
+  .job-brief-page .job-brief-stepper ol { display: flex; flex-wrap: nowrap; gap: .5rem; overflow-x: auto; padding-bottom: .35rem; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+  .job-brief-page .job-brief-stepper__item { flex: 0 0 auto; position: relative; scroll-snap-align: start; }
+  .job-brief-page .job-brief-stepper__item > a, .job-brief-page .job-brief-stepper__item > div { gap: .45rem; padding: .45rem .65rem; white-space: nowrap; }
+  .job-brief-page .job-brief-stepper__num { flex-basis: 1.6rem; width: 1.6rem; height: 1.6rem; font-size: .75rem; }
+  .job-brief-page .job-brief-stepper__text strong, .job-brief-page .job-brief-stepper__text small { white-space: nowrap; }
+  /* Only the open step shows its label; the others shrink to their number or tick, so all 4 or 5
+     steps fit in 358px and the open one is never scrolled out of view. The hidden labels stay in
+     the markup (clipped, not display:none) so screen readers still announce every step. */
+  .job-brief-page .job-brief-stepper__item:not(.job-brief-stepper__item--current) .job-brief-stepper__text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .job-brief-page .job-brief-stepper__item:not(.job-brief-stepper__item--current) > a,
+  .job-brief-page .job-brief-stepper__item:not(.job-brief-stepper__item--current) > div { padding: .45rem; }
+  .job-brief-page .job-brief-stepper__item--current { flex: 1 1 auto; min-width: 0; }
+
+  /* Brief tables marked .table-stack sit in a plain .table-responsive (not a .card-body), which the
+     shared workflow.css un-scroll rule does not reach; without this the stacked rows would still be
+     clipped by the scroll box. */
+  .job-brief-page .table-responsive:has(> .table-stack) { overflow-x: visible; }
+  .job-brief-page .table-stack { min-width: 0; width: 100%; }
+  .job-brief-page .table-stack td { overflow-wrap: anywhere; }
+  /* The decision cell carries buttons and the keep-reason field: give it the full row width. */
+  .job-brief-page .requirement-check-table td.requirement-check-decision { grid-column: 1 / -1; }
+  .job-brief-page .requirement-check-table td.requirement-check-decision form { flex-wrap: wrap; }
+}
+
+/* Competency map: the rubric anchors and questions are folded per competency (they are reference
+   detail; name and stage are what the map is read for). */
+.job-brief-rubric { margin-top: .3rem; }
+.job-brief-rubric > summary { cursor: pointer; font-size: .75rem; font-weight: 600; color: #1D428A; }
+.job-brief-rubric > summary:hover { color: #041E42; }
+.job-brief-rubric[open] > summary { margin-bottom: .15rem; }

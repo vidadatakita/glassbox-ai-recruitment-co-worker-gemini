@@ -3,7 +3,7 @@ module Staff
   class WorkQueuesController < BaseController
     # Screen 6 belongs to the consultant (slice plan §2). Marking an item handled removes it from
     # the only screen that shows it, so only the consultant may (test engine F11).
-    before_action -> { require_role!(:consultant) }, only: %i[handle_link_request handle_mail_failure]
+    before_action -> { require_role!(:hr_admin) }, only: %i[handle_link_request handle_mail_failure]
     def show
       @queue = Portal::WorkQueue.new(jobs: org_jobs, unassigned: current_user.client_company_id.nil?)
     end

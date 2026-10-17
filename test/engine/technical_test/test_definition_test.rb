@@ -73,20 +73,34 @@ class Engine07TestDefinitionTest < ActiveSupport::TestCase
     assert e7_save(@job, actor: @consultant).ok?, "control: the assigned consultant saves"
   end
 
-  test "only HR PIC approves (service); consultant, owner, reviewer, admin refused" do
+  # Three roles (17 Oct 2026): the hr_admin uploads AND approves the test case, so the consultant
+  # (an hr_admin person) may approve too; the hr_manager (old owner and reviewer) is refused, and the
+  # superadmin passes every role check.
+  test "only hr_admin or superadmin approves (service); hr_manager (owner, reviewer) refused" do
     tc = e7_save(@job).test_case
-    %w[consultant owner reviewer admin].each do |role|
+    %w[owner reviewer].each do |role|
       refute TestCases::Approve.call(test_case: tc, actor: staff_user(role)).ok?, role
       refute tc.reload.approved?
     end
-    assert TestCases::Approve.call(test_case: tc, actor: @hr).ok?
+    assert TestCases::Approve.call(test_case: tc, actor: @consultant).ok?, "control: the consultant (hr_admin) approves"
+    other = e7_brief
+    other_tc = e7_save(other).test_case
+    assert TestCases::Approve.call(test_case: other_tc, actor: staff_user("admin")).ok?, "control: the superadmin approves"
+    third = e7_brief
+    assert TestCases::Approve.call(test_case: e7_save(third).test_case, actor: @hr).ok?, "control: the HR PIC (hr_admin) approves"
   end
 
-  test "DB: approval by a non-HR user through update_columns is refused" do
+  test "DB: approval by an hr_manager through update_columns is refused; hr_admin and superadmin pass" do
     tc = e7_save(@job).test_case
-    %w[consultant owner reviewer admin].each do |role|
+    %w[owner reviewer].each do |role|
       error = refused_by_database { tc.update_columns(approved_by_id: staff_user(role).id, approved_at: Time.current) }
       assert_match "only HR PIC approves", error.message
+    end
+    %w[consultant admin].each do |role|
+      job = e7_brief
+      draft = e7_save(job).test_case
+      draft.update_columns(approved_by_id: staff_user(role).id, approved_at: Time.current)
+      assert draft.reload.approved?, "control: the database accepts a #{staff_user(role).role} approver"
     end
   end
 
@@ -299,7 +313,7 @@ class Engine07TestDefinitionTest < ActiveSupport::TestCase
     assert_difference(count, 1) { e7_save(@job, file: nil, instructions: "Berubah") }
     assert_difference(count, 1) { TestCases::Approve.call(test_case: tc, actor: @hr) }
     rows = JobBriefChange.where(job: @job, step: "5").order(:id).to_a
-    assert_equal %w[consultant consultant hr_pic], rows.map(&:actor_role)
+    assert_equal %w[hr_admin hr_admin hr_admin], rows.map(&:actor_role)
     assert_equal [@consultant.id, @consultant.id, @hr.id], rows.map(&:actor_id)
     assert_equal [false, true], rows.last.changes_made["approved"]
     assert_no_difference(count) { TestCases::Approve.call(test_case: tc, actor: staff_user("owner")) }

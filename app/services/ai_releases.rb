@@ -29,7 +29,7 @@ module AiReleases
 
   # Raises Refused unless `user` may act on `release` (the database checks the same rule).
   def authorize!(release, user)
-    raise Refused, "Only a reviewer can check a text before it is sent to the AI." unless user&.role == "reviewer"
+    raise Refused, "Only a reviewer can check a text before it is sent to the AI." unless user&.role.in?(%w[hr_manager superadmin])
     # Read fresh from the database, not from a loaded association: a consultant assigned a moment
     # ago must already be excluded (the database trigger reads it fresh too).
     consultant_id = Job.where(id: release.job_id).pick(:consultant_id)

@@ -6,7 +6,7 @@ password = "glassbox-demo-2026"
 # Seeding never sends anything to the AI, whatever .env says: the demo rows are written as "data
 # contoh", and the release demo shows a CV waiting for a reviewer. Put back at the end of the file.
 ai_config = Screening::Config.singleton_class
-ai_saved = %i[enabled? review_before_ai?].to_h { |name| [name, Screening::Config.method(name)] }
+ai_saved = %i[enabled? review_before_ai?].to_h { |name| [ name, Screening::Config.method(name) ] }
 ai_config.define_method(:enabled?) { false }
 ai_config.define_method(:review_before_ai?) { true }
 
@@ -20,12 +20,12 @@ company = ClientCompany.first || ClientCompany.create!(
 
 # One account per role; the demo door (/demo) picks the first user of a role. README lists them.
 {
-  "hr@terangnusantara.example" => ["Dewi Lestari", "hr_pic", company],
-  "consultant@glassbox.example" => ["Rangga Saputra", "consultant", nil],
-  "reviewer@glassbox.example" => ["Sari Wulandari", "reviewer", nil],
-  "admin@terangnusantara.example" => ["System Admin", "admin", company],
-  # The owner agrees the salary (step 11); the AI never sees money.
-  "owner@terangnusantara.example" => ["Hendra Wijaya", "owner", company]
+  # Three roles (17 Oct 2026). The HR Admin prepares and decides and is the vacancies' consultant;
+  # the HR Manager releases CVs to Gemini, scores the test and agrees the salary. Two people, so the
+  # rule "the reviewer is never the vacancy's consultant" holds. The superadmin passes every check.
+  "hr@terangnusantara.example" => [ "Dewi Lestari", "hr_admin", company ],
+  "manager@terangnusantara.example" => [ "Hendra Wijaya", "hr_manager", company ],
+  "admin@glassbox.example" => [ "GlassBox Superadmin", "superadmin", nil ]
 }.each do |email, (name, role, client_company)|
   User.find_or_create_by!(email_address: email) do |user|
     user.name = name
@@ -41,7 +41,7 @@ end
 # prefix keeps the portal closed (ConsentTemplate#placeholder_sections, Portal::ConsentReadiness).
 ConsentTemplate.in_force || ConsentTemplate.create!(
   ConsentTemplate::SECTIONS.to_h do |field, heading|
-    [field, "[DEMO TEXT, not legal text] Sample wording for the demo (#{heading}). A real install publishes the employer's own text."]
+    [ field, "[DEMO TEXT, not legal text] Sample wording for the demo (#{heading}). A real install publishes the employer's own text." ]
   end.merge(version: "demo-1", effective_from: 1.day.ago, created_at: Time.current)
 )
 
@@ -52,8 +52,8 @@ puts "Seeded #{company.name}: users #{User.count}. Password: #{password}"
 # docs/evaluation/hand-scores.csv. Idempotent. This is the ONLY demo data the public demo carries.
 require_relative "seeds/demo_glassbox"
 glassbox_hr = User.find_by!(email_address: "hr@terangnusantara.example")
-glassbox_consultant = User.find_by!(email_address: "consultant@glassbox.example")
-glassbox_reviewer = User.find_by!(email_address: "reviewer@glassbox.example")
+glassbox_consultant = glassbox_hr # the HR Admin is the vacancies' consultant (three roles)
+glassbox_reviewer = User.find_by!(email_address: "manager@terangnusantara.example")
 
 # Development only: a demo consent text and retention period, so a FRESH development database can
 # run the demo seeds below (several of them submit applications, which the portal refuses without a
@@ -63,7 +63,7 @@ glassbox_reviewer = User.find_by!(email_address: "reviewer@glassbox.example")
 # Every section is marked as demo text so nobody mistakes it for legal text. Idempotent: it does
 # nothing when any consent version or retention value already exists.
 if Rails.env.development? || Glassbox::Settings.demo_mode?
-  admin = User.find_by!(email_address: "admin@terangnusantara.example")
+  admin = User.find_by!(email_address: "admin@glassbox.example")
   if ConsentTemplate.none?
     demo_line = "[DEMO TEXT, not legal text] The employer's legal team writes this section."
     ConsentTemplate.create!(
@@ -81,12 +81,13 @@ glassbox_jobs = DemoGlassbox.run(hr: glassbox_hr, consultant: glassbox_consultan
 puts "Demo Cup data (A6): #{glassbox_jobs.map { |j| "#{j.title} (/apply/#{j.public_code})" }.join('; ')}"
 
 # The earlier feature demos (jobs, technical test, screening report, Google, review before AI, the
-# first Cup walk-through) carry Indonesian titles and text. They stay available for development
-# behind LEGACY_DEMO_SEEDS=1 and never run on the public demo, so the demo workspace shows only the
-# English Cup data above. Their seed tests load the modules directly and do not depend on this switch.
+# first Cup walk-through), translated to English on 17 Oct 2026 like every demo record. They stay
+# available for development behind LEGACY_DEMO_SEEDS=1 and never run on the public demo, so the demo
+# workspace shows only the Cup data above. Their seed tests load the modules directly and do not
+# depend on this switch.
 if Glassbox::Settings.legacy_demo_seeds?
-# The first feature demo job (Indonesian title and knockout questions), development only.
-job = Job.find_or_create_by!(title: "Staf Admin Gudang", client_company: company) do |j|
+# The first feature demo job, development only (English title and knockout questions, 17 Oct 2026).
+job = Job.find_or_create_by!(title: "Warehouse Admin Staff", client_company: company) do |j|
   j.golongan = 2
   j.location = "Bekasi"
   j.salary_min = 5_200_000
@@ -95,13 +96,13 @@ job = Job.find_or_create_by!(title: "Staf Admin Gudang", client_company: company
 end
 
 if job.knockout_questions.none?
-  job.knockout_questions.create!(position: 1, text: "Bersedia bekerja shift di Bekasi?")
-  job.knockout_questions.create!(position: 2, text: "Memiliki pengalaman administrasi minimal 1 tahun?")
+  job.knockout_questions.create!(position: 1, text: "Are you willing to work shifts in Bekasi?")
+  job.knockout_questions.create!(position: 2, text: "Do you have at least 1 year of administrative experience?")
 end
 
 if job.stages.none?
-  [["S1", "ai", 10, 60], ["S2", "manual_or_import", 20, 60], ["S3", "scorecard", 20, 65],
-   ["S5", "scorecard", 50, 70]].each do |code, source, weight, threshold|
+  [ [ "S1", "ai", 10, 60 ], [ "S2", "manual_or_import", 20, 60 ], [ "S3", "scorecard", 20, 65 ],
+   [ "S5", "scorecard", 50, 70 ] ].each do |code, source, weight, threshold|
     job.stages.create!(code:, score_source: source, weight:, threshold:)
   end
 end
@@ -128,13 +129,13 @@ puts "Demo technical test (feature 07): #{demo_tests.map { |j| "#{j.title} ##{j.
 require_relative "seeds/demo_screening_report"
 report_jobs = DemoScreeningReport.run(company:, hr: hr_user, consultant: glassbox_consultant,
                                       reviewer: glassbox_reviewer)
-puts "Demo laporan (feature 08): #{report_jobs.map { |j| "#{j.title} (/staff/jobs/#{j.id}/laporan-analisis)" }.join('; ')}"
+puts "Screening report demo (feature 08): #{report_jobs.map { |j| "#{j.title} (/staff/jobs/#{j.id}/screening-report)" }.join('; ')}"
 
 # Feature 10: Google integrations demo (D52). Invented rows only, no credential, no Google call;
 # shows a sent and a failed calendar invite, a failed Gmail delivery and the health rows.
 require_relative "seeds/demo_google"
 google_lines = DemoGoogle.run(consultant: glassbox_consultant,
-                              admin: User.find_by!(email_address: "admin@terangnusantara.example"))
+                              admin: User.find_by!(email_address: "admin@glassbox.example"))
 puts "Demo Google (feature 10): #{google_lines.join('; ')}"
 
 # Feature 09: "Pemeriksaan sebelum AI" demo (D51 B, D52). One invented job, five invented CVs in
@@ -143,7 +144,7 @@ puts "Demo Google (feature 10): #{google_lines.join('; ')}"
 require_relative "seeds/demo_ai_release"
 release_job = DemoAiRelease.run(company:, consultant: glassbox_consultant,
                                 reviewer: glassbox_reviewer)
-puts "Demo pemeriksaan sebelum AI (feature 09): #{release_job.title} (/staff/jobs/#{release_job.id}/pemeriksaan-ai)"
+puts "Review before AI demo (feature 09): #{release_job.title} (/staff/jobs/#{release_job.id}/ai-review)"
 
 # AI Builder Cup: one invented job walked through the nine steps (candidates at every point, the
 # user's interview link for Kandidat C still waiting), so the demo and Ringkasan Dampak have data.
@@ -151,8 +152,8 @@ puts "Demo pemeriksaan sebelum AI (feature 09): #{release_job.title} (/staff/job
 require_relative "seeds/demo_cup"
 cup_job = DemoCup.run(company:, hr: hr_user, consultant: glassbox_consultant,
                       reviewer: glassbox_reviewer,
-                      owner: User.find_by!(email_address: "owner@terangnusantara.example"))
-puts "Demo Cup: #{cup_job.title} (/staff/jobs/#{cup_job.id}, /staff/dampak)"
+                      owner: glassbox_reviewer)
+puts "Demo Cup: #{cup_job.title} (/staff/jobs/#{cup_job.id}, /staff/impact)"
 end
 
 ai_saved.each { |name, original| ai_config.define_method(name, original) }

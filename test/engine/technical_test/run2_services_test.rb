@@ -316,9 +316,12 @@ class Engine07Run2ServicesTest < ActiveSupport::TestCase
     end
   end
 
-  test "scoring refused: consultant, HR PIC, owner, admin; a reviewer who is the job's consultant; a second reviewer; blank note; bad ratings" do
+  # Three-role model (17 Oct 2026): scoring is an HR manager action, so every HR admin person is
+  # refused; owner is now an HR manager and superadmin passes every role check, so neither is refused
+  # by role any more (the per-person consultant rule below still binds both).
+  test "scoring refused: every HR admin person; a reviewer who is the job's consultant; a second reviewer; blank note; bad ratings" do
     attempt = travel_to(@t0 + 1.hour) { r2_answer(@app) }
-    %w[consultant hr_pic owner admin].each do |role|
+    %w[consultant hr_pic hr_admin].each do |role|
       assert_raises(TechnicalTests::ScoreAnswer::Refused, role) { r2_score!(attempt, [5, 5], reviewer: staff_user(role)) }
     end
     conflicted = r2_reviewer(email: "reviewer-konsultan@uji.example")

@@ -1,8 +1,9 @@
 require "test_helper"
 
 # D60 slice 1 on screen: the vacancy home shows the gate "CV screening and technical test" with both
-# stages' counts side by side and the gate result per applicant. Client roles see numbers, not
-# names (rule 14, D62 h7).
+# stages' counts side by side and the gate result per applicant. HR admin and HR manager see numbers,
+# not names, until the gate is confirmed; only superadmin sees names before that (rule 14, D62 h7;
+# three-role model, 17 Oct 2026).
 class GateBoxTest < ActionDispatch::IntegrationTest
   include GateFactory
 
@@ -22,8 +23,9 @@ class GateBoxTest < ActionDispatch::IntegrationTest
     scored_decision!(@wait1, 80, "pass")
   end
 
+  # Read as superadmin so the rows can be matched by name before the gate closes.
   test "the gate box shows both stages side by side, the gate totals and each applicant's result" do
-    sign_in_as staff_user("consultant")
+    sign_in_as staff_user("superadmin")
     get staff_job_path(@job)
     assert_response :success
     box = css_select("#gerbang-seleksi").first
@@ -54,17 +56,19 @@ class GateBoxTest < ActionDispatch::IntegrationTest
     assert_includes row.text, "Not assessed: eliminated at CV screening"
   end
 
-  test "HR PIC and owner see numbered candidates, never names; DataKita staff see names" do
-    %w[hr_pic owner].each do |role|
+  # Every non-superadmin person of the old matrix, which covers both new roles (hr_pic and consultant
+  # are hr_admin; owner and reviewer are hr_manager).
+  test "HR admin and HR manager see numbered candidates, never names; superadmin sees names" do
+    %w[hr_pic consultant owner reviewer].each do |role|
       sign_in_as staff_user(role)
       get staff_job_path(@job)
       table = css_select("#gerbang-seleksi table").first.to_html
       %w[Bayu Citra Dodi].each { |name| refute_includes table, name, "#{role} sees a name" }
       assert_includes table, "Candidate 01"
     end
-    sign_in_as staff_user("reviewer")
+    sign_in_as staff_user("superadmin")
     get staff_job_path(@job)
-    assert_includes css_select("#gerbang-seleksi table").first.to_html, "Citra Maharani", "control: staff see names"
+    assert_includes css_select("#gerbang-seleksi table").first.to_html, "Citra Maharani", "control: superadmin sees names"
   end
 
   test "a job without a gate shows no gate box (control)" do

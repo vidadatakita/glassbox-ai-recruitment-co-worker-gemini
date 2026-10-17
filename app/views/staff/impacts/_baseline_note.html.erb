@@ -1,0 +1,8 @@
+<%# Shown at the top while any BEFORE figure is missing: it explains every "not entered" and "-"
+    in the matrix below, so it sits before them rather than after. %>
+<% if baseline.values_at("baseline_hours_to_answer", "baseline_minutes_per_cv", "baseline_reasoned_pct").any?(&:nil?) %>
+  <div class="impact-note" role="note">
+    <i class="fa fa-info-circle" aria-hidden="true"></i>
+    <span>Some "Before" figures are not entered yet. An admin enters them in Settings from a client interview or survey; until then the change is not computed.</span>
+  </div>
+<% end %>

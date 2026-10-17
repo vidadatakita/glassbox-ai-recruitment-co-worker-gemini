@@ -1,37 +1,40 @@
-<%# Blind judging: the AI's answer for a CV stays hidden until the consultant has judged it, so the
+<%# Blind judging: the AI's answer for a CV stays hidden until the HR Admin has judged it, so the
     agreement figure measures agreement, not copying. One form per row, none nested. %>
 <% cal = board.calibration %>
 <div class="card custom-card">
-  <div class="card-header"><div class="card-title">Calibration CVs (<%= cal.rows.size %>)</div></div>
+  <%# The reason the AI column is hidden is said once here, not in every row (it repeated 9 times). %>
+  <div class="card-header"><div><div class="card-title">Calibration CVs (<%= cal.rows.size %>)</div>
+    <small class="text-muted">The AI advice for a CV stays hidden until the HR Admin has judged it.</small></div></div>
   <div class="card-body table-responsive">
-    <table class="table align-middle mb-0">
-      <thead><tr><th>Applicant</th><th>CV</th><th>Consultant's judgement</th><th>AI advice</th><th>Same?</th></tr></thead>
+    <%# table-stack: on a phone each row becomes a card, every cell under its data-label (workflow.css). %>
+    <table class="table align-middle mb-0 table-stack">
+      <thead><tr><th>Applicant</th><th>CV</th><th>HR Admin's judgement</th><th>AI advice</th><th>Same?</th></tr></thead>
       <tbody>
         <% if cal.rows.empty? %><tr><td colspan="5" class="text-muted">No applications yet. The first 20 applications received become the calibration CVs.</td></tr><% end %>
         <% cal.rows.each do |row| %>
           <% p = row.participation %>
           <tr id="kalibrasi-<%= p.id %>">
             <td><%= screening_person(p, board) %></td>
-            <td>
+            <td data-label="CV">
               <% if p.job_application.cv.attached? %>
                 <%= link_to cv_staff_application_path(p.job_application), class: "btn btn-sm btn-primary-light", title: "View CV" do %><i class="fa fa-plus" aria-hidden="true"></i> View detail<% end %>
               <% else %>-<% end %>
             </td>
-            <td>
+            <td data-label="HR Admin's judgement">
               <% if row.judgement %>
                 <%= CalibrationJudgement::OUTCOMES.fetch(row.judgement.outcome) %>
-              <% elsif current_user.role == "consultant" %>
+              <% elsif current_user.role.in?(%w[hr_admin superadmin]) %>
                 <%= render "staff/screenings/calibration_form", participation: p %>
               <% else %>
                 <span class="text-muted">Not judged yet</span>
               <% end %>
             </td>
-            <td>
+            <td data-label="AI advice">
               <% if row.result.nil? %><span class="text-muted">No AI result yet</span>
-              <% elsif row.judgement.nil? %><span class="text-muted">Hidden until the consultant has judged</span>
+              <% elsif row.judgement.nil? %><span class="text-muted" title="Hidden until the HR Admin has judged"><i class="fa fa-lock me-1" aria-hidden="true"></i>Hidden<span class="visually-hidden"> until the HR Admin has judged</span></span>
               <% else %><%= outcome_label(row.ai_outcome) %> (score <%= score_text(row.result.score) %>)<% end %>
             </td>
-            <td>
+            <td data-label="Same?">
               <% if row.pair? %>
                 <% if row.disagree? %><span class="portal-state portal-state--danger">Different</span><% else %><span class="portal-state portal-state--success">Same</span><% end %>
               <% else %>-<% end %>

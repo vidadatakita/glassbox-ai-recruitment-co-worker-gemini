@@ -12,9 +12,14 @@
       <% else %>
         <ul class="job-brief-list">
           <% list.each do |c| %>
+            <%# Name and stage stay visible; the rubric anchors and questions fold into a <details> so the
+                map reads as a list on a phone instead of ~1000px of text. Nothing is removed. %>
             <li><strong><%= c.name %></strong> <span class="portal-state portal-state--muted"><%= stage_label(c.stage_code) %></span>
-              <small>1: <%= c.anchor_1 || "-" %> · 3: <%= c.anchor_3 || "-" %> · 5: <%= c.anchor_5 || "-" %></small>
-              <% if c.questions.present? %><small>Questions: <%= c.questions %></small><% end %></li>
+              <details class="job-brief-rubric">
+                <summary><%= c.questions.present? ? "Rubric and questions" : "Rubric" %></summary>
+                <small>1: <%= c.anchor_1 || "-" %> · 3: <%= c.anchor_3 || "-" %> · 5: <%= c.anchor_5 || "-" %></small>
+                <% if c.questions.present? %><small>Questions: <%= c.questions %></small><% end %>
+              </details></li>
           <% end %>
         </ul>
       <% end %>

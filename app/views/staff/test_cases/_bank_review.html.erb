@@ -1,0 +1,56 @@
+<%# The three-step path's actions, each its own form: the HR Admin submits a draft (or takes a
+    submitted one back); the HR Manager approves or returns a submitted one, never the bank's creator.
+    The last return reason is shown to the HR Admin, so a returned bank says what to change. %>
+<% last_return = JobBriefChange.where(job_id: job.id, step: "5").order(:id).reverse
+                               .find { |c| c.changes_made.dig("question_bank_version", 1) == bank.version && c.changes_made.key?("decision") } %>
+<% if bank.draft? && last_return&.changes_made&.dig("decision", 1) == "return" %>
+  <div class="alert alert-warning job-brief-notice" role="status">
+    <i class="fa fa-undo" aria-hidden="true"></i>
+    <div><strong>Returned by <%= last_return.actor.name %>, <%= wib(last_return.created_at) %>.</strong> <%= last_return.changes_made.dig("reason", 1) %></div>
+  </div>
+<% end %>
+<% problems = bank.approved? ? [] : TestCases::BankReadiness.problems(bank) %>
+<% if bank.draft? && editor %>
+  <div class="question-bank-action">
+    <% if problems.any? %>
+      <div class="question-bank-action__note"><strong>Not ready to submit:</strong>
+        <ul class="mb-0"><% problems.each do |p| %><li><%= p %></li><% end %></ul></div>
+    <% else %>
+      <div class="question-bank-action__note"><i class="fa fa-check-circle text-success" aria-hidden="true"></i> Both sections have enough linked questions. Submit to send the bank to the HR Manager; the questions are locked until it is approved or returned.</div>
+      <%= form_with url: staff_job_question_bank_decision_path(job, bank), method: :post, class: "question-bank-action__form",
+                    data: { turbo: false, submit_guard: true } do %>
+        <input type="hidden" name="decision" value="submit">
+        <%= label_button "Submit for approval", "fa-paper-plane" %>
+      <% end %>
+    <% end %>
+  </div>
+<% elsif bank.submitted? %>
+  <div class="question-bank-action">
+    <% if TestCases::Authority.may_review_bank?(current_user, bank) %>
+      <div class="question-bank-action__note">Read every question below, its correct answer or scoring anchors, and the draw rule. Approving makes version <%= bank.version %> final.</div>
+      <%= form_with url: staff_job_question_bank_decision_path(job, bank), method: :post, class: "question-bank-action__form",
+                    data: { turbo: false, submit_guard: true } do %>
+        <input type="hidden" name="decision" value="approve">
+        <%# Maker-checker: the fingerprint of exactly what this page shows (TestCases::BankDecision). %>
+        <input type="hidden" name="content_digest" value="<%= bank.content_digest %>">
+        <%= label_button "Approve version #{bank.version}", "fa-check", purpose: :approve %>
+      <% end %>
+      <%= form_with url: staff_job_question_bank_decision_path(job, bank), method: :post, class: "question-bank-action__form question-bank-action__form--return",
+                    data: { turbo: false, submit_guard: true } do %>
+        <input type="hidden" name="decision" value="return">
+        <label class="form-label" for="bank_return_reason">Reason for returning it</label>
+        <textarea class="form-control" id="bank_return_reason" name="reason" rows="2" placeholder="What the HR Admin should change"></textarea>
+        <%= label_button "Return to the HR Admin", "fa-undo", purpose: :rework %>
+      <% end %>
+    <% elsif editor %>
+      <div class="question-bank-action__note">Waiting for the HR Manager. To change a question, take the bank back to draft; it is then submitted again.</div>
+      <%= form_with url: staff_job_question_bank_decision_path(job, bank), method: :post, class: "question-bank-action__form",
+                    data: { turbo: false, submit_guard: true } do %>
+        <input type="hidden" name="decision" value="withdraw">
+        <%= label_button "Take back to draft", "fa-pencil", purpose: :neutral %>
+      <% end %>
+    <% elsif current_user.id == bank.created_by_id %>
+      <div class="question-bank-action__note"><%= TestCases::Authority.review_bank_refusal(current_user, bank) %></div>
+    <% end %>
+  </div>
+<% end %>

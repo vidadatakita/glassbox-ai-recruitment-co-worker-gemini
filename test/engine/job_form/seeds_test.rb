@@ -8,7 +8,9 @@ class JobFormSeedsTest < ActiveSupport::TestCase
   include JobFormEngineSupport
 
   # D49: "Operator G2, Team Leader G3, Supervisor G4, Manager G6, General Manager G7, Direktur G8".
-  D49 = [["Operator", 2], ["Team Leader", 3], ["Supervisor", 4], ["Manager", 6], ["General Manager", 7], ["Direktur", 8]].freeze
+  # The demo titles are English (17 Oct 2026), so the role word is matched as a whole word anywhere
+  # in the title ("Production Operator", "HR Manager") and the spec's "Direktur" reads "Director".
+  D49 = [["Operator", 2], ["Team Leader", 3], ["Supervisor", 4], ["Manager", 6], ["General Manager", 7], ["Director", 8]].freeze
 
   def footprint
     [Job.count, Activity.count, Requirement.count, KnockoutQuestion.count, Competency.count, Stage.count,
@@ -19,7 +21,7 @@ class JobFormSeedsTest < ActiveSupport::TestCase
     legacy = Job.create!(title: "Staf Lama", golongan: 2, client_company: company)
     jobs = DemoJobs.run(company:, actor: staff_user("hr_pic"))
     D49.zip(jobs).each do |(prefix, g), job|
-      assert job.title.start_with?(prefix), "#{job.title} vs D49 #{prefix}"
+      assert_match(/\b#{prefix}\b/, job.title, "#{job.title} vs D49 #{prefix}")
       assert_equal g, job.golongan, job.title
       assert job.brief_complete?, job.title
       shares = job.activities.pluck(:share_percent)

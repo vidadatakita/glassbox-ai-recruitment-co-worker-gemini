@@ -120,13 +120,19 @@ class AiReleases::ReleaseGateTest < ActiveSupport::TestCase
       assert_includes e.message, "Tick the statement"
       e = assert_raises(AiReleases::Refused) { AiReleases::Release.call(release: @release, user: @reviewer, confirmed: "1", seen_sha256: "0" * 64) }
       assert_includes e.message, "changed since the page was opened"
-      %w[hr_pic owner consultant admin].each do |role|
-        assert_raises(AiReleases::Refused, role) { AiReleases::Release.call(release: @release, user: staff_user(role), confirmed: "1", seen_sha256: @release.payload_sha256) }
+      # Three roles (17 Oct 2026): both HR Admin people are refused by role; the HR Manager and the
+      # superadmin pass the role check, and the per-person rule still refuses each of them while
+      # they are the vacancy's consultant.
+      %w[hr_pic consultant].each do |role|
+        e = assert_raises(AiReleases::Refused, role) { AiReleases::Release.call(release: @release, user: staff_user(role), confirmed: "1", seen_sha256: @release.payload_sha256) }
+        assert_includes e.message, "Only a reviewer", role
       end
       consultant_reviewer = staff_user("reviewer", email: "reviewer-konsultan@uji.example")
-      @job.update_columns(consultant_id: consultant_reviewer.id)
-      e = assert_raises(AiReleases::Refused) { release!(user: consultant_reviewer) }
-      assert_includes e.message, "consultant"
+      [consultant_reviewer, staff_user("owner"), staff_user("admin")].each do |person|
+        @job.update_columns(consultant_id: person.id)
+        e = assert_raises(AiReleases::Refused, person.email_address) { release!(user: person) }
+        assert_includes e.message, "consultant", person.email_address
+      end
     end
     assert_nil @release.reload.action
     assert_equal "awaiting_release", @participation.reload.screening_state

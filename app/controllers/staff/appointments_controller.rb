@@ -2,7 +2,7 @@ module Staff
   # Schedules (BP §3.6 B3). Only the consultant schedules. A changed time resets the confirmation
   # and logs the old time (§3.6 C).
   class AppointmentsController < BaseController
-    before_action -> { require_role!(:consultant) }
+    before_action -> { require_role!(:hr_admin) }
 
     def create
       participation = org_find(Participation, params[:participation_id])

@@ -1,6 +1,6 @@
 <%# Feature 08: the way into the screening report from the vacancy home. Only where the job
     has a CV screening stage; the report itself applies the name rules (rule 14, D62 h7). %>
-<% if job.stages.exists?(code: "S1") && %w[hr_pic consultant reviewer owner].include?(current_user.role) %>
+<% if job.stages.exists?(code: "S1") && %w[hr_admin hr_manager superadmin].include?(current_user.role) %>
 <div class="hris-form-card report-link" id="laporan-analisis">
   <div class="hris-form-card__header">
     <div class="hris-form-card__icon"><i class="fa fa-table" aria-hidden="true"></i></div>

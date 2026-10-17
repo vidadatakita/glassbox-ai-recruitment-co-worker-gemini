@@ -1,5 +1,5 @@
 /* Candidate pages (Lamar, Status Lamaran): phone first, one column, light enough for a slow
-   connection. Components follow the approved design artifact portal-pelamar.html; the face is
+   connection. Components follow the approved design mock-up portal-pelamar.html; the face is
    the house Quicksand, self-hosted (no external request, ONP-7). Targets are at least 44px
    high (WCAG 2.2 SC 2.5.8 asks 24px; 44px suits thumbs). */
 @font-face{font-family:"Quicksand";font-style:normal;font-weight:300 700;font-display:swap;
@@ -257,3 +257,36 @@ details summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;alig
 .score-picks span{display:flex;height:48px;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:10px;font-weight:700;background:var(--bg);cursor:pointer}
 .score-picks input:checked+span{background:var(--navy);color:#fff;border-color:var(--navy)}
 .score-picks input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Applicant status page (17 Oct 2026), in the sign-in page's spirit: a greeting, a prominent "next"
+   card with the stage progress, the stages as a navy/orange timeline, a reassurance line, and the
+   consent withdrawal as a quiet card. Scoped to .status-page; colours PANTONE 282 C navy and 158 C
+   orange (docs/brand-palette.md). */
+.status-page__hello { margin: 0 0 .1rem; font-size: .95rem; font-weight: 700; color: #A9431E; }
+.status-page h1 { margin: 0 0 1rem; color: #041E42; letter-spacing: -.01em; }
+.status-page__h2 { font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: #63666A; margin: 1.5rem 0 .75rem; }
+.status-next { display: flex; gap: .9rem; align-items: flex-start; padding: 1rem 1.1rem; border-radius: 1rem; color: #fff;
+  background: radial-gradient(30rem 14rem at 110% -20%, rgba(237, 160, 79, .35), transparent 60%), linear-gradient(150deg, #041E42, #1D428A); box-shadow: 0 12px 30px rgba(4, 30, 66, .25); }
+.status-next .small { color: #EDA04F; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; font-size: .72rem; }
+.status-next b { display: block; color: #fff; font-size: 1.05rem; line-height: 1.4; margin-top: .15rem; }
+.status-next__icon { flex: 0 0 auto; width: 2.4rem; height: 2.4rem; border-radius: .75rem; display: grid; place-items: center; background: #E87722; color: #041E42; font-weight: 900; }
+.status-next__text { min-width: 0; flex: 1; }
+.status-next__progress { display: flex; align-items: center; gap: .6rem; margin-top: .7rem; }
+.status-next__bar { flex: 1; height: 6px; border-radius: 999px; background: rgba(255, 255, 255, .2); overflow: hidden; }
+.status-next__bar > span { display: block; height: 100%; background: #EDA04F; border-radius: 999px; }
+.status-next__step { font-size: .78rem; color: #d7deeb; white-space: nowrap; }
+.status-tl li.done .dot { background: #041E42; color: #EDA04F; border-color: #041E42; }
+.status-tl li.current .dot { background: #fff; color: #A9431E; border-color: #E87722; box-shadow: 0 0 0 3px rgba(232, 119, 34, .25); }
+.status-tl li.current b { color: #A9431E; }
+.status-tl li.waiting b, .status-tl li.skipped b { color: #53565A; }
+.status-tl li.not_passed .dot { background: #b42318; color: #fff; border-color: #b42318; }
+.status-trust { margin: 1.25rem 0 .75rem; padding: .75rem .9rem; border-radius: .75rem; background: #f3f5f9; color: #41464d; font-size: .9rem; }
+.status-withdraw { background: #fff; border-style: dashed; }
+.status-withdraw summary { color: #53565A; }
+
+/* "Applicant portal" in the applicant header, larger (Vida, 17 Oct 2026): it names the page the
+   applicant is on, so it reads at the same weight as the GlassBox name beside it. */
+.cand-brand > span { font-size: 1.05rem; font-weight: 700; letter-spacing: .01em; color: #EDA04F; }
+@media (max-width: 575.98px) { .cand-brand > span { font-size: .95rem; } }
+/* The logo above the header already names GlassBox; the header line carries only "Applicant portal". */
+.cand-brand--portal { justify-content: flex-end; }

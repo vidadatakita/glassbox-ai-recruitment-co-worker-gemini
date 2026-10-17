@@ -1,54 +1,16 @@
-<%# AI Builder Cup standard item 1: before / after. "With GlassBox" is measured from this
+<%# AI Builder Cup standard item 1: before / after. "With AiCoHire" is measured from this
     organization's records (Impact); "Before" is the client's own figure from Settings,
-    shown as "not entered" until someone enters it, never invented. %>
+    shown as "not entered" until someone enters it, never invented. This view only orchestrates;
+    each section is its own partial and the figures are built once in ImpactHelper#impact_rows. %>
 <% content_for :title, "Impact summary" %>
-<% hours = @impact.hours_to_answer %>
-<% read = @impact.human_read_pct %>
-<% reasoned = @impact.reasoned_pct %>
-<% agree = @impact.agreement_pct %>
-<% before_hours = @baseline["baseline_hours_to_answer"] %>
-<% before_minutes = @baseline["baseline_minutes_per_cv"] %>
-<% before_reasoned = @baseline["baseline_reasoned_pct"] %>
-<% blank = "not entered" %>
-<div class="portal-page loan-index-page layout-decoration-page">
-  <%= render "staff/shared/page_header", eyebrow: "Impact summary", title: "Before and after GlassBox",
+<% rows = impact_rows(@impact, @baseline) %>
+<div class="portal-page loan-index-page layout-decoration-page impact-page">
+  <%= render "staff/shared/page_header", eyebrow: "Impact summary · AiCoHire by GlassBox", title: "Before and after AiCoHire",
              subtitle: "Measured from #{@impact.applications} applications in your vacancies.#{" Includes sample (synthetic) data from the demo vacancy." if @impact.includes_demo?}" %>
   <section class="content">
-    <div class="impact-grid">
-      <article class="impact-card">
-        <h3>Time to first answer</h3>
-        <div class="impact-pair">
-          <div><span>Before</span><strong><%= before_hours ? "#{before_hours} hours" : blank %></strong></div>
-          <div><span>With GlassBox</span><strong><%= hours.value ? "#{hours.value} hours" : "-" %></strong></div>
-        </div>
-        <p>Median, from the application coming in to the first AI screening result, decision, or HR choice. <%= hours.count %> applications.</p>
-      </article>
-      <article class="impact-card">
-        <h3>CVs a person still has to read</h3>
-        <div class="impact-pair">
-          <div><span>Before</span><strong><%= before_minutes ? "100% · #{before_minutes} min/CV" : "100%" %></strong></div>
-          <div><span>With GlassBox</span><strong><%= read.value ? "#{read.value}%" : "-" %><%= " · ±#{(before_minutes * read.value / 100.0).round(1)} min/CV" if before_minutes && read.value %></strong></div>
-        </div>
-        <p>CVs held for review, not sent, unreadable, failed, or reviewed by a reviewer, out of <%= read.count %> CVs screened. Minutes per CV is an estimate from the "before" figure.</p>
-      </article>
-      <article class="impact-card">
-        <h3>Decisions with a written reason</h3>
-        <div class="impact-pair">
-          <div><span>Before</span><strong><%= before_reasoned ? "#{before_reasoned}%" : blank %></strong></div>
-          <div><span>With GlassBox</span><strong><%= reasoned.value ? "#{reasoned.value}%" : "-" %></strong></div>
-        </div>
-        <p>Continue / Do not continue choices that carry the chooser's note or the reasons of the AI advice. <%= reasoned.count %> choices.</p>
-      </article>
-      <article class="impact-card">
-        <h3>HR choices in line with the AI</h3>
-        <div class="impact-pair">
-          <div><span>A person decides every step</span><strong><%= agree.value ? "#{agree.value}%" : "-" %></strong></div>
-        </div>
-        <p>Out of <%= agree.count %> choices made with AI advice. <%= @impact.agreement_flag %></p>
-      </article>
-    </div>
-    <% if [before_hours, before_minutes, before_reasoned].any?(&:nil?) %>
-      <p class="text-muted mt-3">The "Before" figures are entered by an admin in Settings from a client interview or survey.</p>
-    <% end %>
+    <%= render "staff/impacts/baseline_note", baseline: @baseline %>
+    <%= render "staff/impacts/headline", rows: rows %>
+    <%= render "staff/impacts/matrix", rows: rows, by_job: @by_job, baseline: @baseline %>
+    <%= render "staff/impacts/safeguards" %>
   </section>
 </div>

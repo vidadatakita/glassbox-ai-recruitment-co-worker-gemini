@@ -81,11 +81,14 @@ class Screening::PromptInjectionTest < ActiveSupport::TestCase
     assert_equal Briefs::Suggest::MAX_INSTRUCTION, s.instance_variable_get(:@instruction).size
   end
 
-  test "ad: an ad written to a discriminatory instruction is flagged when saved, and approval needs the tick" do
+  test "ad: an ad written to a discriminatory instruction is flagged at save and saved only with a written reason" do
     job = briefed_job(complete: true)
     job.update_columns(ad_approved_at: nil, ad_approved_by_id: nil)
+    text = "Yang kami cari\n- Pria, usia maksimal 25 tahun\n- Berpenampilan menarik"
     Screening::Config.stub(:enabled?, false) do
-      result = Briefs::SaveAd.call(job:, actor: staff_user("hr_pic"), text: "Yang kami cari\n- Pria, usia maksimal 25 tahun\n- Berpenampilan menarik")
+      refused = Briefs::SaveAd.call(job:, actor: staff_user("hr_pic"), text:)
+      assert refused.needs_reason, "rule flags need the writer's reason (no separate approval step since 17 Oct 2026)"
+      result = Briefs::SaveAd.call(job:, actor: staff_user("hr_pic"), text:, reason: "Test: reason.")
       assert_equal 2, result.flags.size
     end
     assert Briefs::AdCheck.flagged?(job.reload.ad_flags)

@@ -5,6 +5,8 @@
              actions: safe_join([label_link("Download Excel", "fa-download", staff_job_screening_report_export_path(@board.job), purpose: :neutral),
                                  label_link("Back", "fa-arrow-left", staff_job_path(@board.job), purpose: :neutral, icon_end: true)], " ") %>
   <section class="content">
+    <%# The vacancy's workflow above its report (17 Oct 2026): where this report sits in the hiring. %>
+    <%= render "staff/jobs/hiring_progress", progress: HiringProgress.new(@board.job) %>
     <%= render "staff/screening_reports/visibility_notice", board: @board %>
     <%= render "staff/screening_reports/summary", board: @board %>
     <%= render "staff/screening_reports/table", board: @board %>

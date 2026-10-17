@@ -1,0 +1,33 @@
+<%# Where the bank stands, in four figures that each say what to do next: the version in force, the
+    version being worked on and whose move it is, and per section how far the bank is from its
+    minimum (twice the draw, so no applicant sees more than half). %>
+<% questions = bank ? bank.questions.to_a : [] %>
+<% next_step = if bank.nil? then ["Not started", "The HR Admin adds questions below, by hand or with the AI draft."]
+               elsif bank.approved? then ["Approved", "Final. A change starts version #{bank.version + 1} with a reason."]
+               elsif bank.submitted? then ["Waiting for the HR Manager", "Submitted by #{bank.submitted_by.name}, #{wib(bank.submitted_at)}. The HR Manager approves or returns it."]
+               else ["Draft, with the HR Admin", "Submit it when both sections reach their minimum."] end %>
+<div class="test-case-status question-bank-status">
+  <div class="test-case-status__item">
+    <span class="test-case-status__label">In force</span>
+    <span class="test-case-status__value"><%= current_bank ? "Version #{current_bank.version}" : "None yet" %></span>
+    <span class="test-case-status__note"><%= current_bank ? "Approved by #{current_bank.approved_by.name}, #{wib(current_bank.approved_at)}" : "Applicants cannot draw from the bank until the HR Manager approves a version." %></span>
+  </div>
+  <div class="test-case-status__item">
+    <span class="test-case-status__label">Version <%= bank&.version || 1 %> · next step</span>
+    <span class="test-case-status__value"><%= next_step.first %></span>
+    <span class="test-case-status__note"><%= next_step.last %></span>
+  </div>
+  <% QuestionBank::SECTIONS.each do |section, label| %>
+    <% count = questions.count { |q| q.section == section } %>
+    <% minimum = bank ? bank.minimum_for(section) : (section == "technical" ? QuestionBank::DEFAULT_TECHNICAL_DRAW : QuestionBank::DEFAULT_ROLE_DRAW) * QuestionBank::MIN_FACTOR %>
+    <% draw = bank ? bank.draw_for(section) : minimum / QuestionBank::MIN_FACTOR %>
+    <div class="test-case-status__item">
+      <span class="test-case-status__label"><%= label %></span>
+      <span class="test-case-status__value"><%= count %> / <%= minimum %> questions</span>
+      <div class="question-bank-meter" role="img" aria-label="<%= count %> of <%= minimum %> questions">
+        <span style="width: <%= [count * 100 / [minimum, 1].max, 100].min %>%" class="<%= count >= minimum ? 'is-met' : '' %>"></span>
+      </div>
+      <span class="test-case-status__note"><%= count >= minimum ? "Minimum reached." : "#{minimum - count} more needed." %> Each applicant draws <%= draw %>.</span>
+    </div>
+  <% end %>
+</div>

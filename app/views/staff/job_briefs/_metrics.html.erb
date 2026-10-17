@@ -9,7 +9,7 @@
 <div class="row loan-index-summary">
   <%= render "staff/shared/metric", variant: "primary", icon: "fa-file-text-o", label: "Brief status",
              value: job.brief_complete? ? "Complete" : "Draft",
-             caption: job.brief_complete? ? "completed #{l(job.brief_completed_at.in_time_zone.to_date, format: :short)}" : "#{problems.size} items incomplete" %>
+             caption: job.brief_complete? ? (job.brief_completed_at ? "completed #{l(job.brief_completed_at.in_time_zone.to_date, format: :short)}" : "completed") : "#{problems.size} items incomplete" %>
   <%= render "staff/shared/metric", variant: (acts.sum(&:share_percent) == 100 ? "success" : "warning"), icon: "fa-list-ol", label: "Activities",
              value: acts.size, caption: "time share #{acts.sum(&:share_percent)}% of 100%, target 5-8 activities" %>
   <%= render "staff/shared/metric", variant: "info", icon: "fa-check-square-o", label: "Requirements",
