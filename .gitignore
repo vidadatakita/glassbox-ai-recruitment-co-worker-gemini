@@ -41,3 +41,6 @@ docs/*
 
 # Local session-memory folders never belong in this project (team rule, 16 Oct 2026).
 .remember/
+
+# Windows download markers (copying files from a Windows download into WSL creates one per file).
+*:Zone.Identifier
