@@ -10,12 +10,16 @@
         breakdown is the Score matrix below Contact and files. D13 blinding applies to both. %>
     <% matrix = ScoreMatrix.new(@application, blinded: ->(p) { ai_result_blinded?(p) }) %>
     <% scored = matrix.rows.count(&:score) %>
+    <%# The Status caption names the next action, not the label again (layout review, 17 Oct 2026): with
+        every step done it says so, so "In progress" never reads as a contradiction. %>
+    <% next_step = ApplicationProgress.new(@application).then { |p| p.steps.find { |s| s.key == p.current_key } } %>
+    <% status_next = next_step ? "next: #{next_step.label.downcase} (#{next_step.role})" : "every step done; awaiting the applicant's answer to the offer" %>
     <div class="row loan-index-summary">
       <%= render "staff/shared/metric", variant: "success", icon: "fa-line-chart", label: "Cumulative score",
                  value: matrix.cumulative ? matrix.cumulative.to_f : (matrix.any_hidden? ? "hidden" : "-"),
                  caption: matrix.cumulative ? "weighted over #{scored} of #{matrix.rows.size} stages scored" : "no stage scored yet", col: "col-lg-3 col-sm-6" %>
       <%= render "staff/shared/metric", variant: "primary", icon: "fa-flag-o", label: "Status",
-                 value: JobApplication::STATUS_LABELS.fetch(@application.status, @application.status), caption: "current application status", col: "col-lg-3 col-sm-6" %>
+                 value: JobApplication::STATUS_LABELS.fetch(@application.status, @application.status), caption: status_next, col: "col-lg-3 col-sm-6" %>
       <%= render "staff/shared/metric", variant: "info", icon: "fa-shield", label: "Data consent",
                  value: @application.consent_template&.version || "-", caption: "text version, consented #{wib(@application.consent_at)}", col: "col-lg-3 col-sm-6" %>
       <%= render "staff/shared/metric", variant: "warning", icon: "fa-hourglass-half", label: "Retention",

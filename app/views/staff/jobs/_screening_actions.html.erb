@@ -1,5 +1,11 @@
 <%# One action bar (17 Oct 2026): the pages to open on the left, the actions on the right. Each action
     is its own form; none is nested; names and values unchanged. %>
+<%# The screening tools act on CVs, so they appear only once the pipeline holds one (Vida, 17 Oct 2026):
+    with an empty pipeline, Calibration, the two reviews and Start screening had nothing to work on. %>
+<% if board.participations.empty? %>
+  <p class="screening-actions__empty text-muted mb-0"><i class="fa fa-inbox me-1" aria-hidden="true"></i>
+    No CV in the pipeline yet. Calibration, Review before AI, Screening review and Start screening appear once the first application arrives.</p>
+<% else %>
 <div class="screening-actions">
   <div class="screening-actions__links">
     <% if %w[hr_admin hr_manager superadmin].include?(current_user.role) %>
@@ -20,9 +26,16 @@
       <% end %>
     <% end %>
     <% if current_user.role.in?(%w[hr_admin superadmin]) && board.enabled? %>
-      <%= form_with url: staff_job_screening_start_path(job), method: :post, class: "d-inline", data: { turbo: false, submit_guard: true } do %>
-        <%= label_button "Start screening", "fa-play" %>
+      <%# A finished vacancy has nothing to start: the button becomes greyed text with the reason (no
+          form is rendered, so no submit button is ever disabled). %>
+      <% if (reason = vacancy_tools_blocked_reason(job, board)) %>
+        <span class="d-inline-block text-end"><%= waiting_tool "Start screening", "fa-play", reason %></span>
+      <% else %>
+        <%= form_with url: staff_job_screening_start_path(job), method: :post, class: "d-inline", data: { turbo: false, submit_guard: true } do %>
+          <%= label_button "Start screening", "fa-play" %>
+        <% end %>
       <% end %>
     <% end %>
   </div>
 </div>
+<% end %>

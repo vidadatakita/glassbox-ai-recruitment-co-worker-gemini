@@ -6,7 +6,15 @@
     <div class="hris-form-card__icon"><i class="fa fa-balance-scale" aria-hidden="true"></i></div>
     <div><h3>Fairness check <%= ai_tier_badge(:fairness, job: job) %></h3>
       <p>One invented CV, run with the name, the gender and the religion swapped in the original text before redaction. Identical redacted bytes prove the redaction; identical scores prove the model saw no difference. A merit control that must move the score shows the check can fail.</p></div>
-    <div class="hris-form-card__action"><%= label_link "Open fairness check", "fa-arrow-right", staff_job_fairness_check_path(job), purpose: :submit, icon_end: true %></div>
+    <%# Greyed out with its reason while no CV is in the pipeline or the hiring is complete
+        (VacancyToolsHelper). A link, not a submit button, so a disabled look is safe here. %>
+    <div class="hris-form-card__action">
+      <% if (reason = vacancy_tools_blocked_reason(job)) %>
+        <%= waiting_tool "Open fairness check", "fa-arrow-right", reason %>
+      <% else %>
+        <%= label_link "Open fairness check", "fa-arrow-right", staff_job_fairness_check_path(job), purpose: :submit, icon_end: true %>
+      <% end %>
+    </div>
   </div>
 </div>
 <% end %>

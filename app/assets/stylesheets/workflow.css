@@ -346,3 +346,7 @@ body:has(.hris-form-actions:not(.hris-form-actions--static)) .data-chat__fab { b
 .section-fold--waiting:not([open]), .section-fold--history:not([open]) { opacity: .85; }
 .section-fold > summary:focus-visible { outline: 3px solid #E87722; outline-offset: 2px; }
 [id="vacancy-brief"], [id="applicant-portal"], [id="screening"], [id="gerbang-seleksi"], [id="applicants"] { scroll-margin-top: 180px; }
+
+/* A link that is not available yet (vacancy page report and fairness links with an empty pipeline). */
+.link-waiting { cursor: not-allowed; opacity: .65; }
+.hris-form-card__action small.text-muted { text-align: right; font-size: .75rem; }

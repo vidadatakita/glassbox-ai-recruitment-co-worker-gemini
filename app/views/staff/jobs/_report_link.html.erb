@@ -6,7 +6,15 @@
     <div class="hris-form-card__icon"><i class="fa fa-table" aria-hidden="true"></i></div>
     <div><h3>Screening report</h3>
       <p>AI score, technical test score, CV screening result, label, appointments and the hiring manager's pick per applicant; downloadable as Excel.</p></div>
-    <div class="hris-form-card__action"><%= label_link "Open report", "fa-arrow-right", staff_job_screening_report_path(job), purpose: :submit, icon_end: true %></div>
+    <%# Greyed out with its reason while no CV is in the pipeline (VacancyToolsHelper); stays open after
+        the hiring, as its record. A link, not a submit button, so a disabled look is safe here. %>
+    <div class="hris-form-card__action">
+      <% if (reason = vacancy_tools_blocked_reason(job, until_done: false)) %>
+        <%= waiting_tool "Open report", "fa-arrow-right", reason %>
+      <% else %>
+        <%= label_link "Open report", "fa-arrow-right", staff_job_screening_report_path(job), purpose: :submit, icon_end: true %>
+      <% end %>
+    </div>
   </div>
 </div>
 <% end %>

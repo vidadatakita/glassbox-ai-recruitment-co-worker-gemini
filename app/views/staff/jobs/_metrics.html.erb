@@ -26,12 +26,13 @@
   <% worst = no_show.max_by { |_s, n, _t| n } %>
   <%= render "staff/shared/metric", col: col, variant: "warning", icon: "fa-user-times", label: "Did not attend",
              value: "#{no_show.sum { |_s, n, _t| n }} / #{no_show.sum { |_s, _n, t| t }}",
-             caption: worst && worst[1].positive? ? "most at #{CandidateStatus::STAGE_LABELS.fetch(worst[0].code)}" : "of the attendance recorded so far" %>
+             caption: (total = no_show.sum { |_s, _n, t| t }).zero? ? "no attendance recorded yet" :
+                        "of #{total} #{"appointment".pluralize(total)}#{worst && worst[1].positive? ? " · most at #{CandidateStatus::STAGE_LABELS.fetch(worst[0].code)}" : ""}" %>
+  <%# Shown only when a close date is set: an unset date is a tile with no figure and no action (layout
+      review, 17 Oct 2026); the portal card is where a date is set. %>
+  <% if window.closes_at %>
   <%= render "staff/shared/metric", col: col, variant: "info", icon: "fa-clock-o", label: "Closes automatically",
-             value: window.closes_at ? l(window.closes_at.in_time_zone.to_date, format: :short) : "-",
-             caption: if window.closes_at
-                        board.days_left.positive? ? "#{board.days_left} #{'day'.pluralize(board.days_left)} left, at #{window.closes_at.in_time_zone.strftime('%H.%M')} WIB" : "already passed"
-                      else
-                        "not set"
-                      end %>
+             value: l(window.closes_at.in_time_zone.to_date, format: :short),
+             caption: board.days_left.positive? ? "#{board.days_left} #{'day'.pluralize(board.days_left)} left, at #{window.closes_at.in_time_zone.strftime('%H.%M')} WIB" : "already passed" %>
+  <% end %>
 </div>

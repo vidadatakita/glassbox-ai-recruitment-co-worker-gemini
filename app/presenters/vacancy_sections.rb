@@ -19,7 +19,7 @@ class VacancySections
     when :brief then @job.brief_complete? ? "done" : "todo"
     when :portal then portal_state
     when :screening then screening_state
-    when :gate then { "draft" => "waiting", "open" => "todo", "closed" => "done" }.fetch(gate.s1.status, "todo")
+    when :gate then hiring_done? ? "done" : { "draft" => "waiting", "open" => "todo", "closed" => "done" }.fetch(gate.s1.status, "todo")
     when :applicants then applicants_state
     when :funnel then "overview"
     when :window_log then "history"
@@ -36,6 +36,10 @@ class VacancySections
   end
 
   private
+
+  # Portal closed and every place filled (VacancyNextStep): the gate has nothing left to decide, even
+  # while its stage is still formally open (Vida, 17 Oct 2026).
+  def hiring_done? = @hiring_done ||= VacancyNextStep.for(@job, @board.window).done
 
   def portal_state
     state = @board.window.state
