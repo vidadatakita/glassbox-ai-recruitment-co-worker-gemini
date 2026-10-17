@@ -1,0 +1,42 @@
+<%# Vacancy list filter (17 Oct 2026). A GET form of its own (never inside another form); each value
+    travels once; the button reads "Filter" (house wording rule) and "Reset" is a plain link. %>
+<%# Layout (Vida, 17 Oct 2026: "the filter is ugly"): one card with a short header, the four fields and
+    the two buttons on ONE row on desktop, the buttons at the end of that row next to the last field
+    (proximity), never alone under the row. %>
+<section class="hris-form-card job-list-filter-card" aria-labelledby="job-list-filter-title">
+  <div class="hris-form-card__body">
+    <%= form_with url: staff_jobs_path, method: :get, class: "job-list-filter", data: { turbo: false } do %>
+      <div class="job-list-filter__head">
+        <h2 id="job-list-filter-title"><i class="fa fa-filter" aria-hidden="true"></i> Filter vacancies</h2>
+        <% if filter.active? %><span class="portal-state portal-state--info">Filter on</span><% end %>
+      </div>
+      <div class="row g-2 align-items-end">
+        <div class="col-xl-3 col-lg-4 col-md-6">
+          <label class="form-label" for="filter_q">Position</label>
+          <input type="search" class="form-control" id="filter_q" name="q" value="<%= filter.q %>" placeholder="e.g. accounting, admin">
+        </div>
+        <div class="col-xl-2 col-lg-4 col-md-6">
+          <%= render "staff/jobs/filter_multi", id: "filter_status", name: "status", label: "Status", all_label: "All statuses",
+                     options: JobListFilter::STATUSES.to_a, selected: filter.statuses %>
+        </div>
+        <div class="col-xl-2 col-lg-4 col-md-6">
+          <%= render "staff/jobs/filter_multi", id: "filter_city", name: "city", label: "City placement", all_label: "All cities",
+                     options: filter.city_options.map { |c| [c, c] }, selected: filter.cities %>
+        </div>
+        <div class="col-xl-1 col-lg-4 col-md-6">
+          <%= render "staff/jobs/filter_multi", id: "filter_package", name: "package", label: "Package", all_label: "All",
+                     options: JobListFilter::PACKAGES.map { |p| [p, "Package #{p}"] }, selected: filter.packages %>
+        </div>
+        <div class="col-xl-2 col-lg-4 col-md-6">
+          <%= render "staff/jobs/filter_multi", id: "filter_owner", name: "owner", label: "Next action by", all_label: "Anyone",
+                     options: JobListFilter::OWNERS.to_a, selected: filter.owners %>
+        </div>
+        <div class="col-xl-2 col-lg-4 col-12 job-list-filter__actions">
+          <%# Named like every submit button (house rule); "commit" is ignored by the filter. %>
+          <%= label_button "Filter", "fa-filter" %>
+          <% if filter.active? %><%= label_link "Reset", "fa-times", staff_jobs_path, purpose: :neutral %><% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</section>

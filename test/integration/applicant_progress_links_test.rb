@@ -68,11 +68,18 @@ class ApplicantProgressLinksTest < ActionDispatch::IntegrationTest
     assert_select "details.section-fold details.section-fold", 0, "folds are not nested"
   end
 
-  test "control: the brief page's stepper has no section links" do
+  # 17 Oct 2026 (Vida): the brief page's stepper is clickable too (it had no links before); every link
+  # must point at a section on the page or at the technical-test page (brief_progress_links_test.rb).
+  test "the brief page's stepper links only to sections that exist" do
     job = Job.find_by!(title: "Accounting Supervisor")
     sign_in_as User.find_by!(email_address: "admin@glassbox.example")
     get staff_job_brief_path(job)
     assert_response :success
-    assert_select ".hiring-progress a.hiring-progress__link", 0
+    doc = Nokogiri::HTML(response.body)
+    doc.css(".hiring-progress a.hiring-progress__link").each do |a|
+      next unless a["href"].start_with?("#")
+
+      assert doc.at_css(a["href"]), "#{a["href"]} exists on the page"
+    end
   end
 end

@@ -17,7 +17,22 @@
     <% if test_case.criteria.empty? %>
       <p class="text-muted">No criteria yet.</p>
     <% else %>
-      <div class="table-responsive">
+      <%# Two forms of one rubric: a table only on wide screens (1400px and up), and one card per criterion
+          below that, where six columns left the 1/3/5 lines one word wide (Vida, 17 Oct 2026). %>
+      <div class="test-case-criteria-cards">
+        <% test_case.criteria.sort_by { |c| [-c.weight, c.position] }.each do |c| %>
+          <div class="test-case-criterion">
+            <div class="test-case-criterion__head"><strong><%= c.name %></strong><span class="portal-state portal-state--info"><%= c.weight %>%</span>
+              <small class="text-muted">tests: <%= c.activity_text %></small></div>
+            <div class="test-case-criterion__anchors">
+              <% [["1", c.anchor_1], ["3", c.anchor_3], ["5", c.anchor_5]].each do |n, text| %>
+                <div class="test-case-criterion__anchor"><span class="test-case-criterion__score">Score <%= n %></span><%= text %></div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+      <div class="table-responsive test-case-criteria-wide">
         <table class="table align-middle test-case-criteria">
           <thead><tr><th>Criterion</th><th>Activity tested</th><th class="job-brief-num-col">Weight</th><th>Score 1</th><th>Score 3</th><th>Score 5</th></tr></thead>
           <tbody>

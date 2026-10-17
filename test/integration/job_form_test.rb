@@ -24,7 +24,11 @@ class JobFormTest < ActionDispatch::IntegrationTest
     patch staff_job_brief_step_path(job, 4), params: form_params(step4_params(package: 3)).merge(lanjut: "1")
     assert_redirected_to staff_job_test_case_step_path(job)
     get staff_job_test_case_step_path(job)
-    assert_select "form[action=?] button", staff_job_brief_complete_path(job), text: /Complete brief/i
+    # 17 Oct 2026 (Vida): step 5 opens with one next action at the top. With no test yet it points to the
+    # question bank; "Complete brief" appears there once a test is approved (approved_case_read_only and
+    # technical_test_guide tests). Completing now is still refused with the missing test listed below.
+    assert_select "#next-step a[href*='question-bank']", text: /question bank/i
+    assert_select "form[action=?] button", staff_job_brief_complete_path(job), 0
 
     post staff_job_brief_complete_path(job)
     assert_redirected_to staff_job_brief_path(job)

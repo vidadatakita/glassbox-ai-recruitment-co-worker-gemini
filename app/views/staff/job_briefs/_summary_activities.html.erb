@@ -1,6 +1,6 @@
 <%# Parts of a whole: each activity's share with a bar, largest first (information-display §1). %>
 <% acts = job.activities.sort_by { |a| [-a.share_percent, a.position] } %>
-<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-list-ol", title: "Main activities",
+<%= render layout: "staff/job_briefs/card", locals: { id: "brief-activities", icon: "fa-list-ol", title: "Main activities",
            text: "#{acts.size} activities, largest time share first. Total share #{acts.sum(&:share_percent)}% of 100%." } do %>
   <% if acts.empty? %>
     <p class="text-muted mb-0">No activities yet. Activities are entered in step 2.</p>

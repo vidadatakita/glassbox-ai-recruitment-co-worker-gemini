@@ -11,12 +11,18 @@
              subtitle: [@job.golongan_label, Job::EMPLOYMENT_TYPES[@job.employment_type], (@job.headcount && "#{@job.headcount} #{'person'.pluralize(@job.headcount)}")].compact.join(" · "), actions: actions %>
   <section class="content">
     <%# The brief's own workflow (17 Oct 2026): each step's state, when it was saved and by whom. %>
-    <%= render "staff/jobs/hiring_progress", progress: BriefProgress.new(@job), title: "Brief progress", id: "brief-progress" %>
+    <%# Each step is a link (Vida, 17 Oct 2026): to its section on this page, or to the technical-test step,
+        which has its own page; the completion step goes to what still blocks it. %>
+    <%= render "staff/jobs/hiring_progress", progress: BriefProgress.new(@job), title: "Brief progress", id: "brief-progress",
+               targets: { step1: "brief-position", step2: "brief-activities", step3: "brief-requirements", discrimination: "requirement-check",
+                          step4: "brief-package", step5: staff_job_test_case_step_path(@job), complete: (@job.brief_complete? ? "brief-progress" : "brief-problems") } %>
     <%= render "staff/job_briefs/metrics", job: @job, check: @check %>
     <% if @locked %>
       <%= render "staff/job_briefs/lock_notice", locked: true, knockout_locked: true, step: "4" %>
     <% end %>
-    <% unless @job.brief_complete? %>
+    <% if @job.brief_complete? %>
+      <%= render "staff/job_briefs/next_step", job: @job %>
+    <% else %>
       <%= render "staff/job_briefs/open_problems", job: @job, check: @check, links: editor %>
     <% end %>
     <div class="row g-3 job-brief-columns">

@@ -1,0 +1,20 @@
+<%# One multi-select of the vacancy filter: a dropdown of checkboxes (name[] so every ticked value is
+    sent once). The summary shows "All …" when nothing is ticked, the value when one is, "N selected"
+    otherwise; multi_select.js updates it live and closes it on an outside click. Works without JS.
+    Locals: id, name, label, all_label, options ([[value, text], ...]), selected (values). %>
+<% chosen = options.select { |value, _| selected.include?(value) } %>
+<label class="form-label" id="<%= id %>_label"><%= label %></label>
+<details class="multi-select" data-multi-select data-all-label="<%= all_label %>">
+  <summary class="form-select multi-select__summary" aria-labelledby="<%= id %>_label">
+    <span data-multi-select-text><%= chosen.empty? ? all_label : (chosen.one? ? chosen.first.last : "#{chosen.size} selected") %></span>
+  </summary>
+  <div class="multi-select__menu" role="group" aria-labelledby="<%= id %>_label">
+    <% if options.empty? %><p class="text-muted small mb-0">Nothing to choose yet.</p><% end %>
+    <% options.each_with_index do |(value, text), i| %>
+      <label class="multi-select__option" for="<%= id %>_<%= i %>">
+        <input type="checkbox" class="form-check-input" id="<%= id %>_<%= i %>" name="<%= name %>[]" value="<%= value %>" <%= "checked" if selected.include?(value) %>>
+        <span><%= text %></span>
+      </label>
+    <% end %>
+  </div>
+</details>

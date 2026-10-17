@@ -12,11 +12,15 @@
     <span class="test-case-status__value"><%= current_bank ? "Version #{current_bank.version}" : "None yet" %></span>
     <span class="test-case-status__note"><%= current_bank ? "Approved by #{current_bank.approved_by.name}, #{wib(current_bank.approved_at)}" : "Applicants cannot draw from the bank until the HR Manager approves a version." %></span>
   </div>
+  <%# The "next step" card is left out once the newest version is the one in force: the guide at the top
+      of the page says the next step, and "In force" already names the version. %>
+  <% unless bank&.approved? && current_bank&.id == bank.id %>
   <div class="test-case-status__item">
     <span class="test-case-status__label">Version <%= bank&.version || 1 %> · next step</span>
     <span class="test-case-status__value"><%= next_step.first %></span>
     <span class="test-case-status__note"><%= next_step.last %></span>
   </div>
+  <% end %>
   <% QuestionBank::SECTIONS.each do |section, label| %>
     <% count = questions.count { |q| q.section == section } %>
     <% minimum = bank ? bank.minimum_for(section) : (section == "technical" ? QuestionBank::DEFAULT_TECHNICAL_DRAW : QuestionBank::DEFAULT_ROLE_DRAW) * QuestionBank::MIN_FACTOR %>

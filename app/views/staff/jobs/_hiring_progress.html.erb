@@ -23,7 +23,9 @@
         <% state = step.done? ? "done" : (step.key == progress.current_key ? "current" : "todo") %>
         <li class="hiring-progress__step hiring-progress__step--<%= state %><%= " is-last-done" if step.key == last_done %>" aria-current="<%= state == "current" ? "step" : "false" %>">
           <% target = targets[step.key] %>
-          <% if target %><a class="hiring-progress__link" href="#<%= target %>" data-open-section data-turbo="false" title="Show the <%= step.label %> section"><% end %>
+          <%# A target starting with "/" is another page (the brief's technical-test step); otherwise an id on this page. %>
+          <% if target&.start_with?("/") %><a class="hiring-progress__link" href="<%= target %>" title="Open <%= step.label %>">
+          <% elsif target %><a class="hiring-progress__link" href="#<%= target %>" data-open-section data-turbo="false" title="Show the <%= step.label %> section"><% end %>
           <span class="hiring-progress__dot"><i class="fa <%= step.done? ? step.icon : (state == "current" ? "fa-hourglass-half" : step.icon) %>" aria-hidden="true"></i></span>
           <span class="hiring-progress__label"><%= step.label %></span>
           <% unless step.count.nil? %>

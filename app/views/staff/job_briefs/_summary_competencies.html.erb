@@ -1,7 +1,7 @@
 <%# Grouped by layer in lens order (§2.3), each with its count and an empty state. %>
 <% comps = job.competencies.to_a %>
 <% required = Briefs::Coverage.required(job.golongan) %>
-<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-sitemap", tone: "warning", title: "Competency map",
+<%= render layout: "staff/job_briefs/card", locals: { id: "brief-competencies", icon: "fa-sitemap", tone: "warning", title: "Competency map",
            text: "#{comps.size} competencies, grouped by layer. Each competency is assessed in one stage." } do %>
   <% Competency::LAYERS.each do |layer, label| %>
     <% list = comps.select { |c| c.layer == layer } %>

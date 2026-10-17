@@ -1,6 +1,6 @@
 <% plan = job.stage_plan || {} %>
 <% stages = job.stages.index_by(&:code) %>
-<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-cubes", tone: "info", title: "Package & stages",
+<%= render layout: "staff/job_briefs/card", locals: { id: "brief-package", icon: "fa-cubes", tone: "info", title: "Package & stages",
            text: job.package ? "#{package_label(job.package)}; recommended for #{job.golongan_label}: #{Briefs::PackageAdvisor.recommended(job.golongan).map { |p| package_label(p) }.join(' or ')}." : "No package chosen yet. The package is chosen in step 4." } do %>
   <% if job.package_override_reason.present? && job.package && !Briefs::PackageAdvisor.recommended?(job.golongan, job.package) %>
     <p class="job-brief-insight">Package outside the recommendation. Reason: <%= job.package_override_reason %></p>

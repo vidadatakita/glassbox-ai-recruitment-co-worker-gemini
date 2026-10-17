@@ -11,20 +11,44 @@
 <section id="question-bank" class="question-bank" aria-labelledby="question-bank-title">
   <header class="question-bank__intro">
     <h2 id="question-bank-title"><i class="fa fa-list-ol" aria-hidden="true"></i> Competency test bank</h2>
-    <p>Questions every applicant answers in step 3 of the application, once the HR Manager approves the bank: technical competency (the job's activities) and role competency (the job's competencies). Each applicant gets a random draw, so no two applicants see the same set. The HR Admin builds and submits the bank; the HR Manager approves it.</p>
+    <p>Applicants answer a random draw of these questions in step 3 of the application. The HR Admin builds and submits the bank; the HR Manager approves it.</p>
   </header>
   <%= render "staff/job_briefs/errors", errors: bank_errors %>
   <%= render "staff/test_cases/bank_status", job: job, bank: bank, current_bank: current_bank %>
   <%= render "staff/test_cases/bank_review", job: job, bank: bank, editor: editor if bank %>
-  <% if drafting || new_version %>
+  <% if drafting %>
     <%= render "staff/test_cases/bank_settings", job: job, bank: bank %>
   <% end %>
   <% if drafting %>
     <%= render "staff/test_cases/bank_ai", job: job, bank: bank, proposal: proposal %>
     <%= render "staff/test_cases/bank_import", job: job, bank: bank %>
   <% end %>
-  <% QuestionBank::SECTIONS.each do |section, label| %>
-    <%= render "staff/test_cases/bank_section", job: job, bank: bank, section: section, label: label, editable: drafting && bank.present? %>
+  <%# An approved or submitted bank is read, not edited: its questions fold under one summary line and
+      "Change the bank" (an approved one) folds the new-version form, so the page is not one long form
+      (Vida, 17 Oct 2026: "tidy the layout"). A draft shows everything open for editing. %>
+  <% if drafting %>
+    <% QuestionBank::SECTIONS.each do |section, label| %>
+      <%= render "staff/test_cases/bank_section", job: job, bank: bank, section: section, label: label, editable: bank.present? %>
+    <% end %>
+  <% elsif bank %>
+    <details class="hris-form-card question-bank-fold">
+      <summary class="question-bank-fold__summary"><i class="fa fa-list-ul" aria-hidden="true"></i>
+        <span>Questions in version <%= bank.version %> (<%= bank.questions.size %>)</span><small class="text-muted">show</small></summary>
+      <div class="question-bank-fold__body">
+        <% QuestionBank::SECTIONS.each do |section, label| %>
+          <%= render "staff/test_cases/bank_section", job: job, bank: bank, section: section, label: label, editable: false %>
+        <% end %>
+      </div>
+    </details>
+    <% if new_version %>
+      <details class="hris-form-card question-bank-fold">
+        <summary class="question-bank-fold__summary"><i class="fa fa-code-fork" aria-hidden="true"></i>
+          <span>Change the bank (starts version <%= bank.version + 1 %>)</span><small class="text-muted">open</small></summary>
+        <div class="question-bank-fold__body">
+          <%= render "staff/test_cases/bank_settings", job: job, bank: bank %>
+        </div>
+      </details>
+    <% end %>
   <% end %>
   <% if drafting %>
     <%= render "staff/test_cases/bank_question_form", job: job, bank: bank, question: nil, ai: local_assigns[:ai_question] %>

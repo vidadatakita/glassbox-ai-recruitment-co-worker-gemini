@@ -1,0 +1,25 @@
+<%# The one next action on step 5 (TechnicalTestGuide), at the top of the page so nobody has to search
+    for it. "Complete brief" is its own form here (never inside another form); other actions are links to
+    the place on the page or the next screen. %>
+<% g = TechnicalTestGuide.new(job, current_user, self).guide %>
+<div class="test-guide test-guide--<%= g.tone %>" id="next-step" role="status">
+  <div class="test-guide__icon"><i class="fa <%= { "success" => "fa-check-circle", "warning" => "fa-exclamation-circle", "muted" => "fa-hourglass-half" }.fetch(g.tone, "fa-arrow-circle-right") %>" aria-hidden="true"></i></div>
+  <div class="test-guide__body">
+    <span class="test-guide__eyebrow">Next step</span>
+    <strong class="test-guide__title"><%= g.title %></strong>
+    <span class="test-guide__text"><%= g.text %></span>
+    <% if g.problems.any? %>
+      <ul class="mb-0"><% g.problems.each do |p| %><li><%= link_to "Step #{p.step}", brief_step_link(job, p.step) %>: <%= p.message %></li><% end %></ul>
+    <% end %>
+  </div>
+  <div class="test-guide__action">
+    <% if g.complete? %>
+      <%= button_to staff_job_brief_complete_path(job), method: :post, class: "btn btn-success label-btn",
+                    form: { data: { turbo: false, submit_guard: true } } do %>
+        <i class="fa fa-check label-btn-icon me-2" aria-hidden="true"></i><span>Complete brief</span>
+      <% end %>
+    <% elsif g.href %>
+      <%= label_link g.label, "fa-arrow-right", g.href, icon_end: true %>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,22 @@
+<%# What to do once the brief is complete (Vida, 17 Oct 2026: "if the brief is complete, what should the
+    user do?"). The step comes from VacancyNextStep, the same rule as the vacancy list's "Next step"
+    column, so the two never disagree. Same look as the step-5 guide (test-guide). Links only, no form. %>
+<% window = ApplicationWindow.new(job) %>
+<% step = VacancyNextStep.for(job, window) %>
+<% href, button = case step.label
+                  when "Write the job ad" then [staff_job_ad_path(job), "Write the job ad"]
+                  when "Open the Applicant portal" then [staff_job_path(job, anchor: "applicant-portal"), "Go to the applicant portal"]
+                  else [staff_job_path(job), "Open the vacancy"]
+                  end %>
+<% text = { "Write the job ad" => "The brief is complete. Write the job ad next (Gemini can draft it from the brief); then open the applicant portal.",
+            "Open the Applicant portal" => "The brief and the job ad are ready. Open the applicant portal on the vacancy page so applicants can apply." }
+            .fetch(step.label, "The brief is complete. The vacancy page shows the applicants and the work that is waiting.") %>
+<div class="test-guide test-guide--<%= step.done ? "success" : "info" %>" id="next-step" role="status">
+  <div class="test-guide__icon"><i class="fa <%= step.done ? "fa-check-circle" : "fa-arrow-circle-right" %>" aria-hidden="true"></i></div>
+  <div class="test-guide__body">
+    <span class="test-guide__eyebrow">Next step</span>
+    <strong class="test-guide__title"><%= step.label %></strong>
+    <span class="test-guide__text"><%= text %></span>
+  </div>
+  <div class="test-guide__action"><%= label_link button, "fa-arrow-right", href, icon_end: true %></div>
+</div>

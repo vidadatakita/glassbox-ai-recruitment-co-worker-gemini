@@ -5,11 +5,15 @@
              subtitle: "Vacancies with their brief status, Applicant portal and number of applications.",
              actions: (label_link("Add vacancy", "fa-plus", staff_new_job_path) if current_user.role.in?(%w[hr_admin superadmin])) %>
   <section class="content">
-    <% open_count = @windows.values.count(&:open?) %>
+    <%= render "staff/jobs/filter", filter: @filter %>
+    <% if @filter.active? %>
+      <p class="text-muted small mb-2" role="status"><strong>Showing <%= @jobs.size %> of <%= @all_jobs.size %> vacancies</strong> (filtered). The figures below describe the vacancies shown.</p>
+    <% end %>
+    <% open_count = @jobs.count { |j| @windows[j.id].open? } %>
     <% complete_count = @jobs.count(&:brief_complete?) %>
     <%# Information display (house rule "every figure informs"): the applications total, and the vacancy
         that draws the most, so the card says what is largest, not only how many. %>
-    <% total_apps = @windows.values.sum(&:application_count) %>
+    <% total_apps = @jobs.sum { |j| @windows[j.id].application_count } %>
     <% top_job = @jobs.max_by { |j| @windows[j.id].application_count } %>
     <div class="row loan-index-summary">
       <%= render "staff/shared/metric", variant: "primary", icon: "fa-briefcase", label: "Vacancies",
@@ -23,12 +27,12 @@
     </div>
     <div class="card custom-card">
       <div class="card-body table-responsive">
-        <p class="text-muted small mb-2">Each vacancy's applications as a share of all <strong><%= total_apps %></strong> received; the next step says what to do now.</p>
+        <p class="text-muted small mb-2">Each vacancy's applications as a share of the <strong><%= total_apps %></strong> received by <%= @filter.active? ? "the vacancies shown" : "all vacancies" %>; the next step says what to do now.</p>
         <table class="table table-hover align-middle mb-0 table-stack">
           <thead><tr><th>Vacancy</th><th>Location</th><th>Brief</th><th>Portal</th><th class="text-end">Applications</th><th>Next step</th><th></th></tr></thead>
           <tbody>
             <% if @jobs.empty? %>
-              <tr><td colspan="7" class="text-muted">No vacancies yet. A new vacancy is created with the Add vacancy button.</td></tr>
+              <tr><td colspan="7" class="text-muted"><%= @filter.active? ? "No vacancy matches this filter. Change it or press Reset." : "No vacancies yet. A new vacancy is created with the Add vacancy button." %></td></tr>
             <% end %>
             <% @jobs.each do |job| %>
               <% window = @windows[job.id] %>
@@ -44,18 +48,12 @@
                   <span class="job-share__pct"><%= share %>%</span>
                   <span class="job-share__bar" aria-hidden="true"><span style="width: <%= share %>%"></span></span>
                 </td>
-                <%# A closed portal with every place filled is finished (Vida, 17 Oct 2026); "filled" is
-                    HeadcountProgress's count, the same as the vacancy page. While the portal is still
-                    open and the places are already filled, the next step is closing it. %>
-                <% filled = job.brief_complete? && window.state != :never_opened && HeadcountProgress.new(job).complete? %>
+                <%# The next step and whose move it is: VacancyNextStep (one owner of the rule, also used by
+                    the filter). A closed portal with every place filled is finished (Vida, 17 Oct 2026). %>
+                <% step = @next_steps[job.id] %>
                 <td data-label="Next step">
-                  <% if !job.brief_complete? %>Complete the brief
-                  <% elsif job.ad_text.blank? %>Write the job ad
-                  <% elsif window.state == :never_opened %>Open the Applicant portal
-                  <% elsif window.open? && filled %>All places filled: close the portal
-                  <% elsif window.open? %>Watch incoming applications
-                  <% elsif filled %><span class="portal-state portal-state--success"><i class="fa fa-check" aria-hidden="true"></i> Done: all places filled</span>
-                  <% else %>Continue the selection<% end %>
+                  <% if step.done %><span class="portal-state portal-state--success"><i class="fa fa-check" aria-hidden="true"></i> <%= step.label %></span>
+                  <% else %><%= step.label %><% end %>
                 </td>
                 <td class="hris-table-actions">
                   <%= link_to staff_job_path(job), class: "btn btn-sm btn-primary-light", title: "View vacancy details" do %>
@@ -87,7 +85,7 @@
         <div class="loan-index-status-card">
           <h3>Portal status</h3>
           <%# States with vacancies first; the empty ones stay one click away instead of five "0" rows. %>
-          <% counts = PortalHelper::WINDOW_LABELS.to_h { |state, _| [state, @windows.values.count { |w| w.state == state }] } %>
+          <% counts = PortalHelper::WINDOW_LABELS.to_h { |state, _| [state, @jobs.count { |j| @windows[j.id].state == state }] } %>
           <% used, empty = PortalHelper::WINDOW_LABELS.partition { |state, _| counts[state].positive? } %>
           <% status_row = ->(state, label) { tag.div { safe_join([tag.span(class: "loan-index-status-dot #{state == :open ? "loan-index-status-dot--success" : "loan-index-status-dot--muted"}"), label, " ", tag.strong("#{counts[state]} #{"vacancy".pluralize(counts[state])}")]) } } %>
           <% used.each do |state, (label, _tone)| %><%= status_row.(state, label) %><% end %>

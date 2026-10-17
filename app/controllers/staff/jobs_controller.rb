@@ -4,9 +4,14 @@ module Staff
     before_action :load_job, only: %i[show approve_ad]
     before_action -> { require_role!(:hr_admin) }, only: :approve_ad
 
+    # @all_jobs: every vacancy of the org; @jobs: the ones the filter keeps (JobListFilter). The figures
+    # on the page describe @jobs, and say so when a filter is on.
     def index
-      @jobs = org_jobs.includes(:client_company).order(:id).to_a
-      @windows = @jobs.to_h { |job| [job.id, ApplicationWindow.new(job)] }
+      @all_jobs = org_jobs.includes(:client_company).order(:id).to_a
+      @windows = @all_jobs.to_h { |job| [job.id, ApplicationWindow.new(job)] }
+      @next_steps = @all_jobs.to_h { |job| [job.id, VacancyNextStep.for(job, @windows[job.id])] }
+      @filter = JobListFilter.new(params, cities: JobListFilter.cities_for(@all_jobs))
+      @jobs = @filter.apply(@all_jobs, @next_steps)
     end
 
     def show

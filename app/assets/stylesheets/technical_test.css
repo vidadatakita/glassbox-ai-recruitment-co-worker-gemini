@@ -140,3 +140,74 @@
 .portal-headcount__label { font-size: .75rem; font-weight: 600; color: #5d71a0; text-transform: uppercase; letter-spacing: .02em; }
 .portal-headcount__value { font-size: 1.15rem; }
 .portal-headcount__note { font-size: .85rem; color: #4b5563; margin: 0; }
+/* Vacancy list filter (17 Oct 2026): the search input and the selects share one height, so their labels
+   sit on one line (a type=search input is a few pixels taller in some browsers). */
+.job-list-filter input[type="search"] { -webkit-appearance: none; appearance: none; }
+/* One height for the search box and the selects so the four labels share a baseline. The theme's
+   .form-control padding is taller than .form-select's and won over the earlier calc() height. */
+.job-list-filter .form-control, .job-list-filter .form-select { height: 2.125rem; min-height: 0; padding-top: .3rem; padding-bottom: .3rem; line-height: 1.5; box-sizing: border-box; }
+/* Step 5 next-step guide (17 Oct 2026): one action, at the top. */
+.test-guide { display: flex; flex-wrap: wrap; gap: .75rem 1rem; align-items: center; border: 1px solid var(--default-border); border-left: 5px solid rgb(var(--primary-rgb)); border-radius: .5rem; padding: .9rem 1.1rem; margin-bottom: 1.25rem; background: var(--custom-white, #fff); }
+.test-guide--success { border-left-color: rgb(var(--success-rgb)); }
+.test-guide--warning { border-left-color: rgb(var(--warning-rgb)); }
+.test-guide--muted { border-left-color: #9ca3af; }
+.test-guide__icon { font-size: 1.6rem; color: rgb(var(--primary-rgb)); }
+.test-guide--success .test-guide__icon { color: rgb(var(--success-rgb)); }
+.test-guide--warning .test-guide__icon { color: #b26b00; }
+.test-guide--muted .test-guide__icon { color: #6b7280; }
+.test-guide__body { flex: 1 1 18rem; display: grid; gap: .15rem; }
+.test-guide__eyebrow { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #5d71a0; }
+.test-guide__title { font-size: 1.05rem; }
+.test-guide__text { color: #4b5563; }
+.test-guide__action { margin-left: auto; }
+@media (max-width: 575px) { .test-guide__action { margin-left: 0; width: 100%; } .test-guide__action .btn { width: 100%; } }
+
+/* Vacancy list filter card: header line, one row of fields with the buttons at its end, space below. */
+/* overflow visible: the card theme clips (overflow hidden), which cut the checkbox menus off and let
+   clicks land on the tiles below. position + z-index keep the open menu above those tiles. */
+.job-list-filter-card { margin-bottom: 1.25rem; overflow: visible; position: relative; z-index: 20; }
+.job-list-filter-card .hris-form-card__body { padding: 1rem 1.25rem 1.1rem; }
+.job-list-filter__head { display: flex; align-items: center; gap: .6rem; margin-bottom: .6rem; }
+.job-list-filter__head h2 { font-size: .95rem; font-weight: 700; margin: 0; color: #041E42; }
+.job-list-filter__head h2 .fa { color: #E87722; margin-right: .3rem; }
+.job-list-filter .form-label { font-size: .8rem; font-weight: 600; margin-bottom: .3rem; }
+.job-list-filter__actions { display: flex; gap: .5rem; align-items: center; }
+.job-list-filter__actions .btn { height: 2.125rem; display: inline-flex; align-items: center; white-space: nowrap; }
+@media (max-width: 991.98px) { .job-list-filter__actions { justify-content: flex-end; } }
+/* Approved bank folds (17 Oct 2026). */
+.question-bank-fold { margin-bottom: 1rem; }
+.question-bank-fold__summary { display: flex; gap: .6rem; align-items: center; padding: .9rem 1.1rem; cursor: pointer; font-weight: 600; list-style: none; }
+.question-bank-fold__summary::-webkit-details-marker { display: none; }
+.question-bank-fold__summary small { margin-left: auto; font-weight: 400; }
+.question-bank-fold[open] .question-bank-fold__summary small { visibility: hidden; }
+.question-bank-fold__body { padding: 0 1.1rem 1rem; }
+.question-bank-fold__body > .hris-form-card { box-shadow: none; }
+.question-bank-status:has(> .test-case-status__item:nth-child(3):last-child) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 991px) { .question-bank-status:has(> .test-case-status__item:nth-child(3):last-child) { grid-template-columns: 1fr; } }
+
+/* Checkbox dropdown (vacancy filter): the closed summary looks like the other selects; the menu floats
+   over the page below it. */
+.multi-select { position: relative; }
+.multi-select > summary { list-style: none; cursor: pointer; display: flex; align-items: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.multi-select > summary::-webkit-details-marker { display: none; }
+.multi-select > summary span { overflow: hidden; text-overflow: ellipsis; }
+.multi-select[open] > summary { border-color: #1D428A; box-shadow: 0 0 0 .2rem rgba(29, 66, 138, .15); }
+.multi-select__menu { position: absolute; z-index: 30; top: calc(100% + .25rem); left: 0; min-width: 100%; width: max-content; max-width: 20rem;
+  max-height: 16rem; overflow-y: auto; background: #fff; border: 1px solid var(--default-border); border-radius: .5rem;
+  box-shadow: 0 10px 28px rgba(4, 30, 66, .16); padding: .35rem; }
+.multi-select__option { display: flex; align-items: center; gap: .55rem; padding: .4rem .55rem; border-radius: .35rem; cursor: pointer; font-size: .875rem; margin: 0; }
+.multi-select__option:hover { background: rgba(29, 66, 138, .06); }
+.multi-select__option .form-check-input { margin: 0; flex: 0 0 auto; }
+.job-list-filter .multi-select__summary { height: 2.125rem; padding-top: .3rem; padding-bottom: .3rem; }
+/* Step 5 at medium widths (17 Oct 2026): short step labels under 1200px; the rubric as cards under 1400px. */
+.job-brief-stepper__short { display: none; }
+@media (max-width: 1199.98px) { .job-brief-stepper__full { display: none; } .job-brief-stepper__short { display: inline; } }
+.test-case-criteria-wide { display: none; }
+@media (min-width: 1400px) { .test-case-criteria-wide { display: block; } .test-case-criteria-cards { display: none; } }
+.test-case-criteria-cards { display: grid; gap: .75rem; margin-bottom: 1rem; }
+.test-case-criterion { border: 1px solid var(--default-border); border-radius: .5rem; padding: .75rem 1rem; }
+.test-case-criterion__head { display: flex; flex-wrap: wrap; gap: .5rem; align-items: baseline; margin-bottom: .5rem; }
+.test-case-criterion__anchors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; }
+.test-case-criterion__anchor { background: rgba(var(--light-rgb), 1); border-radius: .4rem; padding: .5rem .65rem; font-size: .9rem; }
+.test-case-criterion__score { display: block; font-size: .72rem; font-weight: 700; text-transform: uppercase; color: #5d71a0; margin-bottom: .15rem; }
+@media (max-width: 767.98px) { .test-case-criterion__anchors { grid-template-columns: 1fr; } }

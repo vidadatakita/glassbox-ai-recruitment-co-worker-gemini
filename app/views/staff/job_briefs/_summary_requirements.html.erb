@@ -1,7 +1,7 @@
 <%# Three tiers, each its own group with its count and an explicit empty state (house view
     convention: multi-value lists are grouped separately, never merged). %>
 <% reqs = job.requirements.includes(:knockout_question).to_a %>
-<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-check-square-o", title: "Requirements",
+<%= render layout: "staff/job_briefs/card", locals: { id: "brief-requirements", icon: "fa-check-square-o", title: "Requirements",
            text: "Each requirement with the evidence looked for in the CV. Knockout questions are asked on the application page; a \"no\" answer eliminates at CV screening." } do %>
   <div class="row g-3">
     <% Requirement::TIERS.each do |tier, label| %>

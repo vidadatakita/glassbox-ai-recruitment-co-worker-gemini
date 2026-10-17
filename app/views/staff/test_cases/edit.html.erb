@@ -5,10 +5,11 @@
 <% editor = TestCases::Authority.may_edit?(current_user, @job) %>
 <div class="portal-page loan-index-page layout-decoration-page job-brief-page test-case-page">
   <%= render "staff/shared/page_header", eyebrow: "Vacancy brief", title: @job.title,
-             subtitle: "Step 5 of 5: Technical test. A case study per position, taken by the applicant after applying, scored by the reviewer with a rubric.",
+             subtitle: "Step 5 of 5: Technical test. A competency question bank applicants answer while applying, and an optional case document taken after CV screening.",
              actions: label_link("Back", "fa-arrow-left", staff_job_brief_path(@job), purpose: :neutral, icon_end: true) %>
   <section class="content salary-schema-page">
     <%= render "staff/job_briefs/stepper", job: @job, step: "5", check: @check %>
+    <%= render "staff/test_cases/guide", job: @job %>
     <%= render "staff/job_briefs/errors", errors: @errors %>
     <%= render "staff/test_cases/bank", job: @job, bank: @bank, current_bank: @current_bank, proposal: @bank_proposal, bank_errors: @bank_errors || [], ai_question: @ai_question %>
     <h2 class="question-bank-divider" id="case-document"><i class="fa fa-file-text-o" aria-hidden="true"></i> Case document <small class="text-muted">uploaded case study, taken after CV screening</small></h2>
@@ -37,21 +38,7 @@
     <% else %>
       <%= render "staff/test_cases/version_detail", job: @job, test_case: @latest, current: @current %>
     <% end %>
-    <%# Step 5 is the brief's last step for this package, so the brief is completed here (it needs an
-        HR-approved test version; Briefs::BriefCheck says what else is missing). Its own form. %>
-    <% if !@job.brief_complete? && current_user.role.in?(Staff::JobBriefsController::EDITORS.map(&:to_s)) %>
-      <%# Same look as the action bar, but not sticky: the test form above has its own sticky "Save",
-          and two sticky bars stack and hide it. %>
-      <div class="hris-form-actions hris-form-actions--static">
-        <div class="hris-form-actions__note"><i class="fa fa-flag-checkered" aria-hidden="true"></i>
-          <span><strong>Last step.</strong> Complete the brief once HR has approved a test version; if anything is still missing, the brief page shows it.</span></div>
-        <div class="hris-form-actions__buttons">
-          <%= button_to staff_job_brief_complete_path(@job), method: :post, class: "btn btn-success label-btn",
-                        form: { data: { turbo: false, submit_guard: true } } do %>
-            <i class="fa fa-check label-btn-icon me-2" aria-hidden="true"></i><span>Complete brief</span>
-          <% end %>
-        </div>
-      </div>
-    <% end %>
+    <%# "Complete brief" lives in the next-step guide at the top (staff/test_cases/_guide), shown when the
+        test is approved; it used to sit here at the bottom, where it was missed (Vida, 17 Oct 2026). %>
   </section>
 </div>

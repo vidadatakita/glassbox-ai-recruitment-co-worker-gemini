@@ -8,7 +8,10 @@
       <li class="job-brief-stepper__item job-brief-stepper__item--<%= state %>">
         <% body = capture do %>
           <span class="job-brief-stepper__num"><% if state == "done" %><i class="fa fa-check" aria-hidden="true"></i><% else %><%= number %><% end %></span>
-          <span class="job-brief-stepper__text"><strong><%= title %></strong>
+          <%# Under 1200px the short label shows instead of the full one, so no label breaks into one word per
+              line (Vida, 17 Oct 2026: the five steps at ~1120px). The full title stays for screen readers. %>
+          <% short = { "1" => "Position", "2" => "Activities", "3" => "Requirements", "4" => "Package", "5" => "Technical test" }[number.to_s] || title %>
+          <span class="job-brief-stepper__text"><strong><span class="job-brief-stepper__full"><%= title %></span><span class="job-brief-stepper__short" aria-hidden="true"><%= short %></span></strong>
             <small><%= if state == "current" then "In progress" elsif open_problems.nil? then "Not started" elsif open_problems.zero? then "Complete" else "#{open_problems} items incomplete" end %></small></span>
         <% end %>
         <% if job.persisted? && number != step %>

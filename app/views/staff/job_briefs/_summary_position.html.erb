@@ -1,4 +1,4 @@
-<%= render layout: "staff/job_briefs/card", locals: { icon: "fa-briefcase", title: "Position & 90-day target", text: "Position, grade, headcount, and the result expected after 90 days." } do %>
+<%= render layout: "staff/job_briefs/card", locals: { id: "brief-position", icon: "fa-briefcase", title: "Position & 90-day target", text: "Position, grade, headcount, and the result expected after 90 days." } do %>
   <dl class="job-brief-facts">
     <dt>Grade</dt><dd><%= job.golongan_label %></dd>
     <dt>Headcount</dt><dd><%= job.headcount ? "#{job.headcount} #{'person'.pluralize(job.headcount)}" : "-" %></dd>
