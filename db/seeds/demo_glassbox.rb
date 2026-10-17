@@ -479,8 +479,33 @@ module DemoGlassbox
     require_relative "demo_question_bank"
     admin_staff = jobs.find { |job| job.title == JOBS[:adm][:title] }
     DemoQuestionBank.seed!(job: admin_staff, admin: consultant, manager: reviewer) if admin_staff
+    flagged_requirement!(admin_staff, hr:, now:) if admin_staff
     report(jobs, links)
     jobs
+  end
+
+  # The discrimination-check scene (the team lead, 18 Oct 2026): ONE requirement on Admin Staff that names
+  # a protected attribute (age), added AFTER the portal opened and the applicants were screened, so
+  # opening and screening are unchanged, and checked through Briefs::RequirementCheck like the brief
+  # screen does. The rule pass flags it "replace" with the standard's reason; the seed has the AI off, so
+  # the neutral wording the AI would propose is written here (invented). Nothing is applied: the line
+  # stays open until a person decides it on the brief page. Not on Accounting Supervisor: an open line
+  # turns that brief's "discrimination check" step back to not done, and the video films vacancy 1.
+  # Idempotent: added once, by its text.
+  FLAGGED_REQUIREMENT = { text: "Maximum age 30", evidence: "Date of birth in the CV",
+                          replacement: "Can keep up with a high daily volume of documents and front-desk visitors" }.freeze
+
+  def flagged_requirement!(job, hr:, now:)
+    return if job.requirements.exists?(text: FLAGGED_REQUIREMENT[:text])
+
+    job.requirements.create!(tier: "nilai_tambah", text: FLAGGED_REQUIREMENT[:text], cv_evidence: FLAGGED_REQUIREMENT[:evidence],
+                             position: job.requirements.maximum(:position).to_i + 1)
+    lines = Briefs::RequirementCheck.run!(job:, actor: hr, now:, record: false)
+    doc = job.reload.requirement_check.deep_dup
+    doc["lines"] = lines.map do |line|
+      line["text"] == FLAGGED_REQUIREMENT[:text] && line["replacement"].to_s.empty? ? line.merge("replacement" => FLAGGED_REQUIREMENT[:replacement]) : line
+    end
+    job.update!(requirement_check: doc)
   end
 
   # TENANCY=single: exactly one client company exists. Created only on an empty install.

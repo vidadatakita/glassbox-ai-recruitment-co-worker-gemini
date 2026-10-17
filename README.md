@@ -1,4 +1,4 @@
-# GlassBox: AI Recruitment Co-worker
+# AiCoHire by GlassBox: AI Recruitment Co-worker
 
 **Evidence you can see. Decisions someone owns. Merit that counts.**
 
@@ -15,7 +15,7 @@ CV; sensitive data is removed before any model call; every applicant always sees
 | `docs/GLASSBOX-PLAN.md` | Project plan: origin of the code, merit analysis, task list A1–A11, project rules, team decisions |
 | `docs/FLOW-v2.1-glassbox.md` | The 12-step prototype flow, the three checks, roadmap, verified evidence (§5.1), team decision log (§7) |
 | `docs/BUILD-PLAN-18-OCT.md` | Timeline 16–18 Oct, proposed owners, submission gates, cut order |
-| `docs/VIDEO-SCRIPT-and-DECK-v2.1.md` | Video script (10 scenes) and 10-slide deck outline, with the claims-check table |
+| `docs/video-material/` | Everything for the video: `VIDEO-NARRATION-aicohire.md` (the 3-minute script for three presenters, claims-checked against the live site), `VIDEO-SCRIPT-and-DECK-v2.1.md` (earlier script and the 10-slide deck outline), `screens/` (storyboard screenshots) |
 | `docs/FIT-CHECK-three-topics.md` | Why this topic was chosen against the judging criteria |
 
 ## Project rules

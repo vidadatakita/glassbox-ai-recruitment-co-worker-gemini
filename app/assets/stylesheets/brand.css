@@ -28,3 +28,7 @@
 .brand--candidate { margin: 0 auto .75rem; padding: 0 .25rem; }
 .brand--candidate .brand__mark { width: 1.75rem; height: 1.75rem; border-radius: .45rem; }
 .brand--candidate .brand__word { font-size: 1rem; }
+
+/* "by GlassBox" after the AiCoHire wordmark: the maker, quieter than the product name. */
+.brand__by { font-weight: 600; font-size: .72em; color: #53565A; margin-left: .3em; letter-spacing: 0; }
+@media (max-width: 575.98px) { .brand--header .brand__by { display: none; } }

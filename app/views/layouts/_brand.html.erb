@@ -1,4 +1,4 @@
-<%# The GlassBox brand, one partial for every surface (senior-uiux: a feature is a partial, the
+<%# The AiCoHire by GlassBox brand, one partial for every surface (senior-uiux: a feature is a partial, the
     layout only renders it). variant:
       :header    staff header: cube tile + wordmark + the client company's name
       :auth      sign-in card hero: the full logo on its own navy ground, rounded
@@ -21,7 +21,9 @@
 <% else %>
   <div class="brand brand--<%= variant %>">
     <%= image_tag "glassbox-mark.png", alt: "", class: "brand__mark", width: 244, height: 256 %>
-    <span class="brand__word" aria-label="GlassBox"><span class="brand__word-glass">Glass</span><span class="brand__word-box">Box</span></span>
+    <%# Product name (the team lead, 18 Oct 2026): "AiCoHire by GlassBox" on every screen. AiCoHire is the
+        product, GlassBox the maker; the logo image stays the GlassBox cube. %>
+    <span class="brand__word" aria-label="AiCoHire by GlassBox"><span class="brand__word-glass">AiCo</span><span class="brand__word-box">Hire</span><span class="brand__by"> by GlassBox</span></span>
     <% if company.present? %>
       <span class="brand__sep" aria-hidden="true"></span>
       <span class="brand__company"><%= company %></span>

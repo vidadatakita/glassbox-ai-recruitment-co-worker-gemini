@@ -83,6 +83,15 @@ if Rails.env.development? || Glassbox::Settings.demo_mode?
   puts "Demo consent (development only): version #{ConsentTemplate.in_force&.version}, retention #{SystemSetting.retention_days} days"
 end
 
+# The public demo (DEMO_MODE=1) runs the AI interview (Vida, 18 Oct 2026): the settings page is not
+# routed there, so the seed switches it on (install-wide on a single-tenant install, per company on a
+# multi-tenant one: Glassbox::Settings.settings_company_id). Portal::UpdateSetting refuses unless
+# the consent text in force names the interview (demo-2 above), so the guard holds here too. It still
+# needs an AI provider and the automatic review mode (Interviews.enabled_for?).
+if Glassbox::Settings.demo_mode? && !SystemSetting.ai_interview?(company:)
+  Portal::UpdateSetting.call(key: "ai_interview", value: "1", actor: glassbox_hr)
+end
+
 glassbox_jobs = DemoGlassbox.run(hr: glassbox_hr, consultant: glassbox_consultant, reviewer: glassbox_reviewer, company:)
 puts "Demo Cup data (A6): #{glassbox_jobs.map { |j| "#{j.title} (/apply/#{j.public_code})" }.join('; ')}"
 
