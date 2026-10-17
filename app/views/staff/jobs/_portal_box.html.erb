@@ -47,6 +47,8 @@
       <%= render "staff/shared/consent_blockers", blockers: Portal::ConsentReadiness.blockers(company: job.client_company) %>
       <div class="mb-3"><%= label_link(job.ad_approved_at ? "View job ad" : "View & edit job ad", "fa-plus", staff_job_ad_path(job), purpose: :neutral) %>
         <% if job.ad_text.blank? %><span class="text-muted small ms-2">This job ad was approved before it had a text, so applicants do not see a description yet.</span><% end %></div>
+      <%# Places filled against places needed (Vida, 17 Oct 2026): counted by HeadcountProgress. %>
+      <%= render "staff/jobs/portal_headcount", job: job %>
       <p class="mb-2">Application link: <span class="portal-link-copy"><%= lamar_url(job.public_code) %></span></p>
       <details class="tech-details mb-3"><summary>Technical details</summary>
         <p class="mb-1">Add <code>?ch=code</code> to the link per channel (for example <code>?ch=ig</code>) so the source of each application is recorded.</p>

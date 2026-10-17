@@ -4,6 +4,7 @@ require "test_helper"
 # the public demo, and must be refused everywhere else: a code everyone knows in production would
 # let any forwarded status link show the salary (D36).
 class OfferAccessCodeDefaultTest < ActiveSupport::TestCase
+  include PortalFactory
   test "the default code is enabled in development and in demo mode only" do
     assert OfferAccessCode.default_code_enabled?(rails_env: "development", env: {})
     assert OfferAccessCode.default_code_enabled?(rails_env: "production", env: { "DEMO_MODE" => "1" })
@@ -13,7 +14,9 @@ class OfferAccessCodeDefaultTest < ActiveSupport::TestCase
   end
 
   test "redeem accepts the default code only while it is enabled" do
-    application = JobApplication.first || skip("no job application fixture")
+    # Builds its own application: the suite has no application fixture, so the earlier
+    # `JobApplication.first || skip` always skipped and this check never ran.
+    application = JobApplication.create!(job: portal_job)
     OfferAccessCode.stub(:default_code_enabled?, true) do
       assert OfferAccessCode.redeem(application, " 123456 ")
       assert OfferAccessCode.redeem(application, "123456"), "the default code works every time, it is not consumed"

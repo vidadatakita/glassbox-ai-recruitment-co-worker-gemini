@@ -3,12 +3,20 @@
 <% scheduled = board.appointments.size %>
 <% no_show = board.no_show_by_stage %>
 <% soon = board.unconfirmed_soon %>
+<%# Five equal tiles from 1200px (col-xl), three then two on a laptop, two per row on a tablet. %>
+<% col = "col-xl col-lg-4 col-sm-6" %>
+<%# Places filled first: the outcome the vacancy exists for (Vida, 17 Oct 2026). One owner of the count:
+    HeadcountProgress, the same figure as the portal card. %>
+<% hc = HeadcountProgress.new(board.job) %>
 <div class="row loan-index-summary">
-  <%= render "staff/shared/metric", variant: "primary", icon: "fa-file-text-o", label: "Applications",
+  <%= render "staff/shared/metric", col: col, variant: hc.complete? ? "success" : "primary", icon: "fa-users", label: "Places filled",
+             value: "#{hc.filled} / #{hc.needed}",
+             caption: hc.complete? ? "all places filled" : "#{hc.open} open · #{hc.accepted} accepted the offer" %>
+  <%= render "staff/shared/metric", col: col, variant: "primary", icon: "fa-file-text-o", label: "Applications",
              value: window.application_count,
              caption: window.quota ? "of quota #{window.quota}, #{window.remaining_quota} left (#{(window.application_count * 100.0 / window.quota).round}% filled)" : "no quota" %>
   <%# On the public demo the work queue is not routed, so this card is plain, not a link. %>
-  <%= link_to demo_mode? ? "#metrics" : staff_work_queue_path, class: "col-lg-3 col-sm-6 text-reset text-decoration-none portal-metric-link", title: demo_mode? ? "Upcoming appointments" : "Open the work queue" do %>
+  <%= link_to demo_mode? ? "#metrics" : staff_work_queue_path, class: "#{col} text-reset text-decoration-none portal-metric-link", title: demo_mode? ? "Upcoming appointments" : "Open the work queue" do %>
     <div class="loan-index-metric loan-index-metric--<%= soon.positive? ? "warning" : "success" %>">
       <span class="loan-index-metric__icon"><i class="fa fa-calendar-check-o"></i></span>
       <div><span>Appointments confirmed</span><strong><%= board.confirmed_count %> / <%= scheduled %></strong>
@@ -16,10 +24,10 @@
     </div>
   <% end %>
   <% worst = no_show.max_by { |_s, n, _t| n } %>
-  <%= render "staff/shared/metric", variant: "warning", icon: "fa-user-times", label: "Did not attend",
+  <%= render "staff/shared/metric", col: col, variant: "warning", icon: "fa-user-times", label: "Did not attend",
              value: "#{no_show.sum { |_s, n, _t| n }} / #{no_show.sum { |_s, _n, t| t }}",
              caption: worst && worst[1].positive? ? "most at #{CandidateStatus::STAGE_LABELS.fetch(worst[0].code)}" : "of the attendance recorded so far" %>
-  <%= render "staff/shared/metric", variant: "info", icon: "fa-clock-o", label: "Closes automatically",
+  <%= render "staff/shared/metric", col: col, variant: "info", icon: "fa-clock-o", label: "Closes automatically",
              value: window.closes_at ? l(window.closes_at.in_time_zone.to_date, format: :short) : "-",
              caption: if window.closes_at
                         board.days_left.positive? ? "#{board.days_left} #{'day'.pluralize(board.days_left)} left, at #{window.closes_at.in_time_zone.strftime('%H.%M')} WIB" : "already passed"

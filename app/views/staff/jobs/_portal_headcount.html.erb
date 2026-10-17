@@ -1,0 +1,17 @@
+<%# Places needed against places filled (HeadcountProgress): filled = applicants who reached "Salary
+    agreed" (minus a withdrawal or a declined offer). One line that says what is left, a bar, and the
+    breakdown that tells HR what to chase next. %>
+<% hc = HeadcountProgress.new(job) %>
+<div class="portal-headcount" aria-labelledby="portal-headcount-<%= job.id %>">
+  <div class="portal-headcount__head">
+    <span class="portal-headcount__label" id="portal-headcount-<%= job.id %>">Places filled</span>
+    <strong class="portal-headcount__value"><%= hc.filled %> of <%= hc.needed %></strong>
+    <span class="portal-state portal-state--<%= hc.complete? ? 'success' : (hc.filled.zero? ? 'muted' : 'warning') %>">
+      <%= if hc.over? then "#{hc.filled - hc.needed} more than needed" elsif hc.complete? then "All places filled" else "#{hc.open} #{'place'.pluralize(hc.open)} open" end %>
+    </span>
+  </div>
+  <div class="question-bank-meter" role="img" aria-label="<%= hc.filled %> of <%= hc.needed %> places filled">
+    <span style="width: <%= hc.percent %>%" class="<%= hc.complete? ? 'is-met' : '' %>"></span>
+  </div>
+  <p class="portal-headcount__note">Filled = applicants who reached <strong>Salary agreed</strong>. <%= hc.accepted %> of them accepted the offer<%= hc.filled > hc.accepted ? "; #{hc.filled - hc.accepted} still to accept" : "" %>.</p>
+</div>

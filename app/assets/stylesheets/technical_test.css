@@ -103,17 +103,28 @@
 .question-bank-coverage li { border: 1px solid var(--default-border); border-radius: 1rem; padding: .15rem .65rem .15rem .2rem; font-size: .8rem; }
 .question-bank-coverage li.is-gap { border-color: rgb(var(--warning-rgb)); background: rgba(var(--warning-rgb), .08); }
 .question-bank-coverage__count { display: inline-block; min-width: 1.4rem; text-align: center; border-radius: 1rem; background: rgba(var(--primary-rgb), .1); font-weight: 700; margin-right: .25rem; }
-.question-bank-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .75rem; }
-.question-bank-item { border: 1px solid var(--default-border); border-radius: .5rem; padding: .75rem 1rem; }
-.question-bank-item__head { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin-bottom: .35rem; }
-.question-bank-item__num { font-weight: 700; color: rgb(var(--primary-rgb)); }
-.question-bank-item__prompt { margin-bottom: .4rem; font-weight: 500; }
-.question-bank-options { margin: 0 0 .4rem 1.25rem; padding: 0; }
+.question-bank-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .9rem; }
+.question-bank-item { border: 1px solid var(--default-border); border-left: 4px solid rgb(var(--primary-rgb)); border-radius: .6rem; padding: .9rem 1.1rem; background: #fff; }
+.question-bank-item__head { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: .6rem; }
+.question-bank-item__num { flex: 0 0 auto; min-width: 2.4rem; text-align: center; font-weight: 800; font-size: .8rem; color: #fff; background: rgb(var(--primary-rgb)); border-radius: .4rem; padding: .2rem .45rem; }
+.question-bank-item__prompt { margin-bottom: .55rem; font-weight: 600; line-height: 1.5; }
+.question-bank-options { margin: 0 0 .2rem 1.5rem; padding: 0; display: grid; gap: .2rem; }
 .question-bank-options li.is-correct { font-weight: 600; color: #146c43; }
 .question-bank-anchors { display: grid; grid-template-columns: auto 1fr; gap: .15rem .75rem; margin: 0 0 .4rem; font-size: .9rem; }
 .question-bank-anchors dt { font-weight: 600; color: #5d71a0; }
-.question-bank-item__actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: flex-start; }
-.question-bank-item__edit { flex: 1 1 100%; }
+.question-bank-item__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; align-items: center; margin-top: .75rem; padding-top: .65rem; border-top: 1px dashed var(--default-border); }
+.question-bank-item__edit { flex: 0 0 auto; }
+.question-bank-item__edit[open] { flex: 1 1 100%; order: 2; text-align: right; }
+.question-bank-item__edit[open] > :not(summary) { text-align: left; }
+.question-bank-item__edit > summary { list-style: none; }
+.question-bank-item__edit > summary::-webkit-details-marker { display: none; }
+.question-bank-item__edit-close, .question-bank-item__edit[open] .question-bank-item__edit-open { display: none; }
+.question-bank-item__edit[open] .question-bank-item__edit-close { display: inline; }
+.question-bank-item__remove { margin: 0; }
+/* Question header: number, what it tests (the line a reviewer scans), then type and source on the right. */
+.question-bank-item__tests { flex: 1 1 14rem; min-width: 0; font-size: .85rem; font-weight: 600; color: #1D428A; }
+.question-bank-item__tests .fa { color: #E87722; margin-right: .2rem; }
+.question-bank-item__tags { display: inline-flex; flex-wrap: wrap; gap: .35rem; margin-left: auto; }
 .question-bank-item__edit[open] summary { margin-bottom: .5rem; }
 .question-bank-form { padding: 1rem; }
 .question-bank-form__title { font-size: 1rem; font-weight: 700; margin-bottom: .75rem; }
@@ -123,3 +134,9 @@
 @media (max-width: 991px) { .question-bank-status { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 575px) { .question-bank-status { grid-template-columns: 1fr; } }
 .question-bank-coverage__summary { font-size: .85rem; margin-bottom: .4rem; color: #4b5563; }
+/* Places filled on the applicant portal card (17 Oct 2026). */
+.portal-headcount { border: 1px solid var(--default-border); border-radius: .5rem; padding: .75rem 1rem; margin: .75rem 0; background: var(--custom-white, #fff); display: grid; gap: .4rem; }
+.portal-headcount__head { display: flex; flex-wrap: wrap; gap: .5rem; align-items: baseline; }
+.portal-headcount__label { font-size: .75rem; font-weight: 600; color: #5d71a0; text-transform: uppercase; letter-spacing: .02em; }
+.portal-headcount__value { font-size: 1.15rem; }
+.portal-headcount__note { font-size: .85rem; color: #4b5563; margin: 0; }

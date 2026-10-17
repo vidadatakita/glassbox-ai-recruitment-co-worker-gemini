@@ -44,11 +44,17 @@
                   <span class="job-share__pct"><%= share %>%</span>
                   <span class="job-share__bar" aria-hidden="true"><span style="width: <%= share %>%"></span></span>
                 </td>
+                <%# A closed portal with every place filled is finished (Vida, 17 Oct 2026); "filled" is
+                    HeadcountProgress's count, the same as the vacancy page. While the portal is still
+                    open and the places are already filled, the next step is closing it. %>
+                <% filled = job.brief_complete? && window.state != :never_opened && HeadcountProgress.new(job).complete? %>
                 <td data-label="Next step">
                   <% if !job.brief_complete? %>Complete the brief
                   <% elsif job.ad_text.blank? %>Write the job ad
                   <% elsif window.state == :never_opened %>Open the Applicant portal
+                  <% elsif window.open? && filled %>All places filled: close the portal
                   <% elsif window.open? %>Watch incoming applications
+                  <% elsif filled %><span class="portal-state portal-state--success"><i class="fa fa-check" aria-hidden="true"></i> Done: all places filled</span>
                   <% else %>Continue the selection<% end %>
                 </td>
                 <td class="hris-table-actions">
