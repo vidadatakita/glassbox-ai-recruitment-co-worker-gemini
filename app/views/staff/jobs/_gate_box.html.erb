@@ -3,8 +3,9 @@
     (rows loaded once). Client roles see "Candidate 01" instead of names (rule 14, D62 h7). %>
 <% gate = GateBoard.new(job) %>
 <% if gate.applicable? %>
-<div class="hris-form-card gate-box" id="gerbang-seleksi">
-  <div class="hris-form-card__header">
+<% fold = local_assigns[:sections]&.state(:gate) %>
+<details class="hris-form-card gate-box section-fold section-fold--<%= fold %>" id="gerbang-seleksi" <%= "open" if fold.nil? || fold.in?(%w[todo overview]) %>>
+  <summary class="hris-form-card__header section-fold__summary">
     <div class="hris-form-card__icon"><i class="fa fa-columns" aria-hidden="true"></i></div>
     <div>
       <h3><%= gate.name %> <%= gate_status_badge(gate.s1) %></h3>
@@ -12,8 +13,9 @@
     </div>
     <div class="hris-form-card__action"><span class="gate-box__total"><strong><%= gate.total %></strong> <%= "applicant".pluralize(gate.total) %></span>
       <%# D60 slice 5: the reviewer's rubric scoring of the answers. %>
-      <%= label_link "Technical test scoring", "fa-pencil-square-o", staff_job_test_scorings_path(job), purpose: :neutral %></div>
-  </div>
+      <%= label_link "Technical test scoring", "fa-pencil-square-o", staff_job_test_scorings_path(job), purpose: :neutral %>
+      <%= render "staff/shared/fold_chip", state: fold if fold %></div>
+  </summary>
   <div class="hris-form-card__body">
     <%= render "staff/jobs/gate_summary", gate: gate %>
     <%= render "staff/jobs/gate_stages", gate: gate %>
@@ -22,5 +24,5 @@
       <%= render "staff/jobs/gate_applicants", gate: gate %>
     </details>
   </div>
-</div>
+</details>
 <% end %>

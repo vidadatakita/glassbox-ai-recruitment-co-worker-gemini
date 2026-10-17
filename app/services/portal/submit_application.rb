@@ -71,6 +71,8 @@ module Portal
         elsif cv.present?
           application.cv.attach(cv)
         end
+        # AI interview: created before the stages, so the participation's after-commit Enqueue finds the gate.
+        Interview.create!(job_application: application) if Interviews.enabled_for?(@job) && !knocked_out?
         enter_first_stage(application)
         _link, token = OneTimeLink.issue!(subject: application, purpose: "candidate_status")
         Result.new(application:, token:, errors: [], knocked_out: knocked_out?, field_errors: {})

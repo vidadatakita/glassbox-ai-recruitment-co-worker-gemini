@@ -2,8 +2,9 @@
     Each action is its own form; none is nested in another. %>
 <% board = ScreeningBoard.new(job) %>
 <% if board.applicable? %>
-<div class="hris-form-card screening-box" id="screening">
-  <div class="hris-form-card__header">
+<% fold = local_assigns[:sections]&.state(:screening) %>
+<details class="hris-form-card screening-box section-fold section-fold--<%= fold %>" id="screening" <%= "open" if fold.nil? || fold.in?(%w[todo overview]) %>>
+  <summary class="hris-form-card__header section-fold__summary">
     <div class="hris-form-card__icon hris-form-card__icon--<%= board.enabled? ? "success" : "warning" %>"><i class="fa fa-magic" aria-hidden="true"></i></div>
     <div>
       <h3>CV screening by AI
@@ -12,7 +13,8 @@
       </h3>
       <p>Gemini scores each CV against the brief; a person decides every step.</p>
     </div>
-  </div>
+    <div class="hris-form-card__action"><%= render "staff/shared/fold_chip", state: fold if fold %></div>
+  </summary>
   <div class="hris-form-card__body">
     <%= render "staff/jobs/screening_off", board: board %>
     <%= render "staff/jobs/screening_counts", board: board %>
@@ -21,5 +23,5 @@
     <%= render "staff/jobs/screening_release", board: board %>
     <%= render "staff/jobs/screening_actions", board: board, job: job %>
   </div>
-</div>
+</details>
 <% end %>

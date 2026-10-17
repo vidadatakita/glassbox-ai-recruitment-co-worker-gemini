@@ -5,5 +5,9 @@ We have received your application for <%= @job.title %> at <%= @job.client_compa
 See the stages, appointments and results of your application at this private link:
 <%= @url %>
 
-Save this link and do not share it with anyone. If you lose it, use "Request a new link" on the vacancy page.
+<% if @interview_url %>
+Before your CV is screened, please answer 5 short interview questions in a chat (about 30 minutes from the first question, you can stop at any time):
+<%= @interview_url %>
+
+<% end %>Save this link and do not share it with anyone. If you lose it, use "Request a new link" on the vacancy page.
 GlassBox never asks for any payment.

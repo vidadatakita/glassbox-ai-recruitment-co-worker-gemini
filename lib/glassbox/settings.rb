@@ -97,6 +97,10 @@ module Glassbox
       "ai_cv_sections" => { type: :list, values: %w[experience education skills certifications projects activities summary],
                             default: %w[experience education skills certifications], label: "CV sections sent to the AI" },
       "verified_line" => { type: :boolean, default: false, label: "Show the \"Verified by GlassBox\" line on the Apply page" },
+      # AI interview before CV screening (docs/superpowers/specs/2026-10-16-ai-interview-design.md). Off until
+      # the consent text names the interview (UU PDP Pasal 21): with it off, no interview exists and the
+      # apply flow is exactly as before.
+      "ai_interview" => { type: :boolean, default: false, label: "AI interview before CV screening" },
       # AI Builder Cup "before / after" (Ringkasan Dampak): the BEFORE side is what the client measured
       # without GlassBox (interview, survey); no default, so no number is ever invented.
       "baseline_hours_to_answer" => { type: :integer, default: nil, min: 1, label: "Before: hours from application to first answer" },
@@ -120,7 +124,10 @@ module Glassbox
       # downloads of the case. Guesses like the others: measure in T0.
       test_start_per_link: { to: 10, within: 600 },
       test_answer_per_link: { to: 10, within: 600 },
-      test_case_file_per_link: { to: 30, within: 600 }
+      test_case_file_per_link: { to: 30, within: 600 },
+      # The AI interview chat, counted per status link like the test: each answer costs a paid model call.
+      interview_start_per_link: { to: 10, within: 600 },
+      interview_answer_per_link: { to: 20, within: 300 }
     }.freeze
 
     module_function

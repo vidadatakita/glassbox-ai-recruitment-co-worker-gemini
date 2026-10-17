@@ -1,0 +1,32 @@
+<%# The AI interview of one application (docs/superpowers/specs/2026-10-16-ai-interview-design.md §6).
+    The answers are the candidate's own text: only the roles that may read it see them
+    (Interviews.viewable_by?); everyone else sees that an interview exists. Nothing renders without one. %>
+<% interview = application.interview %>
+<% if interview %>
+  <% readable = Interviews.viewable_by?(user, application.job) %>
+  <div class="hris-form-card" id="interview">
+    <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-comments-o" aria-hidden="true"></i></div>
+      <div><h3>AI interview</h3><p>Five questions asked before the CV was screened; the answers are extra evidence for the screening.</p></div></div>
+    <div class="hris-form-card__body">
+      <p class="mb-2"><%= interviews_status_text(interview) %>
+        <% if interview.held_count.positive? %><span class="pill warn"><%= pluralize(interview.held_count, "answer") %> held</span><% end %></p>
+      <% if interview.held_count.positive? %>
+        <p class="small text-muted">A held answer looked like personal data or an instruction to the AI, so it was never sent to the AI.</p>
+      <% end %>
+      <% if readable %>
+        <% interview.turns.each do |turn| %>
+          <div class="mb-3">
+            <p class="small text-muted mb-1">Question <%= turn.position %>: <%= turn.question %></p>
+            <% if turn.answered_at %>
+              <p class="mb-0"><%= turn.answer_raw %><%= " (held, not sent to the AI)" if turn.held %></p>
+            <% else %>
+              <p class="text-muted mb-0">Not answered.</p>
+            <% end %>
+          </div>
+        <% end %>
+      <% else %>
+        <p class="text-muted mb-0">The answers are visible to the HR Manager and the superadmin, and to the HR Admin once the screening is confirmed.</p>
+      <% end %>
+    </div>
+  </div>
+<% end %>

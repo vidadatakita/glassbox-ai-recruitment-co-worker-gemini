@@ -2,8 +2,9 @@
     and the way to the full brief. %>
 <% check = Briefs::BriefCheck.new(job) %>
 <% open_count = check.problems.size %>
-<div class="hris-form-card job-brief-box">
-  <div class="hris-form-card__header">
+<% fold = local_assigns[:sections]&.state(:brief) %>
+<details class="hris-form-card job-brief-box section-fold section-fold--<%= fold %>" id="vacancy-brief" <%= "open" if fold.nil? || fold.in?(%w[todo overview]) %>>
+  <summary class="hris-form-card__header section-fold__summary">
     <div class="hris-form-card__icon hris-form-card__icon--<%= job.brief_complete? ? "success" : "warning" %>"><i class="fa fa-file-text-o" aria-hidden="true"></i></div>
     <div><h3>Vacancy brief <%= brief_status_badge(job) %></h3>
       <p><%= job.brief_complete? ? "The basis of CV screening, the test and the interviews for this vacancy." : "#{open_count} items incomplete. The applicant portal can open once the brief is complete." %></p></div>
@@ -11,8 +12,9 @@
       <%= link_to staff_job_brief_path(job), class: "btn btn-sm btn-primary-light", title: "View vacancy brief details" do %>
         <i class="fa fa-plus" aria-hidden="true"></i> View details
       <% end %>
+      <%= render "staff/shared/fold_chip", state: fold if fold %>
     </div>
-  </div>
+  </summary>
   <div class="hris-form-card__body">
     <dl class="job-brief-facts job-brief-facts--inline">
       <dt>Grade</dt><dd><%= job.golongan_label %></dd>
@@ -21,4 +23,4 @@
       <dt>Placement</dt><dd><%= placement_summary(job) %></dd>
     </dl>
   </div>
-</div>
+</details>

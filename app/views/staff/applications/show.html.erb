@@ -23,7 +23,11 @@
     </div>
     <%= render "staff/applications/attention", application: @application %>
     <%# This applicant's journey (17 Oct 2026): when each step happened and who acted; no scores here. %>
-    <%= render "staff/jobs/hiring_progress", progress: ApplicationProgress.new(@application), title: "Applicant progress", id: "applicant-progress" %>
+    <%# Clicking a step opens and scrolls to its section below (17 Oct 2026). %>
+    <% salary_shown = current_user.role.in?(%w[hr_admin hr_manager superadmin]) && Progression::Salary.ready?(@application) %>
+    <% applicant_progress = ApplicationProgress.new(@application) %>
+    <%= render "staff/jobs/hiring_progress", progress: applicant_progress, title: "Applicant progress", id: "applicant-progress",
+               targets: applicant_progress.section_ids %>
     <% duplicates = Portal::DuplicateCheck.for(@application) %>
     <% if duplicates.any? %>
       <%# AI Builder Cup step 04: the same person applied more than once (by rule, never merged). %>
@@ -37,7 +41,11 @@
     <%= render "staff/applications/contact", application: @application %>
     <%= render "staff/applications/score_matrix", matrix: matrix %>
     <%= render "staff/applications/stages", application: @application %>
-    <%= render "staff/applications/salary", application: @application if current_user.role.in?(%w[hr_admin hr_manager superadmin]) && Progression::Salary.ready?(@application) %>
+    <% if salary_shown %>
+      <%= render "staff/applications/salary", application: @application %>
+    <% elsif current_user.role.in?(%w[hr_admin hr_manager superadmin]) %>
+      <%= render "staff/applications/salary_waiting", application: @application %>
+    <% end %>
     <%# Letters (AI draft + send) are roadmap on the public demo (FLOW v2.1 cut #7); their routes are not drawn there. %>
     <%= render "staff/applications/letters", application: @application if current_user.role.in?(%w[hr_admin superadmin]) && !demo_mode? && Progression::Letters.kind_for(@application) %>
     <%= render "staff/applications/offers", application: @application, offers: @offers, matrix: matrix %>

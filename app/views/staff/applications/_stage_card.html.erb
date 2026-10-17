@@ -1,0 +1,68 @@
+<%# One stage of this application, in its own card (Vida, 17 Oct 2026: "one section per process, never
+    mixed"). Header: the stage number and name, its status and this applicant's result. Body: only that
+    stage's work, each part under its own small heading. The id is the redirect anchor of every
+    progression action (Staff::ProgressionsController#back) and the scroll-margin selector in staff.css
+    must match its prefix; the three change together. %>
+<% stage = participation.stage %>
+<% decision = participation.current_decision %>
+<%# Done = the step's decision is made: on its own row, or (a stage inside the screening gate) on the
+    gate's S1 row. To do = the stage is open and not decided. Waiting = the stage has not opened. Done
+    and waiting cards start folded; the one to work on starts open (Vida, 17 Oct 2026). %>
+<% step_row = Progression.step?(participation) ? participation : Progression.step_members(participation).find { |m| m.stage.code == "S1" } %>
+<% choice = step_row&.progression_choice %>
+<% work_state = if choice || stage.status == "closed" then "done" elsif stage.status == "open" then "todo" else "waiting" end %>
+<% blinded = stage.code == "S1" && ai_result_blinded?(participation) %>
+<% result = decision && !blinded ? decision.outcome : nil %>
+<% result_label = { "pass" => "Passed", "eliminate" => "Not passed", "review" => "Needs review" }.fetch(result, "No result yet") %>
+<% purpose = { "S1" => "Gemini reads the redacted CV against the brief; a person decides.",
+               "S2" => "The case study the applicant answers, scored with the rubric.",
+               "S3" => "The HR interview, scored per competency.",
+               "S4" => "The psychological test result, entered by HR.",
+               "S5" => "The hiring manager's interview, scored per competency.",
+               "RC" => "The reference check." }[stage.code] %>
+<details class="hris-form-card stage-card stage-card--<%= result || "open" %> stage-card--<%= work_state %>" id="stage-<%= participation.id %>" <%= "open" if work_state == "todo" %>>
+  <summary class="hris-form-card__header stage-card__summary">
+    <div class="stage-card__num" aria-hidden="true"><%= number %></div>
+    <div>
+      <h3><%= CandidateStatus::STAGE_LABELS.fetch(stage.code) %>
+        <span class="portal-state portal-state--muted">Stage <%= { "draft" => "draft", "open" => "open", "closed" => "closed" }.fetch(stage.status) %></span></h3>
+      <p><%= purpose %></p>
+    </div>
+    <div class="hris-form-card__action stage-card__chips">
+      <span class="stage-card__work stage-card__work--<%= work_state %>"><%= { "done" => "Done", "todo" => "To do", "waiting" => "Waiting" }.fetch(work_state) %></span>
+      <span class="stage-card__result stage-card__result--<%= result || "none" %>"><%= result_label %></span>
+      <% if choice %><span class="stage-card__by"><%= wib(choice.created_at) %> · <%= choice.actor&.name %></span><% end %>
+      <i class="fa fa-chevron-down stage-card__toggle" aria-hidden="true"></i>
+    </div>
+  </summary>
+  <div class="hris-form-card__body">
+    <% if stage.code == "S1" && stage.score_source == "ai" %>
+      <div class="stage-card__part" id="stage-<%= participation.id %>-ai">
+        <h4 class="stage-card__part-title"><i class="fa fa-magic" aria-hidden="true"></i> AI screening</h4>
+        <%= render "staff/applications/ai_screening", participation:, job: stage.job %>
+      </div>
+    <% end %>
+    <% if stage.code != "RC" && Progression.step?(participation) %>
+      <div class="stage-card__part" id="stage-<%= participation.id %>-decision">
+        <h4 class="stage-card__part-title"><i class="fa fa-check-square-o" aria-hidden="true"></i> <%= stage.code == "S1" ? "Step decision" : "Scoring and decision" %></h4>
+        <%# AI Builder Cup step 06: the AI advice and the HR Admin's choice (the gate's on its S1 row). %>
+        <%= render "staff/applications/progression", participation: participation %>
+      </div>
+    <% end %>
+    <% appointment = participation.appointment %>
+    <% can_schedule = current_user.role.in?(%w[hr_admin superadmin]) && stage.code != "S1" && stage.status != "closed" && !demo_mode? %>
+    <% if appointment || can_schedule %>
+      <div class="stage-card__part" id="stage-<%= participation.id %>-appointment">
+        <h4 class="stage-card__part-title"><i class="fa fa-calendar" aria-hidden="true"></i> Appointment</h4>
+        <% if appointment %>
+          <p class="mb-2"><%= wib(appointment.starts_at) %> · <%= Appointment::MODES.fetch(appointment.mode) %> · <%= appointment.place_or_link %> ·
+            confirmation: <strong><%= { "pending" => "not yet", "confirmed" => "will attend", "reschedule_requested" => "asked for another time" }.fetch(appointment.confirmation) %></strong>
+            <% if appointment.reschedule_reason.present? %>(<%= appointment.reschedule_reason %>)<% end %></p>
+          <%= render "staff/applications/calendar_status", appointment: appointment unless demo_mode? %>
+        <% end %>
+        <%# Calendar appointments are outside the twelve demo steps; their routes are not drawn in demo mode. %>
+        <%= render "staff/applications/appointment_form", participation: participation, appointment: appointment if can_schedule %>
+      </div>
+    <% end %>
+  </div>
+</details>

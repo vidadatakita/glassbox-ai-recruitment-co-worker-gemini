@@ -1,35 +1,11 @@
-<%# Stages of this application with the schedule. Scores are staff-only and are entered on the
-    scoring screens (Plan 6); this card shows the decision and attendance, and schedules. %>
-<div class="hris-form-card">
-  <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-list-ol"></i></div>
-    <div><h3>Stages and appointments</h3><p>A changed appointment asks the applicant to confirm again.</p></div></div>
-  <div class="hris-form-card__body">
-    <% participations = application.participations.sort_by { |p| p.stage.code } %>
-    <% if participations.empty? %><p class="text-muted mb-0">The applicant has not entered any stage yet.</p><% end %>
-    <% participations.each do |participation| %>
-      <% stage = participation.stage %>
-      <% decision = participation.current_decision %>
-      <%# The id is the redirect anchor of every progression action (Staff::ProgressionsController#back),
-          and the scroll-margin selector in staff.css must match its prefix; the three change together. %>
-      <div class="border-bottom pb-3 mb-3" id="stage-<%= participation.id %>">
-        <h4 class="fs-14"><%= CandidateStatus::STAGE_LABELS.fetch(stage.code) %>
-          <span class="text-muted fw-normal">· stage <%= { "draft" => "draft", "open" => "open", "closed" => "closed" }.fetch(stage.status) %>
-          · result: <%= decision && !(stage.code == "S1" && ai_result_blinded?(participation)) ? { "pass" => "passed", "eliminate" => "not passed", "review" => "needs review" }.fetch(decision.outcome) : "none yet" %></span></h4>
-        <%= render "staff/applications/ai_screening", participation:, job: stage.job if stage.code == "S1" && stage.score_source == "ai" %>
-        <%# AI Builder Cup step 06: the AI advice and the HR PIC's choice (the gate's on its S1 row). %>
-        <%= render "staff/applications/progression", participation: participation if stage.code != "RC" && Progression.step?(participation) %>
-        <% appointment = participation.appointment %>
-        <% if appointment %>
-          <p class="mb-2"><%= wib(appointment.starts_at) %> · <%= Appointment::MODES.fetch(appointment.mode) %> · <%= appointment.place_or_link %> ·
-            confirmation: <strong><%= { "pending" => "not yet", "confirmed" => "will attend", "reschedule_requested" => "asked for another time" }.fetch(appointment.confirmation) %></strong>
-            <% if appointment.reschedule_reason.present? %>(<%= appointment.reschedule_reason %>)<% end %></p>
-          <%= render "staff/applications/calendar_status", appointment: appointment unless demo_mode? %>
-        <% end %>
-        <% if current_user.role.in?(%w[hr_admin superadmin]) && stage.code != "S1" && stage.status != "closed" %>
-          <%# Calendar appointments are outside the twelve demo steps; their routes are not drawn in demo mode. %>
-          <%= render "staff/applications/appointment_form", participation: participation, appointment: appointment unless demo_mode? %>
-        <% end %>
-      </div>
-    <% end %>
-  </div>
-</div>
+<%# The stages of this application, one card per stage in process order (Vida, 17 Oct 2026: one
+    section per process, never mixed). This partial only arranges; each stage is _stage_card. Scores
+    are staff-only and entered on the scoring screens; a changed appointment asks the applicant to
+    confirm again. %>
+<% participations = application.participations.includes(:stage).sort_by { |p| Stage::CODES.index(p.stage.code) || 99 } %>
+<% if participations.empty? %>
+  <div class="hris-form-card"><div class="hris-form-card__body"><p class="text-muted mb-0">The applicant has not entered any stage yet.</p></div></div>
+<% end %>
+<% participations.each_with_index do |participation, i| %>
+  <%= render "staff/applications/stage_card", participation: participation, number: i + 1 %>
+<% end %>

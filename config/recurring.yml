@@ -25,6 +25,12 @@ production:
     class: ApplicationDraftPurgeJob
     queue: default
     schedule: every hour at minute 25
+  # AI interview: closes an interview 30 minutes after its first question (or 48 hours after the
+  # application without one), so S1 can run on the CV and the answers given.
+  interview_tick:
+    class: InterviewTickJob
+    queue: default
+    schedule: every 5 minutes
   # A5: the demo workspace goes back to its seed every night, 20:00 UTC = 03:00 WIB. Demo::Reset
   # refuses to run unless DEMO_MODE=1, so this line is harmless on a client install.
   demo_reset:

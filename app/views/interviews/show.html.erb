@@ -1,0 +1,74 @@
+<%# The AI interview page, a live chat: JavaScript (interview_chat.js) sends each answer and draws the next
+    question here; without it the forms below still post and the page reloads. No score, no AI judgement and
+    no other candidate is ever printed here. %>
+<% content_for :title, "Interview" %>
+<%= render "candidate_shared/job_top", job: @application.job %>
+<h1>Interview</h1>
+<p class="small"><%= @application.job.title %> · <%= @application.candidate.name %></p>
+<div data-interview-chat data-max="<%= Interview::MAX_TURNS %>">
+  <p class="flash alert" data-iv-error role="alert" hidden></p>
+
+  <section class="card iv-intro" data-iv-intro aria-labelledby="interview-before" <%= "hidden" if @started %>>
+    <h2 id="interview-before">Before you start</h2>
+    <p>An AI assistant will ask you <b><%= Interview::MAX_TURNS %> short questions</b> about this job and your experience, one at a time, like a chat.</p>
+    <ul class="iv-rules">
+      <li>You have <b><%= (Interview::TIME_LIMIT / 60).to_i %> minutes</b>, counted from the first question. The clock does not stop if you close the page.</li>
+      <li>Each answer can have up to <%= Interview::MAX_ANSWER %> characters and cannot be changed after it is sent.</li>
+      <li>Please do not write personal details such as phone numbers, addresses or ID numbers.</li>
+      <li>You can finish at any time. Your CV is screened afterwards together with your answers; people make the decisions.</li>
+    </ul>
+    <%= form_with url: candidate_status_interview_start_path(params[:token]), method: :post, data: { turbo: false, "iv-start-form": true } do %>
+      <button type="submit" class="btn primary">Start interview</button>
+    <% end %>
+    <%= link_to "Back to the status page", candidate_status_path(params[:token]), class: "btn ghost" %>
+  </section>
+
+  <section class="iv-chat" data-iv-chat aria-label="Interview chat" <%= "hidden" unless @started %>>
+    <div class="iv-progress" role="img" aria-label="Interview progress">
+      <% done = @turns ? @turns.count(&:answered_at) : 0 %>
+      <% Interview::MAX_TURNS.times do |i| %><span class="iv-seg<%= " on" if @started && i <= done %>"></span><% end %>
+    </div>
+    <p class="small iv-meta" data-iv-meta>
+      <% if @started && @interview.due_at %>Question <b><%= (@current || @turns.last).position %></b> of <%= Interview::MAX_TURNS %> · answer before <b><%= l(@interview.due_at.in_time_zone, format: :long_wib) %></b><% end %>
+    </p>
+
+    <div class="iv-thread" data-iv-thread aria-live="polite">
+      <% if @started %>
+        <% @turns.each do |turn| %>
+          <% if turn.answered_at %>
+            <%= render "interviews/turn", turn: turn %>
+          <% else %>
+            <div class="iv-msg iv-q iv-current"><span class="iv-who">Interviewer</span><p><%= turn.question %></p></div>
+          <% end %>
+        <% end %>
+      <% end %>
+    </div>
+
+    <%# The AI was busy after the last answer: the answer is saved, the next question is asked again on request. %>
+    <div class="iv-retry" data-iv-retry <%= "hidden" unless @waiting %>>
+      <p>The interviewer is busy right now. Your answer is saved.</p>
+      <%= form_with url: candidate_status_interview_next_path(params[:token]), method: :post, data: { turbo: false, "iv-next-form": true } do %>
+        <button type="submit" class="btn primary">Try again</button>
+      <% end %>
+    </div>
+
+    <%= form_with url: candidate_status_interview_answer_path(params[:token]), method: :post, class: "iv-composer", data: { turbo: false, "iv-form": true }, html: { hidden: @waiting } do %>
+      <input type="hidden" name="position" value="<%= @current&.position %>">
+      <label for="interview-answer" class="iv-sr">Your answer</label>
+      <textarea id="interview-answer" name="answer" rows="1" maxlength="<%= Interview::MAX_ANSWER %>" required placeholder="Type your answer…"></textarea>
+      <button type="submit" class="iv-send" aria-label="Send answer">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6 3.3 10l12.6 2-12.6 2z" fill="currentColor"/></svg>
+      </button>
+    <% end %>
+    <p class="small iv-hint">Enter sends · Shift+Enter adds a new line · up to <%= Interview::MAX_ANSWER %> characters · an answer cannot be changed after it is sent</p>
+
+    <div class="row2 iv-actions">
+      <%= form_with url: candidate_status_interview_finish_path(params[:token]), method: :post, data: { turbo: false, "iv-finish-form": true } do %>
+        <button type="submit" class="btn ghost">Finish interview now</button>
+      <% end %>
+      <%= link_to "Back to the status page", candidate_status_path(params[:token]), class: "btn ghost" %>
+    </div>
+    <p class="small iv-hint">If you finish now, your CV is screened with the answers sent so far.</p>
+  </section>
+</div>
+<%= javascript_include_tag "interview_chat", type: "module" %>

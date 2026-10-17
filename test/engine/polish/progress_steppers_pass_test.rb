@@ -134,6 +134,11 @@ class PolishProgressSteppersPassTest < ActionDispatch::IntegrationTest
   # The step shows the decision's time when there is one, but the person who entered the score. When
   # the score was entered by one person and a manual decision taken later by another, the time is the
   # decider's and the name is the scorer's: a pair no record holds.
+  #
+  # Rule change, 17 Oct 2026 (Vida, applicant 29): an interview is its own step, so it is done only when
+  # its step decision (ProgressionChoice) is made; a score and a stage decision alone leave it open,
+  # because the salary card opens only after that choice. The pairing rule is unchanged: once done, the
+  # time and the person both come from the step decision.
   test "a later stage step pairs its time and its actor from the same record" do
     job, s1, s2 = gated_job
     s5 = job.stages.find_by!(code: "S5")
@@ -150,10 +155,15 @@ class PolishProgressSteppersPassTest < ActionDispatch::IntegrationTest
     Decision.create!(participation: interview, outcome: "pass", basis: "manual", reason_code: "manual", note: "Strong case study",
                      decided_by_id: decider.id, decided_at:)
 
+    refute step(ApplicationProgress.new(application.reload), :stage_S5).done?,
+           "a score and a stage decision without the step decision do not finish the interview step"
+
+    chooser = staff_user("hr_admin")
+    chosen_at = 30.minutes.ago.change(usec: 0)
+    ProgressionChoice.create!(participation: interview, choice: "lanjut", direction: "lanjut", actor: chooser, created_at: chosen_at)
     shown = step(ApplicationProgress.new(application.reload), :stage_S5)
     pair = [shown.at.to_i, shown.actor]
-    assert_includes [[entered_at.to_i, scorer], [decided_at.to_i, decider]], pair,
-                    "time #{shown.at} is paired with #{shown.actor.try(:name).inspect}"
+    assert_equal [chosen_at.to_i, chooser], pair, "time #{shown.at} is paired with #{shown.actor.try(:name).inspect}"
   end
 
   # --- BriefProgress: no invented name for a brief written outside the wizard ---------------------

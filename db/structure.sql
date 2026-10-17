@@ -2044,6 +2044,110 @@ ALTER SEQUENCE public.google_integration_events_id_seq OWNED BY public.google_in
 
 
 --
+-- Name: interview_erasures; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.interview_erasures (
+    id bigint NOT NULL,
+    interview_id bigint NOT NULL,
+    actor_id bigint,
+    reason character varying NOT NULL,
+    note text,
+    created_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT interview_erasures_reason_known CHECK (((reason)::text = ANY ((ARRAY['retention_expired'::character varying, 'consent_withdrawn'::character varying, 'no_consent'::character varying])::text[])))
+);
+
+
+--
+-- Name: interview_erasures_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.interview_erasures_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: interview_erasures_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.interview_erasures_id_seq OWNED BY public.interview_erasures.id;
+
+
+--
+-- Name: interview_openings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.interview_openings (
+    id bigint NOT NULL,
+    job_id bigint NOT NULL,
+    question text NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: interview_openings_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.interview_openings_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: interview_openings_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.interview_openings_id_seq OWNED BY public.interview_openings.id;
+
+
+--
+-- Name: interview_turns; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.interview_turns (
+    id bigint NOT NULL,
+    interview_id bigint NOT NULL,
+    "position" integer NOT NULL,
+    question text,
+    answer_raw text,
+    answer_clean text,
+    held boolean DEFAULT false NOT NULL,
+    asked_at timestamp(6) without time zone NOT NULL,
+    answered_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT interview_turns_position_range CHECK ((("position" >= 1) AND ("position" <= 5)))
+);
+
+
+--
+-- Name: interview_turns_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.interview_turns_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: interview_turns_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.interview_turns_id_seq OWNED BY public.interview_turns.id;
+
+
+--
 -- Name: interviewer_invites; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2078,6 +2182,43 @@ CREATE SEQUENCE public.interviewer_invites_id_seq
 --
 
 ALTER SEQUENCE public.interviewer_invites_id_seq OWNED BY public.interviewer_invites.id;
+
+
+--
+-- Name: interviews; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.interviews (
+    id bigint NOT NULL,
+    job_application_id bigint NOT NULL,
+    status character varying DEFAULT 'open'::character varying NOT NULL,
+    finish_reason character varying,
+    started_at timestamp(6) without time zone,
+    finished_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT interviews_finish_reason_known CHECK (((finish_reason IS NULL) OR ((finish_reason)::text = ANY ((ARRAY['completed'::character varying, 'ended_by_candidate'::character varying, 'time_up'::character varying, 'never_started'::character varying, 'ai_unavailable'::character varying, 'consent_withdrawn'::character varying, 'staff_started'::character varying])::text[])))),
+    CONSTRAINT interviews_status_known CHECK (((status)::text = ANY ((ARRAY['open'::character varying, 'finished'::character varying])::text[])))
+);
+
+
+--
+-- Name: interviews_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.interviews_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: interviews_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.interviews_id_seq OWNED BY public.interviews.id;
 
 
 --
@@ -3805,10 +3946,38 @@ ALTER TABLE ONLY public.google_integration_events ALTER COLUMN id SET DEFAULT ne
 
 
 --
+-- Name: interview_erasures id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.interview_erasures ALTER COLUMN id SET DEFAULT nextval('public.interview_erasures_id_seq'::regclass);
+
+
+--
+-- Name: interview_openings id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.interview_openings ALTER COLUMN id SET DEFAULT nextval('public.interview_openings_id_seq'::regclass);
+
+
+--
+-- Name: interview_turns id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.interview_turns ALTER COLUMN id SET DEFAULT nextval('public.interview_turns_id_seq'::regclass);
+
+
+--
 -- Name: interviewer_invites id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.interviewer_invites ALTER COLUMN id SET DEFAULT nextval('public.interviewer_invites_id_seq'::regclass);
+
+
+--
+-- Name: interviews id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.interviews ALTER COLUMN id SET DEFAULT nextval('public.interviews_id_seq'::regclass);
 
 
 --
@@ -4277,11 +4446,43 @@ ALTER TABLE ONLY public.google_integration_events
 
 
 --
+-- Name: interview_erasures interview_erasures_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.interview_erasures
+    ADD CONSTRAINT interview_erasures_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: interview_openings interview_openings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.interview_openings
+    ADD CONSTRAINT interview_openings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: interview_turns interview_turns_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.interview_turns
+    ADD CONSTRAINT interview_turns_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: interviewer_invites interviewer_invites_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.interviewer_invites
     ADD CONSTRAINT interviewer_invites_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: interviews interviews_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.interviews
+    ADD CONSTRAINT interviews_pkey PRIMARY KEY (id);
 
 
 --
@@ -4913,6 +5114,41 @@ CREATE INDEX index_google_integration_events_on_integration_and_created_at ON pu
 
 
 --
+-- Name: index_interview_erasures_on_actor_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_interview_erasures_on_actor_id ON public.interview_erasures USING btree (actor_id);
+
+
+--
+-- Name: index_interview_erasures_on_interview_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_interview_erasures_on_interview_id ON public.interview_erasures USING btree (interview_id);
+
+
+--
+-- Name: index_interview_openings_on_job_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_interview_openings_on_job_id ON public.interview_openings USING btree (job_id);
+
+
+--
+-- Name: index_interview_turns_on_interview_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_interview_turns_on_interview_id ON public.interview_turns USING btree (interview_id);
+
+
+--
+-- Name: index_interview_turns_on_interview_id_and_position; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_interview_turns_on_interview_id_and_position ON public.interview_turns USING btree (interview_id, "position");
+
+
+--
 -- Name: index_interviewer_invites_on_participation_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4924,6 +5160,13 @@ CREATE INDEX index_interviewer_invites_on_participation_id ON public.interviewer
 --
 
 CREATE UNIQUE INDEX index_interviewer_invites_on_score_entry_id ON public.interviewer_invites USING btree (score_entry_id);
+
+
+--
+-- Name: index_interviews_on_job_application_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_interviews_on_job_application_id ON public.interviews USING btree (job_application_id);
 
 
 --
@@ -6209,6 +6452,14 @@ ALTER TABLE ONLY public.draft_answers
 
 
 --
+-- Name: interviews fk_rails_00ebd5b653; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.interviews
+    ADD CONSTRAINT fk_rails_00ebd5b653 FOREIGN KEY (job_application_id) REFERENCES public.job_applications(id);
+
+
+--
 -- Name: screening_reviews fk_rails_08dfe02abe; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6262,6 +6513,14 @@ ALTER TABLE ONLY public.salary_recommendations
 
 ALTER TABLE ONLY public.salary_recommendations
     ADD CONSTRAINT fk_rails_0fc27940eb FOREIGN KEY (job_application_id) REFERENCES public.job_applications(id);
+
+
+--
+-- Name: interview_turns fk_rails_13c9ad82ec; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.interview_turns
+    ADD CONSTRAINT fk_rails_13c9ad82ec FOREIGN KEY (interview_id) REFERENCES public.interviews(id);
 
 
 --
@@ -6406,6 +6665,14 @@ ALTER TABLE ONLY public.application_drafts
 
 ALTER TABLE ONLY public.jobs
     ADD CONSTRAINT fk_rails_337fe738b9 FOREIGN KEY (consultant_id) REFERENCES public.users(id);
+
+
+--
+-- Name: interview_erasures fk_rails_3c72daa3fe; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.interview_erasures
+    ADD CONSTRAINT fk_rails_3c72daa3fe FOREIGN KEY (interview_id) REFERENCES public.interviews(id);
 
 
 --
@@ -6753,6 +7020,14 @@ ALTER TABLE ONLY public.application_drafts
 
 
 --
+-- Name: interview_erasures fk_rails_afcbb2d0e5; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.interview_erasures
+    ADD CONSTRAINT fk_rails_afcbb2d0e5 FOREIGN KEY (actor_id) REFERENCES public.users(id);
+
+
+--
 -- Name: test_reviews fk_rails_b47a58df5c; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7041,6 +7316,14 @@ ALTER TABLE ONLY public.ai_release_erasures
 
 
 --
+-- Name: interview_openings fk_rails_f54da3ea6a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.interview_openings
+    ADD CONSTRAINT fk_rails_f54da3ea6a FOREIGN KEY (job_id) REFERENCES public.jobs(id);
+
+
+--
 -- Name: appointment_changes fk_rails_fa3a24c49c; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -7076,6 +7359,8 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20261017113000'),
 ('20261017110000'),
 ('20261017100000'),
+('20261017000100'),
+('20261017000000'),
 ('20261016091000'),
 ('20261016090000'),
 ('20261016081000'),

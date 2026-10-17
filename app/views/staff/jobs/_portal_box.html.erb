@@ -1,11 +1,13 @@
 <%# The Applicant portal box (BP §3.6 A). Each action is its own form: no form inside another. %>
 <% window = board.window %>
-<div class="hris-form-card" id="applicant-portal">
-  <div class="hris-form-card__header">
+<% fold = local_assigns[:sections]&.state(:portal) %>
+<details class="hris-form-card section-fold section-fold--<%= fold %>" id="applicant-portal" <%= "open" if fold.nil? || fold.in?(%w[todo overview]) %>>
+  <summary class="hris-form-card__header section-fold__summary">
     <div class="hris-form-card__icon"><i class="fa fa-globe"></i></div>
     <div><h3>Applicant portal <%= window_badge(window) %></h3>
       <p>Open it when the vacancy is ready, close it when there are enough applications. Every change is recorded with a name and time.</p></div>
-  </div>
+    <div class="hris-form-card__action"><%= render "staff/shared/fold_chip", state: fold if fold %></div>
+  </summary>
   <div class="hris-form-card__body">
     <% if job.ad_approved_at.nil? && !job.brief_complete? %>
       <%# Feature 03: the portal opens only for a complete brief; say why and where to finish it. %>
@@ -90,4 +92,4 @@
       </div>
     <% end %>
   </div>
-</div>
+</details>

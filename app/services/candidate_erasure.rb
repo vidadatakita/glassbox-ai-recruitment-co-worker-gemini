@@ -43,7 +43,7 @@ class CandidateErasure
         results: erase_results,
         stage_texts: erase_stage_texts,
         cv_text: erase_cv_text
-      }
+      }.tap { erase_interviews } # AI interview texts; kept out of the counts (their shape is pinned)
     end
     counts[:cv_file] = @application.cv.attached? ? 1 : 0
     ActiveRecord.after_all_transactions_commit { @application.cv.purge if @application.cv.attached? }
@@ -86,6 +86,21 @@ class CandidateErasure
       model.where(id: ids).update_all(columns) if ids.any?
       ids.size
     end
+  end
+
+  # The AI interview (docs/superpowers/specs/2026-10-16-ai-interview-design.md): an erasure row first, then every
+  # question and answer text is NULL; the rows, positions, who and when stay. An interview still open when
+  # consent is withdrawn is closed. Idempotent: a second call finds no text and writes nothing.
+  def erase_interviews
+    interview = Interview.find_by(job_application_id: @application.id)
+    return unless interview
+
+    Interviews::Finish.call(interview, reason: "consent_withdrawn", queue: false) if interview.open? && @reason == "consent_withdrawn"
+    turns = InterviewTurn.where(interview_id: interview.id).where("question IS NOT NULL OR answer_raw IS NOT NULL OR answer_clean IS NOT NULL")
+    return unless turns.exists?
+
+    InterviewErasure.create!(interview:, actor: @actor, reason: @reason, note: @note, created_at: Time.current)
+    turns.update_all(question: nil, answer_raw: nil, answer_clean: nil)
   end
 
   def erase_cv_text

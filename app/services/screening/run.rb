@@ -51,7 +51,8 @@ module Screening
       # D51 (feature 09): evidence sections only (A), redaction + fail-closed residual check +
       # evidence floor (C), then a person releases the exact text (B). Without a released text
       # nothing is sent: the CV waits in "Menunggu pemeriksaan". See Screening::ReleaseGate.
-      gate = ReleaseGate.new(@participation, text:, rubric:, names:, attempt: @attempt)
+      interview = Interviews::ForScreening.for(@application) # AI interview answers: extra evidence (auto mode only)
+      gate = ReleaseGate.new(@participation, text:, rubric:, names:, attempt: @attempt, interview:)
       release = gate.call
       return :awaiting_release if release.nil?
 
@@ -66,7 +67,8 @@ module Screening
       end
       @release = release
       # flags: the protected categories the model reported, plus AiClient::INSTRUCTION_FLAG.
-      judgements, flags = parse(reply.text, rubric, extracted: text, redacted: release.cv_part)
+      judgements, flags = parse(reply.text, rubric, extracted: [text, interview&.raw_answers].compact.join("\n"),
+                                                    redacted: [release.cv_part, interview&.redacted_answers].compact.join("\n"))
       if (categories = flags - [AiClient::INSTRUCTION_FLAG]).any?
         # Category names only: they tell the redactor's owner which word list missed something.
         Rails.logger.warn("[screening] participation=#{@participation.id} protected_attribute_seen categories=#{categories.join(',')}")

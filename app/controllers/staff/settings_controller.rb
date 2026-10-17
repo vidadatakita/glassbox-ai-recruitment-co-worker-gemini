@@ -9,6 +9,7 @@ module Staff
       company = ClientCompany.find_by(id: Glassbox::Settings.settings_company_id(current_user))
       @retention_days = SystemSetting.retention_days(company:)
       @verified_line = SystemSetting.verified_line?(company:)
+      @ai_interview = SystemSetting.ai_interview?(company:)
       @cv_sections = Screening::CvSections.enabled(company:)
       @consent = ConsentTemplate.in_force(company:)
       @upcoming = ConsentTemplate.upcoming(company:)

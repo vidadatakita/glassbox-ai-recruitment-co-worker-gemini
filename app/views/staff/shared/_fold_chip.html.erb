@@ -1,0 +1,6 @@
+<%# The state chip and the open/close arrow of a folding section (summary right side). Locals: state
+    (done / todo / waiting / overview / history). The styles are the stage cards' (workflow.css). %>
+<span class="section-fold__chips">
+  <span class="stage-card__work stage-card__work--<%= { "overview" => "waiting", "history" => "waiting" }.fetch(state, state) %>"><%= { "done" => "Done", "todo" => "To do", "waiting" => "Waiting", "overview" => "Overview", "history" => "History" }.fetch(state) %></span>
+  <i class="fa fa-chevron-down stage-card__toggle" aria-hidden="true"></i>
+</span>

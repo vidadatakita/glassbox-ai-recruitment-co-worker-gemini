@@ -32,8 +32,8 @@ class Screening::RubricAnchorsTest < ActiveSupport::TestCase
     # The scale did not move: the schema still accepts exactly 0-3 and met/not_met.
     assert_equal %w[met not_met 0 1 2 3], request_schema(@fake.parsed_bodies.sole).dig("properties", "criteria", "items", "properties", "judgement", "enum")
     result = @participation.screening_results.sole
-    assert_equal "s1-2026-10-16.4", result.prompt_version
-    assert_equal "s1-2026-10-16.4", @participation.score_entries.sole.prompt_version
+    assert_equal "s1-2026-10-17.5", result.prompt_version
+    assert_equal "s1-2026-10-17.5", @participation.score_entries.sole.prompt_version
   end
 
   # Prompt .4 (16 Oct agreement check: 12 of 17 rating disagreements had the AI higher, because

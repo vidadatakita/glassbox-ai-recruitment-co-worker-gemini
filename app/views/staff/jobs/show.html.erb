@@ -8,20 +8,22 @@
     <%# Order (Vida, 17 Oct 2026): the figures first, then the workflow, then the work. %>
     <%= render "staff/jobs/metrics", board: @board %>
     <% progress = HiringProgress.new(@job) %>
-    <%= render "staff/jobs/hiring_progress", progress: progress %>
+    <%# Each section folds: done and waiting folded, to do open; a stepper step opens its section (17 Oct 2026). %>
+    <% sections = VacancySections.new(@job, board: @board) %>
+    <%= render "staff/jobs/hiring_progress", progress: progress, targets: sections.section_ids %>
     <div class="vacancy-layout">
       <div class="vacancy-layout__main">
-    <%= render "staff/jobs/brief_box", job: @job %>
-    <%= render "staff/jobs/portal_box", job: @job, board: @board %>
+    <%= render "staff/jobs/brief_box", job: @job, sections: sections %>
+    <%= render "staff/jobs/portal_box", job: @job, board: @board, sections: sections %>
       </div>
       <aside class="vacancy-layout__side"><%= render "staff/jobs/approval_chain", progress: progress %></aside>
     </div>
-    <%= render "staff/jobs/screening_box", job: @job %>
-    <%= render "staff/jobs/gate_box", job: @job %>
+    <%= render "staff/jobs/screening_box", job: @job, sections: sections %>
+    <%= render "staff/jobs/gate_box", job: @job, sections: sections %>
     <%= render "staff/jobs/report_link", job: @job %>
     <%= render "staff/jobs/fairness_link", job: @job %>
-    <%= render "staff/jobs/funnel", board: @board %>
-    <%= render "staff/jobs/applicants", board: @board %>
-    <%= render "staff/jobs/window_log", board: @board %>
+    <%= render "staff/jobs/funnel", board: @board, sections: sections %>
+    <%= render "staff/jobs/applicants", board: @board, sections: sections %>
+    <%= render "staff/jobs/window_log", board: @board, sections: sections %>
   </section>
 </div>

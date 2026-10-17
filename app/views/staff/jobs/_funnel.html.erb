@@ -1,8 +1,10 @@
 <% funnel = board.funnel %>
 <% top = [funnel.map(&:entered).max.to_i, 1].max %>
-<div class="hris-form-card">
-  <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-filter"></i></div>
-    <div><h3>Selection review</h3><p>Applicants entering each stage, in process order; percentage against the previous stage.</p></div></div>
+<% fold = local_assigns[:sections]&.state(:funnel) %>
+<details class="hris-form-card section-fold section-fold--<%= fold %>" id="selection-review" <%= "open" if fold.nil? || fold.in?(%w[todo overview]) %>>
+  <summary class="hris-form-card__header section-fold__summary"><div class="hris-form-card__icon"><i class="fa fa-filter"></i></div>
+    <div><h3>Selection review</h3><p>Applicants entering each stage, in process order; percentage against the previous stage.</p></div>
+    <div class="hris-form-card__action"><%= render "staff/shared/fold_chip", state: fold if fold %></div></summary>
   <div class="hris-form-card__body">
     <% if funnel.empty? %>
       <p class="text-muted mb-0">No selection stages have been created for this vacancy yet.</p>
@@ -25,4 +27,4 @@
       <% end %>
     <% end %>
   </div>
-</div>
+</details>

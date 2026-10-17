@@ -38,8 +38,13 @@ module Screening
     # since (staff action "Mulai screening" on the job page). Without it only a participation that
     # was never screened is queued, so a second click or a second callback queues nothing twice.
     def call(rerun: false)
-      reason = blocked_reason
+      reason = blocked_reason(rerun:)
       return reason if reason
+
+      # HR "Mulai screening" while the interview is still open: S1 runs now, the interview closes.
+      if rerun && (interview = Interviews.open_for(@application))
+        Interviews::Finish.call(interview, reason: "staff_started", queue: false)
+      end
 
       state = @participation.screening_state
       # In the automatic mode a CV still waiting for a reviewer (prepared under the release-first
@@ -54,7 +59,7 @@ module Screening
       :queued
     end
 
-    def blocked_reason
+    def blocked_reason(rerun: false)
       return :not_ai_stage unless @stage.score_source == "ai"
       return :no_candidate if @application.candidate_id.nil?
       return :no_consent if @application.consent_at.nil?
@@ -63,6 +68,9 @@ module Screening
       return :decided if @participation.current_decision
       return :stage_closed if @stage.status == "closed"
       return :no_cv if @application.cv_text.blank? && !@application.cv.attached?
+      # The AI interview comes first (it adds evidence); HR can still run S1 without it (rerun).
+      interview = Interviews.open_for(@application)
+      return :interview_pending if interview && (!rerun || Interviews.live?(interview))
 
       nil
     end

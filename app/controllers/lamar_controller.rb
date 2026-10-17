@@ -75,6 +75,9 @@ class LamarController < CandidateController
     unless @test.can_start?
       MailDelivery.deliver!(@application, "application_ack") { CandidateMailer.application_ack(@application, @token) }
     end
+    # AI interview (switch on): the candidate goes straight to the chat; S1 waits for it.
+    return redirect_to(candidate_status_interview_path(@token)) if Interviews.open_for(@application)
+
     render "lamar/sent"
   rescue Portal::SubmitApplication::Closed
     @window = ApplicationWindow.new(@job)

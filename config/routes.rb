@@ -59,6 +59,15 @@ Rails.application.routes.draw do
     post "answer",       action: :answer,    as: :answer
   end
 
+  # AI interview: five chat questions after applying, before S1; same private status link.
+  scope "status/:token/interview", as: :candidate_status_interview, controller: :interviews do
+    get  "/",      action: :show,   as: ""
+    post "start",  action: :start,  as: :start
+    post "answer", action: :answer, as: :answer
+    post "next",   action: :next_question, as: :next
+    post "finish", action: :finish, as: :finish
+  end
+
   # A5 (Cup rule "works without login"): the demo door, drawn only in DEMO_MODE=1 so a client install
   # never has the route. DemoSessionsController also answers 404 outside demo mode (belt and braces).
   if demo

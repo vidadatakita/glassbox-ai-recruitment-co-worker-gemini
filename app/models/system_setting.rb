@@ -25,4 +25,5 @@ class SystemSetting < ApplicationRecord
   # Days after the job closes; nil until someone sets it (D32).
   def self.retention_days(company: nil) = value_of("retention_days", company:)
   def self.verified_line?(company: nil) = value_of("verified_line", company:)
+  def self.ai_interview?(company: nil) = value_of("ai_interview", company:)
 end

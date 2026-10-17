@@ -1,8 +1,11 @@
 <%# The vacancy's workflow as a stepper (17 Oct 2026): done steps green with when and who, the current step
     highlighted, later steps grey. Steps come from HiringProgress, which reads what each step recorded. %>
 <%# Locals: progress (HiringProgress or BriefProgress: steps, current_key, complete?, done_count); title
-    and id (optional, so the brief page can draw its own workflow with the same look). %>
+    and id (optional, so the brief page can draw its own workflow with the same look); targets (optional,
+    step key => element id on the same page: that step becomes a link that opens and scrolls to the
+    section, see details_hash.js; pages without it draw the steps exactly as before). %>
 <% progress = local_assigns.fetch(:progress) %>
+<% targets = local_assigns.fetch(:targets, {}) %>
 <div class="hris-form-card hiring-progress" id="<%= local_assigns.fetch(:id, "hiring-progress") %>">
   <div class="hris-form-card__header">
     <div class="hris-form-card__icon"><i class="fa fa-road" aria-hidden="true"></i></div>
@@ -19,6 +22,8 @@
       <% progress.steps.each do |step| %>
         <% state = step.done? ? "done" : (step.key == progress.current_key ? "current" : "todo") %>
         <li class="hiring-progress__step hiring-progress__step--<%= state %><%= " is-last-done" if step.key == last_done %>" aria-current="<%= state == "current" ? "step" : "false" %>">
+          <% target = targets[step.key] %>
+          <% if target %><a class="hiring-progress__link" href="#<%= target %>" data-open-section data-turbo="false" title="Show the <%= step.label %> section"><% end %>
           <span class="hiring-progress__dot"><i class="fa <%= step.done? ? step.icon : (state == "current" ? "fa-hourglass-half" : step.icon) %>" aria-hidden="true"></i></span>
           <span class="hiring-progress__label"><%= step.label %></span>
           <% unless step.count.nil? %>
@@ -32,6 +37,7 @@
             <span class="hiring-progress__when"><%= state == "current" ? "Next" : "Waiting" %></span>
             <span class="hiring-progress__who"><i class="fa fa-user-o" aria-hidden="true"></i> <%= step.role %></span>
           <% end %>
+          <% if target %></a><% end %>
         </li>
       <% end %>
     </ol>

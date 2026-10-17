@@ -1,0 +1,18 @@
+<%# Where the salary agreement will appear, while it is not open yet (17 Oct 2026): it opens only after the
+    last stage's step decision is "Continue" (Progression::Salary.ready?). Without this card the section
+    was simply missing and the HR Manager or Superadmin could not tell why. Display only. %>
+<% last = Progression::Salary.last_step(application) %>
+<div class="hris-form-card salary-waiting" id="salary">
+  <div class="hris-form-card__header">
+    <div class="hris-form-card__icon"><i class="fa fa-money" aria-hidden="true"></i></div>
+    <div><h3>Salary agreement</h3><p>The HR Manager or the Superadmin agrees the salary within the vacancy's band.</p></div>
+    <div class="hris-form-card__action"><span class="stage-card__work stage-card__work--waiting">Not open yet</span></div>
+  </div>
+  <div class="hris-form-card__body">
+    <p class="mb-2"><i class="fa fa-lock text-muted" aria-hidden="true"></i>
+      Opens after the step decision <strong>Continue</strong> on the last stage<%= last ? " (#{CandidateStatus::STAGE_LABELS.fetch(last.stage.code, last.stage.code)})" : "" %>.</p>
+    <% if last %>
+      <div class="action-row"><%= link_to "Go to the #{CandidateStatus::STAGE_LABELS.fetch(last.stage.code, last.stage.code)} decision", "#stage-#{last.id}-decision", class: "btn btn-sm btn-primary", data: { open_section: true, turbo: false } %></div>
+    <% end %>
+  </div>
+</div>

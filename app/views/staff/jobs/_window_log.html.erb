@@ -1,5 +1,6 @@
-<div class="card custom-card">
-  <div class="card-header"><div class="card-title">Portal open and close history</div></div>
+<% fold = local_assigns[:sections]&.state(:window_log) %>
+<details class="card custom-card section-fold section-fold--<%= fold %>" id="portal-history" <%= "open" if fold.nil? || fold.in?(%w[todo overview]) %>>
+  <summary class="card-header section-fold__summary"><div class="card-title">Portal open and close history</div><%= render "staff/shared/fold_chip", state: fold if fold %></summary>
   <div class="card-body table-responsive">
     <table class="table mb-0">
       <thead><tr><th>Time (WIB)</th><th>Action</th><th>By</th><th>Closes automatically</th><th class="text-end">Quota</th><th>Reason</th></tr></thead>
@@ -18,4 +19,4 @@
       </tbody>
     </table>
   </div>
-</div>
+</details>

@@ -50,6 +50,10 @@ class SuperadminWalkTest < ActionDispatch::IntegrationTest
       assert_redirected_to staff_job_brief_step_path(job, 2)
       patch staff_job_brief_step_path(job, 2), params: brief_params(step2_params)
       patch staff_job_brief_step_path(job, 3), params: brief_params(step3_params)
+      # Owner requirement, 17 Oct 2026: the superadmin sets the salary band (brief step 3) too. Pinned on
+      # the persisted columns, so a later role change that drops the superadmin from step 3 shows red.
+      assert_equal [5_200_000, 6_000_000], job.reload.values_at(:salary_min, :salary_max).map(&:to_i),
+                   "the superadmin's salary band was not saved: #{flash_alert}"
       patch staff_job_brief_step_path(job, 4), params: brief_params(step4_params(package: 3)).merge(lanjut: "1")
       assert_redirected_to staff_job_test_case_step_path(job), "package 3 runs S2, so step 5 comes next"
 

@@ -38,10 +38,13 @@ module Screening
     AutoRelease = Data.define(:payload_text, :payload_sha256, :cv_part)
     NO_EVIDENCE = "No experience/education section found".freeze
 
-    def self.call(participation, text:, rubric:, names:, attempt: 1) = new(participation, text:, rubric:, names:, attempt:).call
+    def self.call(participation, text:, rubric:, names:, attempt: 1, interview: nil) = new(participation, text:, rubric:, names:, attempt:, interview:).call
 
-    def initialize(participation, text:, rubric:, names:, attempt: 1)
+    # interview: Interviews::ForScreening::Result or nil. Only the automatic mode has one (a live chat
+    # cannot wait for a person to release each answer), so only #auto_release adds it to the payload.
+    def initialize(participation, text:, rubric:, names:, attempt: 1, interview: nil)
       @participation = participation
+      @interview = interview
       @attempt = attempt
       @text = text
       @rubric = rubric
@@ -101,7 +104,7 @@ module Screening
       end
       raise Errors::Permanent.new("config", "API key not configured") unless Config.enabled?
 
-      payload = AiClient.user_content(redacted, @rubric.payload)
+      payload = AiClient.user_content(redacted, @rubric.payload, interview: @interview&.payload)
       AutoRelease.new(payload_text: payload, payload_sha256: Digest::SHA256.hexdigest(payload.encode("UTF-8")), cv_part: redacted)
     end
 

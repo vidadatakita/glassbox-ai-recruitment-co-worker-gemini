@@ -35,5 +35,5 @@ module Screening
   # below the level asked = 2, the level or scale asked = 3; a single unit is not "several" or "a
   # team"; an implied duty at most 2), one to three verbatim passages per criterion ("quotes", each
   # checked), and the instruction_seen flag. Scale, ids, stored values and the report block unchanged.
-  PROMPT_VERSION = "s1-2026-10-16.4"
+  PROMPT_VERSION = "s1-2026-10-17.5"
 end

@@ -45,6 +45,19 @@
       </div>
     </div>
 
+    <div class="hris-form-card">
+      <div class="hris-form-card__header"><div class="hris-form-card__icon"><%= render "staff/shared/ai_sparkle", size: 18 %></div>
+        <div><h3>AI interview</h3><p>After applying, each candidate answers 5 questions in a short chat before the CV is screened. Turn this on only after the consent text names the AI interview.</p></div></div>
+      <div class="hris-form-card__body">
+        <%= form_with url: staff_settings_path, method: :patch, data: { turbo: false, submit_guard: true } do %>
+          <input type="hidden" name="key" value="ai_interview">
+          <input type="hidden" name="value" value="0">
+          <label class="form-check-label"><input type="checkbox" class="form-check-input me-2" name="value" value="1" <%= "checked" if @ai_interview %>> Ask applicants 5 questions before screening</label>
+          <div class="mt-3"><%= label_button "Save", "fa-save" %></div>
+        <% end %>
+      </div>
+    </div>
+
     <%# Which CV parts the AI may read (Screening::CvSections). Personal data is never a choice. %>
     <div class="hris-form-card">
       <div class="hris-form-card__header"><div class="hris-form-card__icon"><%= render "staff/shared/ai_sparkle", size: 18 %></div>

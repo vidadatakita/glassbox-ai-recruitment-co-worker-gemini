@@ -15,6 +15,7 @@ class CandidateMailer < ApplicationMailer
     @application = application
     @job = application.job
     @url = candidate_status_url(token:)
+    @interview_url = interview_url(application, token)
     mail(to: application.candidate.email, subject: "Application received: #{@job.title}")
   end
 
@@ -32,6 +33,7 @@ class CandidateMailer < ApplicationMailer
     @job = application.job
     @url = candidate_status_url(token:)
     @test_url = candidate_status_test_url(token:)
+    @interview_url = interview_url(application, token)
     @start_by = start_by
     @minutes = minutes
     mail(to: application.candidate.email, subject: "Application received and technical test: #{@job.title}")
@@ -67,4 +69,9 @@ class CandidateMailer < ApplicationMailer
     @reason = reason
     mail(to: application.candidate.email, subject: "CV screening and technical test result: #{@job.title}")
   end
+
+  private
+
+  # The AI interview link, only while the interview is open (the AI interview, spec §3).
+  def interview_url(application, token) = Interviews.open_for(application) && candidate_status_interview_url(token:)
 end

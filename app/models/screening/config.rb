@@ -48,7 +48,7 @@ module Screening
     TASK_TIERS = {
       screening: :high, test_scoring: :high, stage_advice: :high, salary: :high, fairness: :high,
       brief: :medium, discrimination_check: :medium, red_flags: :medium, test_bank: :medium,
-      ad: :low, ad_scan: :low, letter: :low, chat: :low, status_text: :low
+      ad: :low, ad_scan: :low, letter: :low, chat: :low, status_text: :low, interview: :low
     }.freeze
     # Rule 6: model ids are defaults, not facts. This is the allowlist the team confirmed in the Google
     # Cloud project (glassbox:ai:smoke TIER=high|medium|low at deploy; results in docs/BUILD-LOG.md). A

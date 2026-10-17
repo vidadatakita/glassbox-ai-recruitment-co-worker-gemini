@@ -63,3 +63,5 @@
     <% unless Screening::Config.enabled? %><p class="text-warning small mb-0 mt-1"><%= ScreeningBoard::OFF_MESSAGE %></p><% end %>
   </div>
 </div>
+<%# AI interview of this application (nothing renders without one). %>
+<%= render "staff/interviews/summary", application: participation.job_application, user: current_user %>

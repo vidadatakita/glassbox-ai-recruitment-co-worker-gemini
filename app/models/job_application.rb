@@ -13,6 +13,7 @@ class JobApplication < ApplicationRecord
   belongs_to :candidate, optional: true
   belongs_to :consent_template, optional: true
   has_many :participations, dependent: :restrict_with_exception
+  has_one :interview, dependent: :restrict_with_exception
   has_many :offer_documents, dependent: :restrict_with_exception
   has_many :mail_deliveries, dependent: :restrict_with_exception
   has_one_attached :cv

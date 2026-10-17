@@ -16,6 +16,7 @@
     <%= render "staff/screening_reports/background", result: row.result, row: row %>
     <%= render "staff/screening_reports/criteria", result: row.result, row: row %>
     <%= render "staff/screening_reports/technical_test", row: row, board: @board %>
+    <%= render "staff/interviews/summary", application: row.application, user: current_user %>
     <%= render "staff/screening_reports/narratives", row: row, board: @board %>
     <%= render "staff/screening_reports/label", row: row, board: @board %>
     <%= render "staff/screening_reports/user_recommendation", row: row, board: @board %>

@@ -27,6 +27,21 @@ class ApplicationProgress
   def complete? = current_key.nil?
   def done_count = steps.count(&:done?)
 
+  # The page section each step opens when clicked on the applicant page (Vida, 17 Oct 2026: "show what
+  # belongs to that step"): step key => element id. The salary slot is always on the page for staff (the
+  # salary card, or the "not open yet" card in its place). The ids are the ones _contact, _stage_card,
+  # _salary, _salary_waiting and _offers draw; they change together.
+  def section_ids
+    ids = { applied: "contact-files", offer: "job-offer" }
+    if s1
+      ai_part = s1.stage.score_source == "ai" ? "stage-#{s1.id}-ai" : "stage-#{s1.id}"
+      ids.merge!(release: ai_part, screening: ai_part, decision: "stage-#{s1.id}-decision")
+    end
+    @participations.except("S1").each { |code, p| ids[:"stage_#{code}"] = "stage-#{p.id}" }
+    ids[:salary] = "salary"
+    ids
+  end
+
   private
 
   def s1 = @participations["S1"]
@@ -50,15 +65,23 @@ class ApplicationProgress
     Step.new(:decision, "Step decision", "fa-check-square-o", "HR Admin", choice&.created_at, choice&.actor)
   end
 
-  # Every stage after CV screening that the vacancy runs: done when it has a recorded result.
+  # Every stage after CV screening that the vacancy runs. A stage that is its own step (an interview) is
+  # done only when its step decision is made: a score alone does not move the applicant on, and the
+  # salary card opens only after that decision (Progression::Salary.ready?). Counting the score as done
+  # told the user "Next: Salary agreed" while the salary form was still closed (17 Oct 2026, applicant
+  # 29). A stage inside the screening gate (the technical test) has no decision of its own; it is done
+  # when it has a recorded result.
   def later_stage_steps
     codes = @application.job.stages.map(&:code).sort_by { |c| Stage::CODES.index(c) || 99 } - ["S1"]
     codes.map do |code|
       p = @participations[code]
       decision = p&.current_decision
       entry = p&.score_entries&.current&.order(:entered_at)&.first
-      # The time and the person come from the same record: the decision when there is one, else the score.
-      at, actor = if decision then [decision.decided_at, User.find_by(id: decision.decided_by_id) || "Recorded"]
+      choice = p && Progression.step?(p) ? p.progression_choice : nil
+      # The time and the person come from the same record: the step decision, else the stage's
+      # decision, else the score.
+      at, actor = if p && Progression.step?(p) then choice && [choice.created_at, choice.actor]
+                  elsif decision then [decision.decided_at, User.find_by(id: decision.decided_by_id) || "Recorded"]
                   elsif entry then [entry.entered_at, User.find_by(id: entry.entered_by_id) || "Recorded"]
                   end
       icon = code == "S2" ? "fa-file-text-o" : "fa-comments-o"
