@@ -14,9 +14,12 @@ module ApplicationDrafts
 
     def self.call(**kwargs) = new(**kwargs).call
 
-    def initialize(draft:, now: Time.current)
+    # after_close: true only from the automatic send at the end of the test (see
+    # Portal::SubmitApplication#initialize): a closed portal does not refuse a draft whose test started.
+    def initialize(draft:, now: Time.current, after_close: false)
       @draft = draft
       @now = now
+      @after_close = after_close
     end
 
     def call
@@ -33,7 +36,8 @@ module ApplicationDrafts
           result = Result.new(nil, nil, ["This application is already submitted."], false, {})
           raise ActiveRecord::Rollback
         end
-        result = Portal::SubmitApplication.call(job: @draft.job, params: person_params, channel_code: @draft.channel_code, now: @now, draft: @draft)
+        result = Portal::SubmitApplication.call(job: @draft.job, params: person_params, channel_code: @draft.channel_code, now: @now, draft: @draft,
+                                                after_close: @after_close)
         raise ActiveRecord::Rollback if result.errors.any?
 
         score_choices

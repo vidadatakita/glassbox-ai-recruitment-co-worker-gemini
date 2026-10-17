@@ -22,6 +22,8 @@ class CandidateStatusController < CandidateController
     # D60 plan §a.2: a technical test past its deadline is recorded as a no-show before the page is
     # built, so the page and the record agree even when the recurring job has not run.
     TechnicalTests::Expire.call(@application)
+    # The same for an AI interview past its time, so the page never offers a chat that has closed.
+    Interviews::Expire.call(@application)
     @status = CandidateStatus.new(@application.reload)
     @offer_unlocked = offer_unlocked?
   end

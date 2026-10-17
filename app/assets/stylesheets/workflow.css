@@ -296,6 +296,12 @@ body:has(.hris-form-actions:not(.hris-form-actions--static)) .data-chat__fab { b
    stage's parts (AI screening, decision, appointment) under small headings. */
 .stage-card__num { flex: 0 0 auto; width: 2.6rem; height: 2.6rem; border-radius: 50%; display: grid; place-items: center;
   font-weight: 800; color: #fff; background: #041E42; }
+/* Keeps the badge round on phones: the phone rule in staff.css stretches every header div to a full
+   row (.hris-form-card__header > div:not(...), specificity 0,3,1), which turned it into an oval. */
+/* The stage number stays a 2.6rem circle on phones. staff.css's phone rule for card headers
+   (`.hris-form-card__header > div:not(.hris-form-card__icon):not(.hris-form-card__action)`, specificity
+   0,3,1) stretched it into a full-width oval; this selector is 0,3,2, so it wins whatever the load order. */
+.stage-card > summary.hris-form-card__header > div.stage-card__num { flex: 0 0 2.6rem; width: 2.6rem; }
 .stage-card--pass .stage-card__num { background: #44883E; } .stage-card--eliminate .stage-card__num { background: #b42318; }
 .stage-card--review .stage-card__num { background: #E87722; }
 .stage-card__result { font-size: .78rem; font-weight: 800; padding: .3rem .75rem; border-radius: 999px; white-space: nowrap; }
@@ -350,3 +356,40 @@ body:has(.hris-form-actions:not(.hris-form-actions--static)) .data-chat__fab { b
 /* A link that is not available yet (vacancy page report and fairness links with an empty pipeline). */
 .link-waiting { cursor: not-allowed; opacity: .65; }
 .hris-form-card__action small.text-muted { text-align: right; font-size: .75rem; }
+
+/* AI interview line in the CV screening card, and the warning before Start screening. */
+.screening-interviews { border: 1px solid #e3e7ef; border-radius: .6rem; padding: .75rem 1rem; margin: .9rem 0; }
+.screening-interviews__list { list-style: none; padding: 0; margin: .4rem 0 0; display: flex; flex-wrap: wrap; gap: .4rem .9rem; font-size: .875rem; }
+.screening-interviews__list b { color: #041E42; font-variant-numeric: tabular-nums; }
+.screening-interviews__list .is-ended b { color: #A9431E; }
+.screening-interviews__insight { margin: .5rem 0 0; font-size: .85rem; color: #A9431E; }
+.screening-actions__warning { flex-basis: 100%; margin: 0 0 .5rem; font-size: .85rem; color: #A9431E; background: #fdf0e6; border-radius: .4rem; padding: .45rem .7rem; }
+.screening-actions__warning .fa { margin-right: .3rem; }
+
+/* Stage scores as small cards (applicant page step decision, 18 Oct 2026): label, figure, meaning. */
+.score-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr)); gap: .6rem; font-size: inherit; }
+.score-tile { display: flex; flex-direction: column; gap: .1rem; border: 1px solid #e3e7ef; border-radius: .6rem; padding: .55rem .8rem; background: #fff; min-width: 0; }
+.score-tile__label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #53565A; }
+.score-tile__value { font-size: 1.35rem; font-weight: 800; color: #041E42; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.score-tile__sub { font-size: .76rem; color: #63666A; }
+.score-tile--pass { border-left: 4px solid #44883E; } .score-tile--pass .score-tile__sub { color: #2f6b2a; }
+.score-tile--fail { border-left: 4px solid #b42318; } .score-tile--fail .score-tile__sub { color: #b42318; }
+
+/* Compact debrief table: no full-width stretch, ratings centred, the result block set apart. */
+.debrief-table { width: auto; min-width: 22rem; max-width: 100%; }
+.debrief-table th:not(:first-child), .debrief-table td:not(:first-child) { text-align: center; min-width: 5rem; }
+.debrief-table td:first-child { padding-right: 2rem; }
+.debrief-table thead th { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: #53565A; }
+.debrief-table__result tr:first-child td { border-top: 2px solid #c9d0de; }
+.debrief-table__result td { background: #f6f7fa; }
+.debrief-table__result td:first-child { font-weight: 700; color: #041E42; }
+@media (max-width: 575.98px) {
+  /* On a phone the debrief table takes the full width instead of a 22rem minimum (it scrolled inside). */
+  .debrief-table { width: 100%; min-width: 0; }
+  .debrief-table td:first-child { padding-right: .5rem; }
+  .debrief-table th:not(:first-child), .debrief-table td:not(:first-child) { min-width: 3rem; }
+}
+/* The step-decision panel is a grid; its children (score cards, AI advice) may shrink to the card's
+   width, or on a phone they spilled past the card and were cut off on the right. */
+.progression-panel > * { min-width: 0; }
+.progression-ai > .d-flex:first-child { flex-wrap: wrap; row-gap: .25rem; }

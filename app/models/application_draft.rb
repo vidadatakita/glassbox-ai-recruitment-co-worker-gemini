@@ -19,6 +19,19 @@ class ApplicationDraft < ApplicationRecord
   def self.digest(secret) = Digest::SHA256.hexdigest(secret.to_s)
   def self.find_by_secret(job, secret) = secret.present? ? find_by(job_id: job.id, token_digest: digest(secret)) : nil
 
+  # How long the AI rating may stay "pending" before the board treats the run as lost. The job runs
+  # in the web process in development (async queue) and in a worker in production; either can die
+  # mid-run (restart, deploy, a console that exits) and leave the status at "pending" for ever, with
+  # no error to show. Rating a few answers takes seconds, so 10 minutes only ever catches a lost run.
+  AI_STUCK_AFTER = 10.minutes
+
+  # A failed run, or one stuck at "pending": the HR Manager may ask the AI again. "pending" is timed
+  # from updated_at, which every place that sets "pending" also sets (ApplyController#submit,
+  # Staff::BankScoringsController#retry_ai); nothing else updates a submitted draft.
+  def ai_retryable?(now = Time.current)
+    ai_status == "failed" || (ai_status == "pending" && updated_at < now - AI_STUCK_AFTER)
+  end
+
   def submitted? = submitted_at.present?
   def test_started? = test_started_at.present?
   # The last moment an answer is accepted: the deadline plus the grace for a slow connection.

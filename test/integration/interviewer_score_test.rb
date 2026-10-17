@@ -68,7 +68,8 @@ class InterviewerScoreTest < ActionDispatch::IntegrationTest
     get staff_application_path(@application)
     table = Nokogiri::HTML(response.body).at_css("table.debrief-table")
     assert table, "debrief after everyone submitted"
-    assert_equal %w[Debrief Budi Sari], table.css("thead th").map(&:text)
+    # Header renamed "Debrief" -> "Competency" on 18 Oct 2026 (the first column lists the competencies).
+    assert_equal %w[Competency Budi Sari], table.css("thead th").map(&:text)
     assert_includes table.text, "Kurang teliti."
     expected = Scoring::StageScore.combine([ratings(4), ratings(2)].map { |r| Scoring::StageScore.from_ratings(r.values.map(&:to_i)) })
     assert_equal expected, @s3.reload.current_score, "the stage score is the mean of both interviewers"

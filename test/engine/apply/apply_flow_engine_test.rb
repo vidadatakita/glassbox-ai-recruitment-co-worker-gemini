@@ -240,7 +240,11 @@ class ApplyFlowEngineTest < ActionDispatch::IntegrationTest
     sent_blob = sent.job_application.cv.blob
     Portal::WindowChange.close!(job: closed_job, actor: staff_user("hr_pic"))
 
-    assert_equal 1, ApplicationDrafts::Purge.call
+    # 18 Oct 2026 (Vida): a started draft is sent automatically after its deadline even when the portal
+    # closed, so the purge keeps it until ApplicationDrafts::Purge::AUTO_SEND_WINDOW after the deadline.
+    # Before, it was deleted at the first purge after closing.
+    assert_equal 0, ApplicationDrafts::Purge.call, "kept for the automatic send"
+    assert_equal 1, ApplicationDrafts::Purge.call(now: gone.answer_deadline + ApplicationDrafts::Purge::AUTO_SEND_WINDOW + 1.minute)
     refute ApplicationDraft.exists?(gone.id)
     refute ActiveStorage::Blob.exists?(gone_blob.id), "the unsent CV is deleted with the draft"
     assert_equal 0, DraftAnswer.where(application_draft_id: gone.id).count

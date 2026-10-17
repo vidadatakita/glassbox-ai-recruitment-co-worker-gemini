@@ -34,7 +34,10 @@ class ManualScoreScreensTest < ActionDispatch::IntegrationTest
     assert_redirected_to staff_application_path(@application, anchor: "stage-#{@s4.id}")
     follow_redirect!
     assert_includes response.body, "Psychological test score saved."
-    assert_includes response.body, "Psychological test: <strong>82.5</strong>"
+    # The stage score is a card since 18 Oct 2026 (label, figure, pass score), no longer "Label: <strong>".
+    tile = css_select(".score-tile").find { |t| t.at_css(".score-tile__label")&.text == "Psychological test" }
+    assert tile, "the psychological test has its score card"
+    assert_equal "82.5", tile.at_css(".score-tile__value").text
     assert_nil form_doc, "the form is gone once the score is recorded"
   end
 

@@ -49,3 +49,20 @@
   .screening-report .report-criteria td:first-child { font-size: .875rem; }
   .screening-report .report-criteria td { white-space: normal; }
 }
+
+/* Candidate detail, 18 Oct 2026 (Vida: "tidy the layout"). Five tiles at 1200-1599 px left ~140 px
+   for the value, so "Recommended" broke mid-word ("Recommend / ed"). One size smaller, words wrap only
+   at spaces, and a narrower icon strip give the value room; wider screens keep the full tile. */
+.screening-report .report-metrics .loan-index-metric strong { overflow-wrap: normal; word-break: normal; hyphens: manual; }
+@media (min-width: 1200px) and (max-width: 1599.98px) {
+  .screening-report .report-metrics .loan-index-metric strong { font-size: 1.05rem; }
+  .screening-report .report-metrics .loan-index-metric__icon { flex: 0 0 2.75rem !important; width: 2.75rem !important; min-width: 2.75rem !important; }
+  .screening-report .report-metrics .loan-index-metric small { font-size: .72rem; }
+}
+
+/* Narrative approval: note and button on one row; the row stacks on a phone. */
+.report-inline-form { max-width: 40rem; }
+.report-inline-form__row { display: flex; gap: .5rem; align-items: center; }
+.report-inline-form__row .form-control { flex: 1 1 auto; min-width: 0; }
+.report-inline-form__row .btn { flex: 0 0 auto; white-space: nowrap; }
+@media (max-width: 575.98px) { .report-inline-form__row { flex-wrap: wrap; } .report-inline-form__row .btn { margin-left: auto; } }

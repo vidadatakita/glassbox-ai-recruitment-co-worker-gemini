@@ -12,7 +12,7 @@ class Interviews::ScreeningPayloadTest < ActiveSupport::TestCase
   setup do
     @job = screening_job
     @job.activities.create!(position: 1, description: "Receive and shelve incoming goods", output: "Shelved stock", share_percent: 100)
-    Portal::UpdateSetting.call(key: "ai_interview", value: "1", actor: staff_user("admin"))
+    switch_ai_interview_on(actor: staff_user("admin"))
   end
 
   def q(text) = gemini_message(nil, text: JSON.generate({ question: text }))

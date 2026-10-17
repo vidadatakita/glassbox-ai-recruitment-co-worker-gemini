@@ -88,7 +88,7 @@ class CandidateErasure
     end
   end
 
-  # The AI interview (docs/superpowers/specs/2026-10-16-ai-interview-design.md): an erasure row first, then every
+  # The AI interview (docs/features/05-ai-interview.md): an erasure row first, then every
   # question and answer text is NULL; the rows, positions, who and when stay. An interview still open when
   # consent is withdrawn is closed. Idempotent: a second call finds no text and writes nothing.
   def erase_interviews

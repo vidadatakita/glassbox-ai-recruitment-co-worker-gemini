@@ -31,6 +31,16 @@
       <% if (reason = vacancy_tools_blocked_reason(job, board)) %>
         <span class="d-inline-block text-end"><%= waiting_tool "Start screening", "fa-play", reason %></span>
       <% else %>
+        <%# Start screening ends every AI interview still open (Screening::Enqueue, reason staff_started), and
+            those CVs are then screened without answers. Say so before the click (18 Oct 2026: all 11
+            interviews of one vacancy ended this way a minute after the applications arrived). %>
+        <% open_interviews = board.participations.filter_map { |p| Interviews.open_for(p.job_application) } %>
+        <% if open_interviews.any? %>
+          <p class="screening-actions__warning" role="note"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+            <%= pluralize(open_interviews.size, "AI interview") %> still open
+            (<%= open_interviews.count(&:started_at) %> in progress, <%= open_interviews.count { |i| i.started_at.nil? } %> not started).
+            Starting screening now ends <%= open_interviews.one? ? "it" : "them" %>, and those CVs are screened without the answers.</p>
+        <% end %>
         <%= form_with url: staff_job_screening_start_path(job), method: :post, class: "d-inline", data: { turbo: false, submit_guard: true } do %>
           <%= label_button "Start screening", "fa-play" %>
         <% end %>

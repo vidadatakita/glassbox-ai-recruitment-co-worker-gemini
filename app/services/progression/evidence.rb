@@ -73,6 +73,16 @@ module Progression
     end
 
     def technical_test(participation)
+      # The competency test taken while applying (TechnicalTests::BankResult): its recorded score, the
+      # multiple-choice count and the written ratings with who rated them. No answer text, no names.
+      bank = TechnicalTests::BankResult.for(participation.job_application)
+      if bank
+        return { status: "competency test taken, not scored yet" } unless bank.recorded?
+
+        return { score: bank.score.to_f.round(1), basis: bank.basis_label, multiple_choice: "#{bank.mc_right} of #{bank.mc_total} correct",
+                 written: bank.written.map { |w| { tests: w.tests, rating: w.rating, rated_by: w.basis } } }
+      end
+
       review = TestReview.where(participation:).order(:id).last
       return { status: participation.attendance == "pending" ? "test not taken yet" : "not scored yet" } unless review
 

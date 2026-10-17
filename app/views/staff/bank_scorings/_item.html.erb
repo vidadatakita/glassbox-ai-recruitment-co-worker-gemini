@@ -8,8 +8,9 @@
            aside: content_tag(:span, score.value ? "#{score.value.round}/100" : "waiting for AI", class: "portal-state portal-state--#{row.recorded ? 'success' : (row.needs_review ? 'warning' : 'info')}") } do %>
   <% if row.recorded %>
     <p class="mb-0"><i class="fa fa-check-circle text-success" aria-hidden="true"></i> Result recorded; it is the technical-test result of this applicant.</p>
-  <% elsif d.ai_status == "failed" %>
-    <div class="alert alert-warning job-brief-notice" role="status"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i><div><%= d.ai_error %></div></div>
+  <% elsif d.ai_retryable? %>
+    <div class="alert alert-warning job-brief-notice" role="status"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+      <div><%= d.ai_status == "failed" ? d.ai_error : "The AI rating has not finished after #{ApplicationDraft::AI_STUCK_AFTER.in_minutes.to_i} minutes; the run was probably interrupted. Ask the AI again, or rate the answers by hand." %></div></div>
     <% if can_score %>
       <%= button_to "Ask the AI again", staff_job_bank_scoring_retry_path(job_id: d.job_id, id: d.id), method: :post, class: "btn btn-light label-btn",
                     form: { data: { turbo: false, submit_guard: true } } %>

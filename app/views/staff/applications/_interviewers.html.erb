@@ -34,12 +34,16 @@
     <% by_entry = invites.select(&:submitted?).index_by(&:score_entry_id) %>
     <% picks = UserRecommendation.where(job_application: participation.job_application).order(:id).to_a %>
     <div class="table-responsive">
+      <%# Compact debrief (18 Oct 2026): one column per assessor, ratings centred; the result rows
+          (score, pick, note) in their own block below the competencies. %>
       <table class="table table-sm debrief-table mb-2">
-        <thead><tr><th>Debrief</th><% entries.each do |e| %><th><%= by_entry[e.id]&.interviewer_name || "HR" %></th><% end %></tr></thead>
+        <thead><tr><th>Competency</th><% entries.each do |e| %><th><%= by_entry[e.id]&.interviewer_name || "HR" %></th><% end %></tr></thead>
         <tbody>
           <% competencies.each do |c| %>
             <tr><td><%= c.name %></td><% entries.each do |e| %><td><%= e.ratings[c.id.to_s] || "-" %></td><% end %></tr>
           <% end %>
+        </tbody>
+        <tbody class="debrief-table__result">
           <tr><td>Score</td><% entries.each do |e| %><td><strong><%= e.value.to_f %></strong></td><% end %></tr>
           <tr><td>Pick</td><% entries.each do |e| %>
             <% invite = by_entry[e.id] %>

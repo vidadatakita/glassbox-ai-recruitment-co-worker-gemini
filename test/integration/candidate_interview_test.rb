@@ -11,7 +11,7 @@ class CandidateInterviewTest < ActionDispatch::IntegrationTest
     @job.activities.create!(position: 1, description: "Receive and shelve incoming goods", output: "Shelved stock", share_percent: 100)
   end
 
-  def switch_on = Portal::UpdateSetting.call(key: "ai_interview", value: "1", actor: staff_user("admin"))
+  def switch_on = switch_ai_interview_on(actor: staff_user("admin"))
   def q(text) = gemini_message(nil, text: JSON.generate({ question: text }))
 
   def run_with(*replies, &)

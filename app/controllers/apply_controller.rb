@@ -81,10 +81,14 @@ class ApplyController < CandidateController
     @application = result.application
     return render("lamar/not_eligible") if result.knocked_out
 
-    MailDelivery.deliver!(@application, "application_ack") { CandidateMailer.application_ack(@application, @token) }
-    # Slice C: the written answers get their AI suggestion right after Submit, in the background.
-    @draft.update_columns(ai_status: "pending")
-    BankAnswerAiRateJob.perform_later(@draft.id)
+    # The acknowledgement e-mail and the AI rating of the written answers; shared with the automatic
+    # submit when the test time runs out with the tab closed (ApplicationDrafts::AutoSubmit).
+    ApplicationDrafts::AfterSubmit.call(draft: @draft, application: @application, token: @token)
+    # AI interview (switch on): the candidate goes straight to the chat, the same as the two-step form
+    # (LamarController#create). Without this the interview was created but never shown, and it closed
+    # unanswered when screening started (17 Oct 2026, vacancy with an approved bank).
+    return redirect_to(candidate_status_interview_path(@token)) if Interviews.open_for(@application)
+
     render "lamar/sent"
   rescue Portal::SubmitApplication::Closed
     @window = ApplicationWindow.new(@job)

@@ -1,4 +1,4 @@
-# The AI interview inside the apply flow (docs/superpowers/specs/2026-10-16-ai-interview-design.md): five
+# The AI interview inside the apply flow (docs/features/05-ai-interview.md): five
 # chat questions after the application, before S1. Reached only through the candidate's private status
 # link; a tampered, revoked or withdrawn link gets the one "link not valid" page.
 #

@@ -6,7 +6,7 @@ class InterviewTickJobTest < ActiveSupport::TestCase
 
   test "the tick expires only the due interviews and queues S1 for each" do
     job = screening_job
-    Portal::UpdateSetting.call(key: "ai_interview", value: "1", actor: staff_user("admin"))
+    switch_ai_interview_on(actor: staff_user("admin"))
     due, fresh = with_env({ "AI_SCREENING_REVIEW" => "auto" }) do
       with_ai(FakeGemini.new) do
         a, = submit!(job, email: "a@uji.example", cv: pdf_upload(pdf_with_text(FIXTURE_CV)))

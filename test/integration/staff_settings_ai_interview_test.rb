@@ -8,6 +8,13 @@ class StaffSettingsAiInterviewTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "input[name=key][value=ai_interview]"
 
+    # Without a consent text naming the interview the switch is refused, with the reason on screen.
+    patch staff_settings_path, params: { key: "ai_interview", value: "1" }
+    assert_redirected_to staff_settings_path
+    assert_match "names the AI interview", flash[:alert].to_s
+    refute SystemSetting.ai_interview?(company: admin.client_company)
+
+    consent_naming_ai_interview!
     patch staff_settings_path, params: { key: "ai_interview", value: "1" }
     assert_redirected_to staff_settings_path
     assert SystemSetting.ai_interview?(company: admin.client_company)

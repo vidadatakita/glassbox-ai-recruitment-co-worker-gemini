@@ -26,12 +26,13 @@ module Staff
       render :index, status: :unprocessable_content
     end
 
-    # A failed AI run (ai_status failed) can be run again from the board.
+    # A failed AI run, or one stuck at "pending" (ApplicationDraft#ai_retryable?), can be run again
+    # from the board.
     def retry_ai
       draft = ApplicationDraft.where(job_id: @job.id).where.not(submitted_at: nil).find(params[:id])
-      return redirect_to(staff_job_bank_scorings_path(@job), alert: "Only a failed AI run can be retried, by an HR Manager who is not the consultant.") unless can_score? && draft.ai_status == "failed"
+      return redirect_to(staff_job_bank_scorings_path(@job), alert: "Only a failed or stalled AI run can be retried, by an HR Manager who is not the consultant.") unless can_score? && draft.ai_retryable?
 
-      draft.update_columns(ai_status: "pending", ai_error: nil)
+      draft.update_columns(ai_status: "pending", ai_error: nil, updated_at: Time.current)
       BankAnswerAiRateJob.perform_later(draft.id)
       redirect_to staff_job_bank_scorings_path(@job), notice: "AI suggestions requested again for #{label(draft)}."
     end

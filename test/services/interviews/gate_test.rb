@@ -8,7 +8,7 @@ class Interviews::GateTest < ActiveSupport::TestCase
 
   setup { @job = screening_job }
 
-  def switch_on = Portal::UpdateSetting.call(key: "ai_interview", value: "1", actor: staff_user("admin"))
+  def switch_on = switch_ai_interview_on(actor: staff_user("admin"))
   def auto(&) = with_env({ "AI_SCREENING_REVIEW" => "auto" }, &)
 
   def apply(fake = FakeGemini.new, **overrides)

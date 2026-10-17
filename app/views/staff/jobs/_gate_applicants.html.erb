@@ -1,6 +1,6 @@
-<%# Per applicant: the two stage decisions and the gate result. Waiting first (someone must act),
-    then passed, then not passed. %>
-<p class="text-muted gate-table__note">Waiting first. "Passed" needs both stages.</p>
+<%# Per applicant: the two stage decisions and the gate result. Waiting first (someone must act), then
+    passed, then not passed; once every place is filled, passed first (GateBoard#result_order). %>
+<p class="text-muted gate-table__note"><%= gate.filled? ? "All places are filled: passed applicants first." : "Waiting first." %> "Passed" needs both stages.</p>
 <div class="table-responsive">
   <table class="table table-hover align-middle mb-0 gate-table">
     <thead><tr><th>Applicant</th><th>CV screening</th><th>Technical test</th><th>Gate result</th><th><span class="visually-hidden">Actions</span></th></tr></thead>

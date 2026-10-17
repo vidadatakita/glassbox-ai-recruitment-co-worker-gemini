@@ -28,12 +28,19 @@ class GateBoard
         d1 = decisions[p1.id]
         d2 = p2 && decisions[p2.id]
         Row.new(s1: p1, s2: p2, s1_decision: d1, s2_decision: d2, result: Gates::Result.of(d1, d2))
-      end.sort_by { |row| [RESULT_ORDER.fetch(row.result), row.s1.id] }
+      end.sort_by { |row| [result_order.fetch(row.result), row.s1.id] }
     end
   end
 
   # Applicants still needing a decision come first: that is what someone has to act on.
   RESULT_ORDER = { open: 0, passed: 1, not_passed: 2 }.freeze
+  # Once every place is filled (HeadcountProgress#complete?: the applicants at "Salary agreed" reach the
+  # headcount, whether or not the portal is still open), nobody has to act any more, and the people who
+  # passed are the ones to see (Vida, 18 Oct 2026, on a vacancy showing "Places filled 2 / 2").
+  FILLED_ORDER = { passed: 0, open: 1, not_passed: 2 }.freeze
+
+  def filled? = defined?(@filled) ? @filled : (@filled = HeadcountProgress.new(job).complete?)
+  def result_order = filled? ? FILLED_ORDER : RESULT_ORDER
 
   def counts_for(stage)
     list = loaded.select { |p| p.stage_id == stage.id }

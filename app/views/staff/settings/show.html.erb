@@ -49,6 +49,10 @@
       <div class="hris-form-card__header"><div class="hris-form-card__icon"><%= render "staff/shared/ai_sparkle", size: 18 %></div>
         <div><h3>AI interview</h3><p>After applying, each candidate answers 5 questions in a short chat before the CV is screened. Turn this on only after the consent text names the AI interview.</p></div></div>
       <div class="hris-form-card__body">
+        <%# The guard: the switch saves only under a consent text that names the AI interview. %>
+        <% unless Interviews.consent_names_it?(current_user.client_company) %>
+          <p class="text-warning small mb-2"><i class="fa fa-exclamation-triangle me-1" aria-hidden="true"></i>The consent text in force does not name the AI interview, so the interview cannot run. Publish a consent version that names it first.</p>
+        <% end %>
         <%= form_with url: staff_settings_path, method: :patch, data: { turbo: false, submit_guard: true } do %>
           <input type="hidden" name="key" value="ai_interview">
           <input type="hidden" name="value" value="0">

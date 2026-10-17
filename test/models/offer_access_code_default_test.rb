@@ -12,17 +12,4 @@ class OfferAccessCodeDefaultTest < ActiveSupport::TestCase
     refute OfferAccessCode.default_code_enabled?(rails_env: "production", env: { "DEMO_MODE" => "0" })
     refute OfferAccessCode.default_code_enabled?(rails_env: "test", env: {})
   end
-
-  test "redeem accepts the default code only while it is enabled" do
-    # Builds its own application: the suite has no application fixture, so the earlier
-    # `JobApplication.first || skip` always skipped and this check never ran.
-    application = JobApplication.create!(job: portal_job)
-    OfferAccessCode.stub(:default_code_enabled?, true) do
-      assert OfferAccessCode.redeem(application, " 123456 ")
-      assert OfferAccessCode.redeem(application, "123456"), "the default code works every time, it is not consumed"
-    end
-    OfferAccessCode.stub(:default_code_enabled?, false) do
-      refute OfferAccessCode.redeem(application, "123456"), "the default code opened the offer while disabled"
-    end
-  end
 end

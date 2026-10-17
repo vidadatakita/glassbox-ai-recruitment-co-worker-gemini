@@ -28,6 +28,7 @@
   </div>
 </div>
 
+<%= render "candidate_status/interview", interview: @application.interview, token: params[:token] %>
 <%= render "candidate_status/test", test: @status.technical_test, token: params[:token] %>
 
 <h2 class="status-page__h2">Your stages</h2>

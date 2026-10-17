@@ -15,6 +15,10 @@ module ScreeningReport
       @review = participation && defined?(::TestReview) ? ::TestReview.where(participation_id: participation.id).order(:id).last : nil
     end
 
+    # The competency test taken while applying, when this application took it (TechnicalTests::BankResult);
+    # the report shows that block instead of the case-test block.
+    def bank = defined?(@bank) ? @bank : (@bank = @participation && TechnicalTests::BankResult.for(@participation.job_application))
+
     def applicable? = !@participation.nil?
     def started? = !attempt.nil?
     def scored? = !review.nil?

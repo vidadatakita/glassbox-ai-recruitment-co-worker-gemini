@@ -10,7 +10,7 @@
       <% if result&.narratives.present? %>
         <% if approval %><span class="portal-state portal-state--success">Approved by the consultant</span><% else %><span class="portal-state portal-state--warning">AI draft</span><% end %>
       <% end %></h3>
-      <p>Drafted by the AI from the CV; every statement carries its CV quote. It stays a draft until the vacancy's consultant approves it.</p></div></div>
+      <p>Drafted by the AI from the CV; every statement carries its CV quote. It stays a draft until the vacancy's HR Admin approves it.</p></div></div>
   <div class="hris-form-card__body">
     <% if result.nil? || result.narratives.blank? %>
       <p class="text-muted mb-0"><%= result.nil? ? "Not screened by the AI yet." : "This AI result was made before the report prompt version; there is no narrative yet." %></p>
@@ -41,8 +41,11 @@
       <% elsif current_user.role.in?(%w[hr_admin superadmin]) && (board.job.consultant_id.nil? || board.job.consultant_id == current_user.id) %>
         <%= form_with url: staff_job_screening_report_narratives_path(board.job, row.application.id), method: :post, class: "report-inline-form mt-3", data: { turbo: false, submit_guard: true } do %>
           <label class="form-label" for="narasi_note">Note (optional)</label>
-          <input type="text" class="form-control" id="narasi_note" name="note" maxlength="500">
-          <div class="action-row mt-2"><%= label_button "Approve narrative", "fa-check" %></div>
+          <%# The note and the button on one row, the button ending it (18 Oct 2026: it sat alone, centred). %>
+          <div class="report-inline-form__row">
+            <input type="text" class="form-control" id="narasi_note" name="note" maxlength="500" placeholder="e.g. checked against the CV">
+            <%= label_button "Approve narrative", "fa-check" %>
+          </div>
         <% end %>
       <% end %>
     <% end %>

@@ -56,6 +56,21 @@ module Screening
       { "quote" => passages.join(SEPARATOR), "verified" => all_verified?(judgement:, quotes: passages, extracted:, redacted:) }
     end
 
+    # One quote string that may hold several excerpts joined or cut short with an ellipsis ("…" or
+    # "..."), as the model writes them when it shortens a long passage. Each excerpt must be found
+    # verbatim on its own, and at least one must carry evidence; the ellipsis itself is never matched.
+    # Used for competency-test written answers (ApplicationDrafts::AiRate), whose prompt asks for one
+    # quote string: before this, a correct but shortened quote failed the plain substring match and
+    # sent the answer to a person (17 Oct 2026 sample run: 2 of the 3 strongest applicants).
+    # An answer that itself contains "..." still verifies: its quote splits at the same places.
+    ELLIPSIS = /…|\.{3,}/
+
+    def excerpts_found?(quote, text)
+      excerpts = quote.to_s.split(ELLIPSIS).map { |q| normalise(q) }.reject { |q| evidence_free?(q) }
+      haystack = normalise(text)
+      excerpts.any? && excerpts.all? { |q| haystack.include?(q) }
+    end
+
     # A stored quote back as its passages, for display (nil after erasure: none).
     def passages(stored) = stored.to_s.split(SEPARATOR).map(&:strip).reject(&:empty?)
 

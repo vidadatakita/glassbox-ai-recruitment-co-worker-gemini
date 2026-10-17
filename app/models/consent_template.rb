@@ -62,6 +62,35 @@ class ConsentTemplate < ApplicationRecord
 
   def draft? = placeholder_sections.any?
 
+  # The AI interview collects new personal data (typed answers) and sends it to an AI, so it may run
+  # only under a consent text that names it (UU PDP Pasal 21; Vida, 18 Oct 2026). "Names it" means a
+  # section contains the words "AI interview"; AI_INTERVIEW_ADDENDUM below is the demo wording. Used by
+  # Interviews.enabled_for? and Portal::UpdateSetting (the switch cannot be turned on without it).
+  AI_INTERVIEW_TERM = /\bAI interview\b/i
+  def names_ai_interview? = SECTIONS.keys.any? { |field| public_send(field).to_s.match?(AI_INTERVIEW_TERM) }
+
+  # The sections the AI interview adds to a consent text (demo wording, 18 Oct 2026; a real employer
+  # publishes its own reviewed text). Processing period is unchanged: answers are erased with the rest
+  # of the application (CandidateErasure). Where Google processes the data is not named yet.
+  AI_INTERVIEW_ADDENDUM = {
+    purpose: "After you apply, you are invited to a short AI interview: five questions in a chat, written by an AI " \
+             "system (Google Gemini) from the job's requirements. Your answers are used as additional evidence when your " \
+             "CV is screened against the vacancy. The AI only advises; a person at the employer decides every step of the selection.",
+    collected_items: "The answers you type in the AI interview, the questions you were asked, and the times you started and finished.",
+    data_types: "Your AI interview answers show how you describe your work experience for this role. Before any answer is " \
+                "sent to the AI, personal details such as names, phone numbers and addresses are removed; an answer that " \
+                "still contains them is held back and not sent.",
+    rights: "The AI interview is optional to complete: you may end it at any time, and if you do not start it within 48 " \
+            "hours, your CV is screened on its own. You can ask for a person to review any result, and when you withdraw " \
+            "your consent or ask for your data to be erased, your interview answers are erased with the rest of your application data."
+  }.freeze
+
+  # A new version = this one's sections with the AI interview addendum appended (versions are never
+  # edited; append-only). Returns the attributes, not a record: the caller sets version and dates.
+  def with_ai_interview_addendum
+    SECTIONS.keys.to_h { |field| [field, [public_send(field), AI_INTERVIEW_ADDENDUM[field]].compact.join(" ")] }
+  end
+
   # Headings of the sections that still contain a [PLACEHOLDER] (D38 blocks the portal on these).
   def placeholder_sections
     SECTIONS.filter_map { |field, heading| heading if public_send(field).to_s.include?("[PLACEHOLDER") }

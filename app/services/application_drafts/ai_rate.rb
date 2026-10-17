@@ -66,7 +66,7 @@ module ApplicationDrafts
       raise Screening::Errors::Malformed.new("malformed", "unreadable rating") unless rating&.between?(1, 5)
 
       quote = data["quote"].to_s.strip
-      verified = quote.present? && Screening::QuoteCheck.normalise(text).include?(Screening::QuoteCheck.normalise(quote))
+      verified = Screening::QuoteCheck.excerpts_found?(quote, text)
       answer.update_columns(ai_rating: rating, ai_quote: quote.presence, ai_reason: data["reason"].to_s.strip.presence,
                             ai_quote_verified: verified, ai_model: reply.model, ai_prompt_version: PROMPT_VERSION, ai_rated_at: Time.current)
     rescue JSON::ParserError

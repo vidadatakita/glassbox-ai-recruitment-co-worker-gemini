@@ -44,6 +44,12 @@ ConsentTemplate.in_force || ConsentTemplate.create!(
     [ field, "[DEMO TEXT, not legal text] Sample wording for the demo (#{heading}). A real install publishes the employer's own text." ]
   end.merge(version: "demo-1", effective_from: 1.day.ago, created_at: Time.current)
 )
+# demo-2 (18 Oct 2026): the demo text plus the AI interview addendum, so the AI interview runs only
+# under a consent text that names it (ConsentTemplate#names_ai_interview?, UU PDP Pasal 21). A new
+# version, never an edit: applicants who agreed to demo-1 keep demo-1.
+if (base = ConsentTemplate.in_force) && !base.names_ai_interview?
+  ConsentTemplate.create!(base.with_ai_interview_addendum.merge(version: "demo-2", effective_from: 1.minute.ago, created_at: Time.current))
+end
 
 puts "Seeded #{company.name}: users #{User.count}. Password: #{password}"
 

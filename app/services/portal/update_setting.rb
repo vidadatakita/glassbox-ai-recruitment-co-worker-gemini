@@ -11,6 +11,11 @@ module Portal
       raise Invalid, "Unknown setting." if spec.nil?
 
       normalised = normalise(spec, value)
+      # The AI interview may be switched on only under a consent text that names it (UU PDP Pasal 21).
+      if key.to_s == "ai_interview" && normalised == "true" &&
+         !Interviews.consent_names_it?(company_id && ClientCompany.find_by(id: company_id))
+        raise Invalid, "Publish a consent text that names the AI interview first: applicants must agree to it before they are interviewed (UU PDP Pasal 21)."
+      end
       SystemSetting.transaction do
         setting = SystemSetting.lock.find_or_initialize_by(key: key.to_s, client_company_id: company_id)
         old = setting.persisted? ? setting.value : nil

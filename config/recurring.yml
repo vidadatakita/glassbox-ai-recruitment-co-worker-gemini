@@ -25,6 +25,12 @@ production:
     class: ApplicationDraftPurgeJob
     queue: default
     schedule: every hour at minute 25
+  # Vida 18 Oct 2026: a started test whose time ran out with the tab closed is sent automatically
+  # (ApplicationDrafts::AutoSubmit). Every 5 minutes, so it runs well before the hourly purge.
+  application_draft_auto_submit:
+    class: ApplicationDraftAutoSubmitJob
+    queue: default
+    schedule: every 5 minutes
   # AI interview: closes an interview 30 minutes after its first question (or 48 hours after the
   # application without one), so S1 can run on the CV and the answers given.
   interview_tick:

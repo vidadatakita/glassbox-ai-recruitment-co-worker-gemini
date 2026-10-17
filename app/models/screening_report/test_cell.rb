@@ -40,6 +40,10 @@ module ScreeningReport
     def state_without_score(participation, decision, attempt, submitted_at, now)
       return :expired if participation.attendance == "no_show" || decision&.reason_code == "no_show"
       return attempt_state(attempt, now) if attempt
+      # The competency test was taken while applying (three-step form): the answers are in, the score is
+      # not recorded yet. Without this the cell said "expired" after 48 hours.
+      # Read defensively like the rest of this cell (some callers pass a bare stand-in participation).
+      return :awaiting_review if participation.respond_to?(:job_application) && TechnicalTests::BankResult.for(participation.job_application)
       return :expired if submitted_at && now > submitted_at + START_WINDOW
 
       :not_started

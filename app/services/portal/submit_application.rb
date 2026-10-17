@@ -33,12 +33,19 @@ module Portal
     # draft: an ApplicationDraft from the three-step form (17 Oct 2026). Its consent was recorded at
     # step 1 (template, retention days, time) and its CV checked at step 2, so those come from the
     # draft instead of the signed token and the upload; every other check runs as for the form.
-    def initialize(job:, params:, channel_code: nil, now: Time.current, draft: nil)
+    #
+    # after_close: the three-step draft's automatic send at the end of its test (Vida, 18 Oct 2026: an
+    # applicant whose test started while the portal was open is still sent, even if the portal closed
+    # since). The portal's closed state (HR, date, quota) is then not checked; the first stage being
+    # closed still refuses, because an application entering a closed CV screening would sit there
+    # forever (D40). Only ApplicationDrafts::Submit passes it, and only for a draft whose test started.
+    def initialize(job:, params:, channel_code: nil, now: Time.current, draft: nil, after_close: false)
       @job = job
       @params = params
       @channel_code = channel_code.to_s[0, 40].presence
       @now = now
       @draft = draft
+      @after_close = after_close && draft&.test_started?
     end
 
     def call
@@ -49,7 +56,8 @@ module Portal
 
       ActiveRecord::Base.transaction do
         @job.lock!
-        raise Closed, "window closed" unless ApplicationWindow.new(@job, now: @now).open?
+        window = ApplicationWindow.new(@job, now: @now)
+        raise Closed, "window closed" unless window.open? || (@after_close && !window.first_stage_closed?)
 
         consent, retention = @draft ? [@draft.consent_template, @draft.consent_retention_days] : shown_consent
         # Without a verifiable record of what the candidate was shown, nothing is stored: a consent

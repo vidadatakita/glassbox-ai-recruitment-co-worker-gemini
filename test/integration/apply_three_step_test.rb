@@ -90,6 +90,39 @@ class ApplyThreeStepTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "already been sent"
   end
 
+  # The three-step form hands over to the AI interview exactly like the two-step form: with the switch
+  # on, Submit goes straight to the chat; with it off (control), the "sent" page as before.
+  def submit_three_step!
+    post apply_start_path(@job.public_code), params: apply_details_params
+    secret = response.location[%r{/d/([^/]+)/cv}, 1]
+    post apply_cv_path(@job.public_code, secret), params: { lamaran: { cv: pdf } }
+    post apply_test_start_path(@job.public_code, secret)
+    assert_difference -> { JobApplication.count }, 1 do
+      post apply_submit_path(@job.public_code, secret)
+    end
+    JobApplication.order(:id).last
+  end
+
+  test "AI interview on: Submit goes straight to the chat" do
+    switch_ai_interview_on(actor: staff_user("admin"))
+    Screening::Config.stub(:enabled?, true) do
+      Screening::Config.stub(:review_before_ai?, false) do
+        application = submit_three_step!
+        assert application.interview&.open?, "an interview is created for the application"
+        assert_response :redirect
+        assert_match %r{/status/[^/]+/interview}, response.location
+      end
+    end
+  end
+
+  test "control: AI interview off, Submit shows the sent page" do
+    Screening::Config.stub(:enabled?, true) do
+      submit_three_step!
+      assert_response :success
+      assert_nil JobApplication.order(:id).last.interview
+    end
+  end
+
   test "the server keeps the deadline: a late answer is refused, Submit still sends the saved ones" do
     post apply_start_path(@job.public_code), params: apply_details_params
     secret = response.location[%r{/d/([^/]+)/cv}, 1]

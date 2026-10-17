@@ -7,6 +7,30 @@
   <div class="hris-form-card__body">
     <% if !block.applicable? %>
       <p class="text-muted mb-0">This vacancy's package has no technical test.</p>
+    <% elsif (bank = block.bank) %>
+      <%# The competency test taken in step 3 of the application (TechnicalTests::BankResult). %>
+      <dl class="report-facts">
+        <div><dt>Test</dt><dd>Competency test (question bank version <%= bank.draft.question_bank.version %>)</dd></div>
+        <div><dt>Sent</dt><dd><%= wib(bank.submitted_at) %></dd></div>
+        <div><dt>Multiple choice</dt><dd><%= bank.mc_right %> of <%= bank.mc_total %> correct</dd></div>
+        <div><dt>Result</dt><dd><%= bank.recorded? ? "#{bank.score.to_f.round(1)} / 100, #{bank.basis_label}" : "not recorded yet" %></dd></div>
+      </dl>
+      <% if bank.written.any? %>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle report-rubric table-stack">
+            <thead><tr><th>Written answer tests</th><th>Rating (1–5)</th><th>Rated by</th></tr></thead>
+            <tbody>
+              <% bank.written.each do |w| %>
+                <tr><td data-label="Tests"><%= w.tests %></td><td data-label="Rating"><%= w.rating || "—" %></td><td data-label="Rated by"><%= w.basis %></td></tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+      <% if bank.recorded? %>
+        <% if bank.note.present? %><p class="mb-1"><strong>Scoring note:</strong> <%= bank.note %></p><% end %>
+        <p class="text-muted small mb-0">Recorded by <%= bank.recorded_by&.name %> · <%= wib(bank.recorded_at) %></p>
+      <% end %>
     <% elsif !block.started? %>
       <p class="text-muted mb-0">The technical test has not been started<%= row.test.state == :expired ? "; the 48-hour window to start has passed" : "" %>.</p>
     <% else %>

@@ -51,13 +51,32 @@
     <%# D13: the S1 figure, the cumulative score and the AI's own score stay hidden while this is an
         unjudged calibration CV (ai_result_blinded?). %>
     <% blinded = Progression.step_members(participation).any? { |m| ai_result_blinded?(m) } %>
-    <p class="progression-scores mb-2">
+    <%# Three figures as small cards, each saying what it means (18 Oct 2026: "make it easy to read"):
+        the stage score against its pass score, the cumulative score, and the AI's own score. %>
+    <div class="progression-scores score-tiles mb-3">
       <% Progression.step_members(participation).each do |m| %>
-        <span><%= CandidateStatus::STAGE_LABELS.fetch(m.stage.code) %>: <strong><%= ai_result_blinded?(m) ? "hidden" : (m.current_score&.to_f || "-") %></strong> <span class="text-muted">/ pass score <%= m.stage.threshold.to_f %></span></span>
+        <% hidden = ai_result_blinded?(m) %>
+        <% score = m.current_score&.to_f %>
+        <% tone = hidden || score.nil? ? "none" : (score >= m.stage.threshold.to_f ? "pass" : "fail") %>
+        <div class="score-tile score-tile--<%= tone %>">
+          <span class="score-tile__label"><%= CandidateStatus::STAGE_LABELS.fetch(m.stage.code) %></span>
+          <strong class="score-tile__value"><%= hidden ? "hidden" : (score || "-") %></strong>
+          <span class="score-tile__sub">pass score <%= m.stage.threshold.to_f %><%= { "pass" => " · passed", "fail" => " · below the pass score" }.fetch(tone, "") %></span>
+        </div>
       <% end %>
-      <span>Cumulative score: <strong><%= blinded ? "hidden" : (cumulative&.to_f || "-") %></strong></span>
-      <% if rec&.ready? && !blinded %><span>Score in the AI advice: <strong><%= rec.ai_score.to_f %></strong></span><% end %>
-    </p>
+      <div class="score-tile">
+        <span class="score-tile__label">Cumulative score</span>
+        <strong class="score-tile__value"><%= blinded ? "hidden" : (cumulative&.to_f || "-") %></strong>
+        <span class="score-tile__sub">all stages so far, weighted</span>
+      </div>
+      <% if rec&.ready? && !blinded %>
+        <div class="score-tile">
+          <span class="score-tile__label">Score in the AI advice</span>
+          <strong class="score-tile__value"><%= rec.ai_score.to_f %></strong>
+          <span class="score-tile__sub">the AI's own estimate, for comparison</span>
+        </div>
+      <% end %>
+    </div>
 
     <div class="progression-ai">
       <div class="d-flex align-items-center gap-2 mb-1">

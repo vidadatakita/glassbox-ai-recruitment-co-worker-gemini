@@ -1,0 +1,26 @@
+<%# The AI interview at vacancy level (18 Oct 2026): how many applicants answered, are still in it, or
+    ended without answers, and why. Before, interviews showed only one applicant at a time, so a vacancy
+    whose 11 interviews had all ended unanswered looked like it had no AI interview at all. Nothing
+    renders for a vacancy without interviews. %>
+<% interviews = Interview.joins(:job_application).where(job_applications: { job_id: board.job.id }).to_a %>
+<% if interviews.any? %>
+  <% open, finished = interviews.partition(&:open?) %>
+  <% ended = finished.reject { |i| i.finish_reason == "completed" }.group_by(&:finish_reason).sort_by { |_, list| -list.size } %>
+  <% completed = finished.count { |i| i.finish_reason == "completed" } %>
+  <div class="screening-interviews" id="ai-interviews">
+    <div class="screening-tiles__head"><span>AI interview</span>
+      <span><strong><%= completed %></strong> of <%= interviews.size %> answered (<%= (100.0 * completed / interviews.size).round %>%)</span></div>
+    <ul class="screening-interviews__list">
+      <li><b><%= completed %></b> completed</li>
+      <li><b><%= open.count(&:started_at) %></b> in progress</li>
+      <li><b><%= open.count { |i| i.started_at.nil? } %></b> not started yet</li>
+      <% ended.each do |reason, list| %>
+        <li class="is-ended"><b><%= list.size %></b> <%= InterviewsHelper::REASONS.fetch(reason, reason).downcase %></li>
+      <% end %>
+    </ul>
+    <% if ended.any? && completed.zero? %>
+      <p class="screening-interviews__insight"><i class="fa fa-exclamation-circle" aria-hidden="true"></i>
+        No applicant has answered yet; every ended interview was screened on the CV alone.</p>
+    <% end %>
+  </div>
+<% end %>

@@ -1,0 +1,16 @@
+<%# The way back into the AI interview from the status page, while it is open (18 Oct 2026): before, the
+    only way back after closing the chat was the link in the email. Same card shape as the technical
+    test card above it. %>
+<% if interview&.open? %>
+  <section class="card test-entry" aria-labelledby="ai-interview-card">
+    <h2 id="ai-interview-card">AI interview</h2>
+    <% if interview.started_at %>
+      <p class="small">In progress. Time ends <%= l(interview.due_at.in_time_zone, format: :long_wib) %>.</p>
+      <%= link_to "Continue the AI interview", candidate_status_interview_path(token), class: "btn primary" %>
+    <% else %>
+      <p class="small"><%= Interview::MAX_TURNS %> short questions in a chat, <%= Interview::TIME_LIMIT.in_minutes.to_i %> minutes once you start.
+        Start no later than <%= l((interview.created_at + Interview::START_WINDOW).in_time_zone, format: :long_wib) %>; your CV is screened after it.</p>
+      <%= link_to "Start the AI interview", candidate_status_interview_path(token), class: "btn primary" %>
+    <% end %>
+  </section>
+<% end %>

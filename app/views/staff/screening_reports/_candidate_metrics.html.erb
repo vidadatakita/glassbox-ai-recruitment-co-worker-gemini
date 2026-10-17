@@ -18,5 +18,5 @@
              caption: row.label_confirmed ? "confirmed by the reviewer · advice, not a decision" : "AI advice, not confirmed by the reviewer yet" %>
   <%= render "staff/shared/metric", variant: ScreeningReport::Budget.tone(row.budget) == "muted" ? "info" : ScreeningReport::Budget.tone(row.budget), icon: "fa-money", label: "FIT: Budget", col: tile,
              value: ScreeningReport::Budget.label(row.budget),
-             caption: "expected #{report_salary(row.application)} · vacancy band #{ScreeningReport::Text.salary(job.salary_min, job.salary_max)} · information only, not scored" %>
+             caption: "expected #{report_salary(row.application)} · band #{ScreeningReport::Text.salary(job.salary_min, job.salary_max)} · not scored" %>
 </div>

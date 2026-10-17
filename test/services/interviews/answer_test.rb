@@ -7,7 +7,7 @@ class Interviews::AnswerTest < ActiveSupport::TestCase
   setup do
     @job = screening_job
     @job.activities.create!(position: 1, description: "Receive and shelve incoming goods", output: "Shelved stock", share_percent: 100)
-    Portal::UpdateSetting.call(key: "ai_interview", value: "1", actor: staff_user("admin"))
+    switch_ai_interview_on(actor: staff_user("admin"))
     @application = with_env({ "AI_SCREENING_REVIEW" => "auto" }) do
       with_ai(FakeGemini.new) { submit!(@job, name: "Rina Pratiwi", email: "rina@uji.example", cv: pdf_upload(pdf_with_text(FIXTURE_CV))).first }
     end
