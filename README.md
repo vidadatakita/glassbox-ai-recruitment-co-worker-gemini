@@ -54,5 +54,5 @@ Superadmin too. Applicants and interview assessors never sign in: they use the p
 
 GlassBox Team
 
-Base code © CV Datakita Komunika, licensed to Team GlassBox for the Google Cloud AI Builder Cup 2026 only.
+Licensed to Team GlassBox & CV Datakita Komunika© for the Google Cloud AI Builder Cup 2026 only.
 GlassBox additions © Team GlassBox. All rights reserved until the team chooses a licence.
