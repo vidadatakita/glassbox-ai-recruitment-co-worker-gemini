@@ -5,7 +5,8 @@
     <div><h3>Consent text for data use <% if consent.nil? || consent.draft? %><span class="badge bg-warning">Draft: check with your legal counsel</span><% end %></h3>
       <p>Fill in every item of UU 27/2022 Article 21(1). The retention period is taken from the setting above.</p></div></div>
   <div class="hris-form-card__body">
-    <%= form_with url: consent_staff_settings_path, method: :post, scope: :consent, data: { turbo: false, submit_guard: true } do |f| %>
+    <%# On the demo the consent route is not drawn: the form renders read-only (SettingsHelper). %>
+    <%= settings_form url: (demo_mode? ? nil : consent_staff_settings_path), method: :post, scope: :consent do |f| %>
       <div class="row g-3">
         <% ConsentTemplate::SECTIONS.each do |field, heading| %>
           <div class="col-12">
@@ -19,7 +20,7 @@
           <span class="hris-field-hint">Must be in the future when a version is already in force.</span>
         </div>
       </div>
-      <div class="mt-3"><%= label_button "Save as new version", "fa-save" %></div>
+      <div class="mt-3"><%= settings_save("Save as new version", "fa-save") %></div>
     <% end %>
   </div>
 </div>

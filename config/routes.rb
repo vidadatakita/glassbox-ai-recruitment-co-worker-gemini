@@ -204,15 +204,15 @@ Rails.application.routes.draw do
     # reads only summaries of the user's own vacancies through fixed read-only functions.
     get  "ask", to: "data_chats#show", as: :data_chat
     post "ask", to: "data_chats#create"
-    unless demo
-      # The work queue and the system settings are not demo steps.
-      resource :work_queue, only: :show do
-        post "link_requests/:id/handled", action: :handle_link_request, as: :handle_link_request
-        post "mail_failures/:id/handled", action: :handle_mail_failure, as: :handle_mail_failure
-      end
-      resource :settings, only: %i[show update] do
-        post :consent, action: :create_consent
-      end
+    # The work queue is on the demo too (the team lead, 18 Oct 2026). The system settings are shown on
+    # the demo READ-ONLY: anyone can enter the public demo without a password, so the saving routes
+    # (update, consent) are drawn only outside demo mode, and the page renders without forms there.
+    resource :work_queue, only: :show do
+      post "link_requests/:id/handled", action: :handle_link_request, as: :handle_link_request
+      post "mail_failures/:id/handled", action: :handle_mail_failure, as: :handle_mail_failure
+    end
+    resource :settings, only: (demo ? %i[show] : %i[show update]) do
+      post :consent, action: :create_consent unless demo
     end
   end
   root to: redirect("/staff")

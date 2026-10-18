@@ -452,3 +452,7 @@ body.modal-open .data-chat__fab { display: none !important; }
 /* A closed guide keeps its own height instead of stretching to the Portal status card beside it. */
 .loan-index-bottom-cards > div:has(> .jobs-guide:not([open])) { align-self: flex-start; }
 .loan-index-bottom-cards .jobs-guide:not([open]) { height: auto !important; min-height: 0 !important; }
+
+/* System settings on the public demo: read-only fieldsets (SettingsHelper), no Save buttons. */
+fieldset.settings-readonly { border: 0; padding: 0; margin: 0; min-width: 0; }
+fieldset.settings-readonly .form-control, fieldset.settings-readonly .form-select { background: #f6f7fa; }

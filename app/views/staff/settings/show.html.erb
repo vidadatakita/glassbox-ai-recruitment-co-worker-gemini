@@ -14,19 +14,23 @@
     </div>
 
     <%= render "staff/shared/consent_blockers", blockers: @blockers %>
+    <% if demo_mode? %>
+      <div class="alert alert-info" role="status"><i class="fa fa-eye me-1" aria-hidden="true"></i>
+        <strong>Read-only on the public demo.</strong> Every setting is shown as it is; nothing can be changed here, because anyone can enter the demo.</div>
+    <% end %>
 
     <div class="hris-form-card">
       <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-hourglass-half"></i></div>
         <div><h3>Applicant data retention period</h3><p>Required before the applicant portal opens. This number appears in the consent text. Set it together with your legal counsel.</p></div></div>
       <div class="hris-form-card__body">
-        <%= form_with url: staff_settings_path, method: :patch, data: { turbo: false, submit_guard: true } do %>
+        <%= settings_form url: staff_settings_path, method: :patch do %>
           <input type="hidden" name="key" value="retention_days">
           <div class="row g-3 align-items-end">
             <div class="col-md-4">
               <label class="form-label" for="retention_days">Days after the vacancy closes</label>
               <input type="number" min="1" step="1" class="form-control" id="retention_days" name="value" value="<%= @retention_days %>" required>
             </div>
-            <div class="col-md-4"><%= label_button "Save", "fa-save" %></div>
+            <div class="col-md-4"><%= settings_save("Save", "fa-save") %></div>
           </div>
         <% end %>
       </div>
@@ -36,11 +40,11 @@
       <div class="hris-form-card__header"><div class="hris-form-card__icon"><i class="fa fa-check-square-o"></i></div>
         <div><h3>"Verified by GlassBox" line</h3><p>Off by default on installs on a client's server until decided.</p></div></div>
       <div class="hris-form-card__body">
-        <%= form_with url: staff_settings_path, method: :patch, data: { turbo: false, submit_guard: true } do %>
+        <%= settings_form url: staff_settings_path, method: :patch do %>
           <input type="hidden" name="key" value="verified_line">
           <input type="hidden" name="value" value="0">
           <label class="form-check-label"><input type="checkbox" class="form-check-input me-2" name="value" value="1" <%= "checked" if @verified_line %>> Show on the Apply page</label>
-          <div class="mt-3"><%= label_button "Save", "fa-save" %></div>
+          <div class="mt-3"><%= settings_save("Save", "fa-save") %></div>
         <% end %>
       </div>
     </div>
@@ -53,11 +57,11 @@
         <% unless Interviews.consent_names_it?(current_user.client_company) %>
           <p class="text-warning small mb-2"><i class="fa fa-exclamation-triangle me-1" aria-hidden="true"></i>The consent text in force does not name the AI interview, so the interview cannot run. Publish a consent version that names it first.</p>
         <% end %>
-        <%= form_with url: staff_settings_path, method: :patch, data: { turbo: false, submit_guard: true } do %>
+        <%= settings_form url: staff_settings_path, method: :patch do %>
           <input type="hidden" name="key" value="ai_interview">
           <input type="hidden" name="value" value="0">
           <label class="form-check-label"><input type="checkbox" class="form-check-input me-2" name="value" value="1" <%= "checked" if @ai_interview %>> Ask applicants 5 questions before screening</label>
-          <div class="mt-3"><%= label_button "Save", "fa-save" %></div>
+          <div class="mt-3"><%= settings_save("Save", "fa-save") %></div>
         <% end %>
       </div>
     </div>
@@ -67,7 +71,7 @@
       <div class="hris-form-card__header"><div class="hris-form-card__icon"><%= render "staff/shared/ai_sparkle", size: 18 %></div>
         <div><h3>CV sections sent to the AI</h3><p>Only the ticked sections are read by the AI during screening. Personal data (name, date of birth, address, ID number, phone number, email, religion, marital status) is always redacted and never sent.</p></div></div>
       <div class="hris-form-card__body">
-        <%= form_with url: staff_settings_path, method: :patch, data: { turbo: false, submit_guard: true } do %>
+        <%= settings_form url: staff_settings_path, method: :patch do %>
           <input type="hidden" name="key" value="ai_cv_sections">
           <div class="row g-2">
             <% Screening::CvSections::GROUPS.each do |key, (label, _)| %>
@@ -77,7 +81,7 @@
             <% end %>
           </div>
           <p class="hris-field-hint mt-2">Sections are recognised by their heading in the CV (for example "Pengalaman Kerja", "Education", "Portofolio"). Applies to CVs screened after saving. At least one section.</p>
-          <div class="mt-2"><%= label_button "Save", "fa-save" %></div>
+          <div class="mt-2"><%= settings_save("Save", "fa-save") %></div>
         <% end %>
       </div>
     </div>
@@ -89,11 +93,11 @@
       <div class="hris-form-card__body">
         <% %w[baseline_hours_to_answer baseline_minutes_per_cv baseline_reasoned_pct].each do |key| %>
           <% spec = Glassbox::Settings::SCREEN_KEYS.fetch(key) %>
-          <%= form_with url: staff_settings_path, method: :patch, class: "d-flex flex-wrap gap-2 align-items-end mb-2", data: { turbo: false, submit_guard: true } do %>
+          <%= settings_form url: staff_settings_path, method: :patch, class: "d-flex flex-wrap gap-2 align-items-end mb-2" do %>
             <input type="hidden" name="key" value="<%= key %>">
             <div class="flex-grow-1"><label class="form-label" for="<%= key %>"><%= spec[:label] %></label>
               <input type="number" class="form-control" id="<%= key %>" name="value" min="<%= spec[:min] %>" <%= "max=#{spec[:max]}" if spec[:max] %> step="1" value="<%= @baselines[key] %>" required></div>
-            <%= label_button "Save", "fa-save" %>
+            <%= settings_save("Save", "fa-save") %>
           <% end %>
         <% end %>
       </div>

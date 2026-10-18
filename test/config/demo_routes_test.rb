@@ -9,9 +9,12 @@ class DemoRoutesTest < ActiveSupport::TestCase
     [:get, "/passwords/new"], [:post, "/auth/google_oauth2"], [:get, "/auth/failure"],
     [:post, "/staff/applications/1/salary/ai-advice"], [:post, "/staff/applications/1/letter/draft"], [:post, "/staff/applications/1/letter"],
     [:post, "/staff/participations/1/appointments"], [:post, "/staff/participations/1/score"], [:post, "/staff/appointments/1/calendar"],
-    [:get, "/staff/work_queue"], [:get, "/staff/settings"]
+    # Settings are READ-ONLY on the demo (18 Oct 2026): the page shows, the saving routes do not exist.
+    [:patch, "/staff/settings"], [:post, "/staff/settings/consent"]
   ].freeze
   KEPT_IN_DEMO = [
+    # The work queue and the read-only settings page are on the demo since 18 Oct 2026 (the team lead).
+    [:get, "/staff/work_queue"], [:get, "/staff/settings"],
     [:get, "/demo"], [:get, "/session/new"], [:get, "/apply/abc"], [:get, "/status/tok"], [:get, "/status/tok/technical-test"],
     [:get, "/score/tok"], [:get, "/staff/jobs/1/brief"], [:get, "/staff/jobs/1/ad"], [:post, "/staff/jobs/1/portal/open"],
     [:get, "/staff/jobs/1/ai-review"], [:get, "/staff/jobs/1/screening/review"], [:get, "/staff/jobs/1/screening-report"],

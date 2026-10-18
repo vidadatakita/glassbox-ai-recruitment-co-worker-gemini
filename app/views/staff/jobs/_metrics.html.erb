@@ -15,8 +15,7 @@
   <%= render "staff/shared/metric", col: col, variant: "primary", icon: "fa-file-text-o", label: "Applications",
              value: window.application_count,
              caption: window.quota ? "of quota #{window.quota}, #{window.remaining_quota} left (#{(window.application_count * 100.0 / window.quota).round}% filled)" : "no quota" %>
-  <%# On the public demo the work queue is not routed, so this card is plain, not a link. %>
-  <%= link_to demo_mode? ? "#metrics" : staff_work_queue_path, class: "#{col} text-reset text-decoration-none portal-metric-link", title: demo_mode? ? "Upcoming appointments" : "Open the work queue" do %>
+  <%= link_to staff_work_queue_path, class: "#{col} text-reset text-decoration-none portal-metric-link", title: "Open the work queue" do %>
     <div class="loan-index-metric loan-index-metric--<%= soon.positive? ? "warning" : "success" %>">
       <span class="loan-index-metric__icon"><i class="fa fa-calendar-check-o"></i></span>
       <div><span>Appointments confirmed</span><strong><%= board.confirmed_count %> / <%= scheduled %></strong>
