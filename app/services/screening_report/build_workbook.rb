@@ -15,6 +15,7 @@ module ScreeningReport
       ["No", ->(_row, _board, i) { i + 1 }, :number],
       ["Name", ->(row, board, _i) { board.visibility.name_for?(row.application) ? row.candidate&.name.to_s : row.person_number }, :text],
       ["Last position", ->(row, board, _i) { board.ai_text(row, Text.last_position(row.result)) }, :text], # masked for blind viewers (engine 08 F-01)
+      # An unjudged calibration CV is blank for the people who judge calibration (row.blinded).
       ["AI score (S1) 0–100", ->(row, _b, _i) { row.ai_score&.to_f }, :number],
       ["AI score (S1) 1–5", ->(row, _b, _i) { row.band }, :band],
       ["Technical test score (S2)", ->(row, _b, _i) { row.test.state == :scored ? row.test.score.to_f : row.test.label }, :mixed],

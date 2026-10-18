@@ -1,7 +1,7 @@
 # Shared helpers for the feature-03 test engine (job form "Buat Lowongan"). Written by the test
 # engine on 2026-10-10. The builder's helpers (BriefFactory, PortalFactory, ScoringFactory) are
 # reused and never changed. The portal engine's helpers are COPIED here, not required, so this
-# directory's hashes (docs/test-engine/hashes-03.txt) cover everything these tests depend on.
+# directory's hashes cover everything these tests depend on.
 #
 # Spec oracles are written out literally below, from the documents, never derived from the
 # constants under test (Briefs::Coverage::REQUIRED, Briefs::StagePlan::CODES, PackageAdvisor):

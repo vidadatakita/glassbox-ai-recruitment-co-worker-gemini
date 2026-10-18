@@ -1,6 +1,6 @@
 require "test_helper"
 
-# AI_SCREENING_REVIEW=auto (owner's decision 2026-10-10, docs/decisions/0004): the AI screens each
+# AI_SCREENING_REVIEW=auto (owner's decision 2026-10-10): the AI screens each
 # CV as it arrives; people decide on the result. A CV whose redacted text still shows personal
 # data is held for a reviewer, exactly as in the release-first mode.
 class Screening::AutoModeTest < ActiveSupport::TestCase

@@ -56,15 +56,8 @@ class DemoPagesTourTest < ActionDispatch::IntegrationTest
   test "every seeded complete brief passes the brief check, so its steps can be saved" do
     jobs = Job.where(brief_status: "complete").where.not(brief_completed_at: nil).order(:id).to_a
     assert_operator jobs.size, :>=, 3
-    # One deliberate exception (18 Oct 2026, the discrimination-check scene): Admin Staff carries ONE
-    # open flagged requirement (DemoGlassbox::FLAGGED_REQUIREMENT) for a person to decide on camera.
-    # Exactly that one line is allowed, on that vacancy only; any other problem still fails.
     jobs.each do |job|
       problems = Briefs::BriefCheck.new(job).problems
-      if job.title == "Admin Staff"
-        assert_equal [DemoGlassbox::FLAGGED_REQUIREMENT[:text]], Briefs::RequirementCheck.open_lines(job).map { |l| l["text"] }
-        problems = problems.reject { |pr| pr.step.to_s == "3" && pr.message.include?("flagged by the discrimination test") }
-      end
       assert_empty problems.map { |pr| "step #{pr.step}: #{pr.message}" }, "#{job.title} is seeded complete but fails its brief check"
     end
   end
@@ -78,7 +71,8 @@ class DemoPagesTourTest < ActionDispatch::IntegrationTest
     total = doc.at_css("p.text-muted.small strong").text.to_i
     counts = doc.css("td.job-share > strong").map { |n| n.text.to_i }
     shares = doc.css(".job-share__pct").map { |n| n.text.to_i }
-    assert_equal 3, counts.size
+    # Three screened vacancies plus the draft discrimination-check scene (18 Oct 2026), which has 0 applications.
+    assert_equal DemoGlassbox::JOBS.size + 1, counts.size
     assert_equal total, counts.sum
     assert_equal JobApplication.where(job_id: Job.where(title: DemoGlassbox::JOBS.values.pluck(:title))).where.not(candidate_id: nil).count, total
     assert_in_delta 100, shares.sum, 2

@@ -1,5 +1,4 @@
-# Database guards for the findings of the Plan 1 test-engine run, 2026-10-10
-# (docs/features/01-scoring-core.md §7). Each guard repeats in PostgreSQL a rule the models
+# Database guards for the findings of the Plan 1 test-engine run, 2026-10-10. Each guard repeats in PostgreSQL a rule the models
 # already enforce, because a model is bypassed by update_columns, update_all, raw SQL or a
 # console; the database is not.
 class HardenScoringRecords < ActiveRecord::Migration[8.1]

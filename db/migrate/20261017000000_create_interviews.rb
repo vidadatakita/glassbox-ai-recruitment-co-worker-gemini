@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# AI interview before CV screening (docs/features/05-ai-interview.md): one
+# AI interview before CV screening: one
 # interview per application and up to five question/answer turns. The answer of a turn is written once
 # (InterviewTurn); the texts are set to NULL only by CandidateErasure (consent withdrawn, retention).
 class CreateInterviews < ActiveRecord::Migration[8.1]

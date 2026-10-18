@@ -4,7 +4,7 @@ require_relative "job_form_engine_support"
 # Test engine, feature 03, through the real routes: who may read and write a brief (D49 (5),
 # blueprint §1.2), the ad-approval gate, the house form rules on every brief page (blueprint §5.3:
 # no nested form, no disabled submit, the named finish button reaches the controller), no price
-# anywhere (D49 (3), E20), the Bahasa wording standard (docs/STANDARD-BAHASA-UI.md, D42-D47) and
+# anywhere (D49 (3), E20), the Bahasa wording standard (D42-D47) and
 # the separately grouped multi-value display (blueprint §3).
 class JobFormAccessAndScreensTest < ActionDispatch::IntegrationTest
   include JobFormEngineSupport

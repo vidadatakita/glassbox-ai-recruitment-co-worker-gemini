@@ -1,18 +1,25 @@
 require "test_helper"
 require Rails.root.join("db/seeds/demo_glassbox").to_s
 
-# Step 7 / evaluation (A6, A9): docs/evaluation/hand-scores.csv must be the seed's HAND data, every
+# Step 7 / evaluation (A6, A9): the hand-scores CSV must be the seed's HAND data, every
 # hand quote must be a verbatim line of its CV, and the one planted quote must NOT be. Risk hunted:
 # a hand score or quote edited in one place only, which would make the agreement check compare the
 # AI against numbers the seed never showed; and a "verbatim" quote that the evidence check would
 # reject, which would turn a hand score into an unverified row on the demo screen.
 # Pure: no database row is written; the seed's constants and Screening::QuoteCheck only.
 class CupHandScoresTieoutTest < ActiveSupport::TestCase
-  CSV_PATH = Rails.root.join("docs/evaluation/hand-scores.csv")
-
-  test "the CSV in docs/evaluation is byte-identical to what the seed generates" do
-    assert File.exist?(CSV_PATH), "docs/evaluation/hand-scores.csv is missing; generate it from DemoGlassbox.hand_scores_csv"
-    assert_equal DemoGlassbox.hand_scores_csv, File.read(CSV_PATH)
+  # The CSV is generated in memory from the seed (DemoGlassbox.hand_scores_csv); no file outside the
+  # repository is read. The tie-out is between that output and HAND itself: every row carries exactly
+  # the judgement and quote HAND holds for that applicant and requirement, and the output is stable.
+  test "the generated hand-scores CSV ties out row by row to the seed's HAND data, and is deterministic" do
+    csv = DemoGlassbox.hand_scores_csv
+    assert_equal csv, DemoGlassbox.hand_scores_csv, "two generations differ: the CSV is not deterministic"
+    rows = csv.lines(chomp: true).drop(1).map { |line| line.scan(/"((?:[^"]|"")*)"/).flatten.map { |f| f.gsub('""', '"') } }
+    expected = DemoGlassbox::PEOPLE.flat_map do |person|
+      person[:hand].map { |code, (judgement, quote)| [person[:key], code, judgement, quote.to_s] }
+    end
+    actual = rows.map { |r| [r[0], r[3], r[5], r[6]] }
+    assert_equal expected.sort, actual.sort
   end
 
   test "n is stated by the data: 25 applicants, 4 requirements each, 100 rows" do

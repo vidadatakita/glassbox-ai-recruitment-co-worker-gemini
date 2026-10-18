@@ -97,7 +97,7 @@ module Glassbox
       "ai_cv_sections" => { type: :list, values: %w[experience education skills certifications projects activities summary],
                             default: %w[experience education skills certifications], label: "CV sections sent to the AI" },
       "verified_line" => { type: :boolean, default: false, label: "Show the \"Verified by GlassBox\" line on the Apply page" },
-      # AI interview before CV screening (docs/features/05-ai-interview.md). Off until
+      # AI interview before CV screening. Off until
       # the consent text names the interview (UU PDP Pasal 21): with it off, no interview exists and the
       # apply flow is exactly as before.
       "ai_interview" => { type: :boolean, default: false, label: "AI interview before CV screening" },

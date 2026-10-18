@@ -1,7 +1,7 @@
 require "test_helper"
 
 # Test engine, feature 10 (D52 (1)): how does "Masuk dengan Google" break?
-# Each test names the mutant it must kill (docs/test-engine/mutants-10.md). Every Google answer
+# Each test names the mutant it must kill. Every Google answer
 # is an OmniAuth mock; no request leaves the process (WebMock, test/support/google_stubs.rb).
 #
 # Claim -> mutant -> test that goes red:

@@ -1,4 +1,4 @@
-# Operator tasks for the Google integrations (D52). Runbook: docs/runbooks/enable-google.md.
+# Operator tasks for the Google integrations (D52).
 # None of them prints a client secret, an app password or the service-account key.
 namespace :glassbox do
   namespace :google do
@@ -10,7 +10,7 @@ namespace :glassbox do
         puts format("%-9s %-14s %s", r.integration, label, r.message)
       end
       # A failed check must fail the command too, so a deploy script cannot read it as green.
-      abort "One or more Google integrations FAILED. See the lines above and the runbook." if results.any? { |r| r.status == :failed }
+      abort "One or more Google integrations FAILED. See the lines above." if results.any? { |r| r.status == :failed }
     end
 
     desc "Copy files from local disk to Google Cloud Storage. Dry run unless DRY_RUN=0. Never deletes the local copy."

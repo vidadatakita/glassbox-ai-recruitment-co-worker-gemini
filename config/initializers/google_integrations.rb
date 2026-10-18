@@ -13,8 +13,8 @@ Rails.application.config.after_initialize do
 
   # (2) Email through Gmail / Google Workspace SMTP, PRODUCTION ONLY. Development keeps writing
   # mail to tmp/mails (:file) and tests keep :test, whatever credentials a developer has.
-  # smtp.gmail.com:587 with STARTTLS required and a Workspace APP PASSWORD (decision record
-  # docs/decisions/0006-google-integrations.md). A refused login or a dropped connection raises a
+  # smtp.gmail.com:587 with STARTTLS required and a Workspace APP PASSWORD (a team
+  # decision). A refused login or a dropped connection raises a
   # Net::SMTP*/socket error, which MailDelivery.deliver! records as "failed" and the work queue
   # shows (ONP-12); nothing here swallows it. Timeouts are short so a stuck Gmail cannot hold a
   # candidate's request for long: the send is synchronous on purpose (MailDelivery).

@@ -16,6 +16,9 @@ class VacancyListCityFilterTest < ActionDispatch::IntegrationTest
 
   def listed_titles = css_select("tbody tr td[data-label='Vacancy']").map { |td| td.text.squish }
 
+  # Every vacancy placed in one of these cities, read from the data (the seed also has a draft scene vacancy).
+  def placed_in(*cities) = Job.all.count { |job| (JobListFilter.cities_of(job).map(&:downcase) & cities.map(&:downcase)).any? }
+
   test "a city keeps only the vacancies placed there, including a second placement" do
     get staff_jobs_path, params: { city: "Makassar", commit: "Filter" }
     assert_response :success
@@ -24,12 +27,13 @@ class VacancyListCityFilterTest < ActionDispatch::IntegrationTest
     assert_match @jobs.first.title, listed_titles.first
 
     get staff_jobs_path, params: { city: "kota tangerang" }
-    assert_equal @jobs.size - 1, listed_titles.size, "the match ignores letter case"
+    assert_equal placed_in("Kota Tangerang"), listed_titles.size, "the match ignores letter case"
   end
 
   test "several cities and several position terms widen the list (any of them matches)" do
     get staff_jobs_path, params: { city: %w[Makassar Kota\ Tangerang] }
-    assert_equal @jobs.size, listed_titles.size
+    assert_equal placed_in("Makassar", "Kota Tangerang"), listed_titles.size
+    assert_operator listed_titles.size, :>, placed_in("Kota Tangerang"), "two cities list more than one"
     get staff_jobs_path, params: { q: "#{@jobs.first.title.split.first}, #{@jobs.last.title.split.first}" }
     assert_operator listed_titles.size, :>=, 2
     assert(listed_titles.all? { |t| t.include?(@jobs.first.title.split.first) || t.include?(@jobs.last.title.split.first) })

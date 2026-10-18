@@ -55,12 +55,15 @@ class CupCalibrationBlindingTest < ActionView::TestCase
     e.message.include?("20 calibration")
   end
 
-  test "consultant assigned: only that person is blinded, until judged" do
+  # 18 Oct 2026 (Vida): the superadmin may judge calibration CVs on any vacancy, so it is blinded too
+  # (before: only the assigned consultant was blinded, and the superadmin was refused the judgement).
+  test "consultant assigned: that person and the superadmin are blinded, until judged" do
     part = participation(consultant: @admin)
     assert blinded?(@admin, part)
     assert_not blinded?(@admin, part, judged: true), "unblinded once judged"
     assert_not blinded?(@other_admin, part)
-    assert_not blinded?(@super, part)
+    assert blinded?(@super, part)
+    assert_not blinded?(@super, part, judged: true), "the superadmin too is unblinded once judged"
     assert_not blinded?(@manager, part)
   end
 
@@ -92,5 +95,6 @@ class CupCalibrationBlindingTest < ActionView::TestCase
     end
     assert may_judge?(@admin, participation(consultant: @admin)), "control: the assigned consultant may judge"
     assert_not may_judge?(@other_admin, participation(consultant: @admin)), "control: another HR Admin may not"
+    assert may_judge?(@super, participation(consultant: @admin)), "the superadmin may judge a vacancy with its own consultant (18 Oct 2026)"
   end
 end

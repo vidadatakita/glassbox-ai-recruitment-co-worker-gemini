@@ -145,6 +145,7 @@ class Engine08NumbersTest < ActionDispatch::IntegrationTest
       e8_decide(p2, o2) if o2
       e8_s2_score(p2, s2v) if s2v
     end
+    e8_judge_calibration!(job)
     # The superadmin sees names before the gate closes (three roles, 17 Oct 2026); a blind role's
     # rows read "Candidate NN", so the name comparison below would not be about names.
     sign_in_as staff_user("admin")
@@ -194,6 +195,7 @@ class Engine08NumbersTest < ActionDispatch::IntegrationTest
       e8_result(p1, score: ai) if ai
       e8_s2_score(p2, s2v) if s2v
     end
+    e8_judge_calibration!(job)
     names = e8_board(job, staff_user("consultant")).rows.map { it.candidate.name.delete_suffix(" Uji") }
     assert_equal %w[WithS2 LowS2 Early Late Zero NoAI], names
   end

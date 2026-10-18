@@ -1,4 +1,4 @@
-# D60 slice 2 (plan docs/plans/2026-10-10-online-test-in-apply-flow.md §c, §d): the technical test
+# D60 slice 2: the technical test
 # of a job, versioned. Additive: three new tables, functions and triggers; nothing existing changes.
 #
 #   test_cases          one row per version of a job's test: case file (ActiveStorage, private),

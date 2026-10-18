@@ -1,4 +1,4 @@
-# Labels for feature 06 (S1 AI screening). Screen text is Bahasa (docs/STANDARD-BAHASA-UI.md).
+# Labels for feature 06 (S1 AI screening). Screen text is Bahasa.
 module ScreeningHelper
   STATE_TONES = { "queued" => "info", "done" => "success", "screening_failed" => "danger", "cv_unreadable" => "warning",
                   "awaiting_release" => "warning", "not_sent" => "muted" }.freeze
@@ -22,19 +22,9 @@ module ScreeningHelper
   # Only the JUDGE is blinded: D13 protects the consultant's own judgement (feature 06 §4.1 step 7).
   # Others do not judge calibration, so they see the score (GlassBox Team, 2026-10-13: HR saw
   # "disembunyikan" on every new job's first CVs). Three roles (17 Oct 2026): the judge is the HR Admin
-  # (or superadmin) who is the job's consultant, or any of them while the job has none assigned; the
-  # role alone no longer tells the judge apart, so the person is checked.
-  def ai_result_blinded?(participation)
-    return false unless current_user&.role.in?(%w[hr_admin superadmin])
-    return false unless participation&.stage&.code == "S1"
-
-    consultant_id = participation.stage.job.consultant_id
-    return false if consultant_id.present? && consultant_id != current_user.id
-
-    calibration = Screening::Calibration.new(participation.stage.job)
-    row = calibration.applicable? && calibration.rows.find { |r| r.participation.id == participation.id }
-    row.present? && row.judgement.nil?
-  end
+  # who is the job's consultant (any HR Admin while the job has none assigned), and since 18 Oct 2026
+  # always the superadmin too; the role alone no longer tells the judge apart, so the person is checked.
+  def ai_result_blinded?(participation) = Screening::CalibrationBlind.blinded?(participation, current_user)
 
   def calibration_badge(calibration)
     label, tone = CALIBRATION_LABELS.fetch(calibration.status)

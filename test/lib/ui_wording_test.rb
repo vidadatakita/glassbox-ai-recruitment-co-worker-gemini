@@ -1,6 +1,6 @@
 require "test_helper"
 
-# docs/STANDARD-BAHASA-UI.md §2: words that never appear in what a user reads (D42–D45 and the
+# The UI wording standard: words that never appear in what a user reads (D42–D45 and the
 # house rules). Scans views, Ruby files under app/ and lib/, the mailers and the locales; comment
 # lines are skipped (code comments are English and may quote the old word). No exceptions: the
 # former exception "Seleksi berkas" became "Seleksi CV" (D46, GlassBox Team 07:54).

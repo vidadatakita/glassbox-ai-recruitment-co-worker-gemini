@@ -1,6 +1,6 @@
 # English screen text formats. Times are shown in WIB (Asia/Jakarta), the app's time zone; formats
 # that print a time say "WIB" so nobody guesses the zone. Demo-path screen text itself is written in
-# the views (A3 decision, docs/BUILD-LOG.md); this file carries only the framework-level text.
+# the views (A3 decision); this file carries only the framework-level text.
 en:
   date:
     abbr_day_names: [Sun, Mon, Tue, Wed, Thu, Fri, Sat]

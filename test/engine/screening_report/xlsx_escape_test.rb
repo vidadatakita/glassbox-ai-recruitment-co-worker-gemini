@@ -38,6 +38,7 @@ class Engine08XlsxEscapeTest < ActionDispatch::IntegrationTest
   # Name, Email and WhatsApp cells unmasked.
   test "every D62 h8 prefix and DDE payload in Name, Last position, Email and WhatsApp number is text with exactly one leading apostrophe" do
     PAYLOADS.each_with_index { |p, i| plant(p, i) }
+    e8_judge_calibration!(@job) # the superadmin judges calibration: judged CVs are not hidden (18 Oct 2026)
     x = export_as("superadmin")
     h = x[:header]
     cols = ["Name", "Last position", "Email", "WhatsApp number"].map { |c| h.index(c) || flunk("column #{c} missing") }

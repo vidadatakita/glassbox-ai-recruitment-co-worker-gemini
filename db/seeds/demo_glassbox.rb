@@ -1,12 +1,13 @@
 # GlassBox demo data for the AI Builder Cup (plan task A6). EVERYTHING HERE IS INVENTED: the
-# company, the three vacancies, the twenty-five applicants, their CV texts, employers, schools,
+# company, the three screened vacancies (plus one draft vacancy for the discrimination-check scene),
+# the twenty-five applicants, their CV texts, employers, schools,
 # scores and notes. No real candidate, client or employee data (project rule). No AI is called:
 # every AI row carries the model id MODEL_ID so nobody can mistake it for a model's judgement.
 #
 # Self-contained on purpose: it requires no other seed file, so the team can swap the demo to
 # this seed in db/seeds.rb with one `require_relative "seeds/demo_glassbox"` and one `.run` call.
 #
-# What it builds (FLOW v2.1 §1 steps, read with docs/GLOSSARY-EN.md):
+# What it builds (FLOW v2.1 §1 steps):
 #   step 3   three vacancies with an approved brief, headcount, salary band at or above the
 #            Kota Tangerang 2026 minimum wage, the tier pass score locked on the S1 stage, the
 #            S1+S2 gate open and the applicant portal open
@@ -23,7 +24,7 @@
 #   step 10  one candidate at Interview 1 with two assessor links: one scored, one still open
 #
 # Hand scores: HAND holds, per applicant and requirement code, the judgement a person gave and the
-# CV line it rests on. docs/evaluation/hand-scores.csv is GENERATED from HAND (`hand_scores_csv`),
+# CV line it rests on. The hand-scores CSV is GENERATED from HAND (`hand_scores_csv`),
 # so the seed and the evaluation file cannot drift; test/engine/cup ties them out.
 #
 # Database rules this seed respects on purpose (they are triggers and CHECK constraints):
@@ -479,33 +480,78 @@ module DemoGlassbox
     require_relative "demo_question_bank"
     admin_staff = jobs.find { |job| job.title == JOBS[:adm][:title] }
     DemoQuestionBank.seed!(job: admin_staff, admin: consultant, manager: reviewer) if admin_staff
-    flagged_requirement!(admin_staff, hr:, now:) if admin_staff
+    scene_vacancy!(company:, consultant:, now:)
+    calibration_judgements!(jobs, hr:, now:)
     report(jobs, links)
     jobs
   end
 
-  # The discrimination-check scene (the team lead, 18 Oct 2026): ONE requirement on Admin Staff that names
-  # a protected attribute (age), added AFTER the portal opened and the applicants were screened, so
-  # opening and screening are unchanged, and checked through Briefs::RequirementCheck like the brief
-  # screen does. The rule pass flags it "replace" with the standard's reason; the seed has the AI off, so
-  # the neutral wording the AI would propose is written here (invented). Nothing is applied: the line
-  # stays open until a person decides it on the brief page. Not on Accounting Supervisor: an open line
-  # turns that brief's "discrimination check" step back to not done, and the video films vacancy 1.
-  # Idempotent: added once, by its text.
-  FLAGGED_REQUIREMENT = { text: "Maximum age 30", evidence: "Date of birth in the CV",
-                          replacement: "Can keep up with a high daily volume of documents and front-desk visitors" }.freeze
+  # The discrimination-check scene (the team lead, 18 Oct 2026): a fourth vacancy in DRAFT, brief steps
+  # 1-3 written, one requirement naming a protected attribute (age). The requirement check runs as on
+  # the brief screen: the rule pass flags it "replace" with the standard's reason, and the neutral
+  # wording the AI would propose is written here (the seed has the AI off; invented wording). Nothing is
+  # applied: the line stays open until a person decides it on the brief page, and the brief cannot be
+  # completed before that, exactly as for a real brief. A draft, with no applicants and no portal, so
+  # the three demo vacancies, their screening and their reports are untouched (a requirement added to a
+  # screened vacancy changes its rubric and sends its AI results to "old rubric").
+  # Idempotent: created once, by title.
+  SCENE_VACANCY = {
+    title: "Warehouse Assistant", golongan: 2,
+    activities: [["Receive incoming goods and check them against the delivery note", "Goods received without differences", 40],
+                 ["Store goods in their location and keep the stock card current", "Stock card matches the shelf", 35],
+                 ["Prepare and load outgoing orders", "Orders leave complete and on time", 25]],
+    requirements: [["wajib", "At least a senior high school (SMA/SMK) diploma", "SMA, SMK or higher in the CV", nil],
+                   ["sebaiknya", "Experience receiving goods in a warehouse", "Warehouse receiving in the work history", 100],
+                   ["nilai_tambah", "Maximum age 30", "Date of birth in the CV", nil]]
+  }.freeze
+  FLAGGED_REQUIREMENT = { text: "Maximum age 30",
+                          replacement: "Can lift and move stock boxes of up to 20 kg safely during a full shift" }.freeze
 
-  def flagged_requirement!(job, hr:, now:)
-    return if job.requirements.exists?(text: FLAGGED_REQUIREMENT[:text])
+  def scene_vacancy!(company:, consultant:, now:)
+    return if Job.exists?(title: SCENE_VACANCY[:title], client_company: company)
 
-    job.requirements.create!(tier: "nilai_tambah", text: FLAGGED_REQUIREMENT[:text], cv_evidence: FLAGGED_REQUIREMENT[:evidence],
-                             position: job.requirements.maximum(:position).to_i + 1)
-    lines = Briefs::RequirementCheck.run!(job:, actor: hr, now:, record: false)
+    job = Job.create!(title: SCENE_VACANCY[:title], golongan: SCENE_VACANCY[:golongan], client_company: company,
+                      location: COMPANY[:city], placements: [COMPANY[:city]], headcount: 1, employment_type: "kontrak_pkwt",
+                      work_arrangement: "onsite", relocation: "tidak_perlu", salary_min: 5_500_000, salary_max: 6_200_000,
+                      show_salary: true, consultant:, brief_status: "draft",
+                      success_90d: "By day 90, receives and stores goods without stock-card differences.")
+    SCENE_VACANCY[:activities].each_with_index { |(d, o, sh), i| job.activities.create!(position: i + 1, description: d, output: o, share_percent: sh) }
+    SCENE_VACANCY[:requirements].each_with_index do |(tier, text, evidence, weight), i|
+      job.requirements.create!(tier:, text:, cv_evidence: evidence, weight:, position: i + 1)
+    end
+    lines = Briefs::RequirementCheck.run!(job:, actor: consultant, now:, record: false)
     doc = job.reload.requirement_check.deep_dup
     doc["lines"] = lines.map do |line|
       line["text"] == FLAGGED_REQUIREMENT[:text] && line["replacement"].to_s.empty? ? line.merge("replacement" => FLAGGED_REQUIREMENT[:replacement]) : line
     end
     job.update!(requirement_check: doc)
+  end
+
+  # Calibration (D13), the team lead's choice of 18 Oct 2026: the HR Admin (each vacancy's consultant)
+  # has judged every demo CV, so the screening report and every other screen show the AI results to the
+  # people who judge calibration (Screening::CalibrationBlind hides them only while a CV is unjudged).
+  # The verdict is the HR Admin's own, taken from the seed's hand scores and NOT from the AI's answer:
+  # Passed when every must-have is met in the CV, else Not passed. Written through
+  # Screening::JudgeCalibration like the calibration screen. With 10, 8 and 7 CVs no vacancy reaches
+  # the 20 pairs calibration needs, so it shows "in progress" and no AI result becomes a decision.
+  # Idempotent: a CV already judged for the current rubric is skipped.
+  def calibration_judgements!(jobs, hr:, now:)
+    jobs.each do |job|
+      calibration = Screening::Calibration.new(job)
+      next unless calibration.applicable?
+
+      must_haves = JOBS.values.find { |spec| spec[:title] == job.title }[:requirements].select { |r| r[1] == "wajib" }.map(&:first)
+      calibration.rows.each do |row|
+        next if row.judgement
+
+        person = PEOPLE.find { |p| p[:name] == row.participation.job_application.candidate&.name }
+        next unless person
+
+        outcome = must_haves.all? { |code| person[:hand].dig(code, 0) == "met" } ? "pass" : "eliminate"
+        Screening::JudgeCalibration.call(participation: row.participation, user: hr, outcome:, now:,
+                                         note: "Judged from the CV against the must-haves")
+      end
+    end
   end
 
   # TENANCY=single: exactly one client company exists. Created only on an empty install.
@@ -805,7 +851,7 @@ module DemoGlassbox
     puts "GlassBox demo: second assessor link (Interview 1, #{first[:key]}): #{routes.interviewer_score_path(@interview_token)}" if @interview_token
   end
 
-  # docs/evaluation/hand-scores.csv, generated from HAND so the file and the seed agree. One row per
+  # The hand-scores CSV, generated from HAND so the file and the seed agree. One row per
   # applicant per requirement; n = PEOPLE.size applicants, PEOPLE.size * 4 rows. The planted fake
   # quote is NOT a hand score and is not in this file. Written without the csv gem (not in the
   # Gemfile; Ruby 4 no longer bundles it): every field is double-quoted, quotes doubled, RFC 4180.

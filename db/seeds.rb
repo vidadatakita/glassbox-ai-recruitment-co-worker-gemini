@@ -54,8 +54,9 @@ end
 puts "Seeded #{company.name}: users #{User.count}. Password: #{password}"
 
 # The Cup demo data (A6): three English vacancies for PT Terang Nusantara with 25 invented applicants
-# at every step of the twelve, the planted fake quote for the evidence check, and the hand scores in
-# docs/evaluation/hand-scores.csv. Idempotent. This is the ONLY demo data the public demo carries.
+# (and a fourth, draft vacancy that carries the discrimination-check scene, no applicants)
+# at every step of the twelve, the planted fake quote for the evidence check, and the hand scores.
+# Idempotent. This is the ONLY demo data the public demo carries.
 require_relative "seeds/demo_glassbox"
 glassbox_hr = User.find_by!(email_address: "hr@terangnusantara.example")
 glassbox_consultant = glassbox_hr # the HR Admin is the vacancies' consultant (three roles)

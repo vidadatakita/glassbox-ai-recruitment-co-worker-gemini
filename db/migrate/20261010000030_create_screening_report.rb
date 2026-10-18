@@ -61,7 +61,7 @@ class CreateScreeningReport < ActiveRecord::Migration[8.1]
     add_column :job_applications, :expected_salary_max, :bigint
     # The explicit IS NOT NULLs are load-bearing: a CHECK passes when it evaluates to NULL, so
     # without them a half range (min set, max NULL) was accepted (seen red in
-    # test/integration/lamar_expected_salary_test.rb, docs/red-runs.md feature 08 R1).
+    # test/integration/lamar_expected_salary_test.rb, feature 08 R1).
     add_check_constraint :job_applications,
                          "(expected_salary_min IS NULL AND expected_salary_max IS NULL) OR " \
                          "(expected_salary_min IS NOT NULL AND expected_salary_max IS NOT NULL AND " \

@@ -72,6 +72,6 @@ class CandidateMailer < ApplicationMailer
 
   private
 
-  # The AI interview link, only while the interview is open (docs/features/05-ai-interview.md).
+  # The AI interview link, only while the interview is open.
   def interview_url(application, token) = Interviews.open_for(application) && candidate_status_interview_url(token:)
 end

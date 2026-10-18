@@ -41,6 +41,7 @@ class Engine08CriterionScaleTest < ActionDispatch::IntegrationTest
       e8_result(p1, score: name == "Ani Uji" ? 80 : 30, judgements: judgements(wajib: w, sebaiknya: s, nilai: n))
     end
     # Superadmin: the only role that sees names before the gate (three-role model, 17 Oct 2026).
+    e8_judge_calibration!(@job) # judged CVs are not hidden from the superadmin (18 Oct 2026)
     sign_in_as staff_user("superadmin")
     board = e8_board(@job, staff_user("superadmin"))
     screen = board.rows.flat_map do |row|
@@ -67,6 +68,7 @@ class Engine08CriterionScaleTest < ActionDispatch::IntegrationTest
     _b, p2, _ = e8_applicant(@job, @s1, @s2, name: "Rendah Skala Uji")
     e8_result(p1, score: 30, judgements: judgements(wajib: "met", sebaiknya: "3", nilai: "2"))
     e8_result(p2, score: 70, judgements: judgements(wajib: "not_met", sebaiknya: "0", nilai: "0"))
+    e8_judge_calibration!(@job) # the consultant judges calibration; judged CVs are not hidden
     rows = e8_board(@job, staff_user("consultant")).rows
     assert_equal ["Rendah Skala Uji", "Tinggi Skala Uji"], rows.map { it.candidate.name }
     assert_equal [4, 2], rows.map(&:band)

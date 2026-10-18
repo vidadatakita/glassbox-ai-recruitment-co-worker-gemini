@@ -11,8 +11,8 @@ require "test_helper"
 # from the live URL), so a route un-hidden later cannot bring Bahasa back. A new view directory is
 # added to SCOPE, or the gate is silently narrower than the claim it protects.
 #
-# Red by construction: written before the translation, with the hit count recorded in
-# docs/BUILD-LOG.md, so a green here means the words were actually removed.
+# Red by construction: written before the translation, with the hit count recorded,
+# so a green here means the words were actually removed.
 class EnglishDemoPathTest < ActiveSupport::TestCase
   SCOPE = %w[
     app/views/layouts app/views/sessions app/views/lamar app/views/candidate_shared app/views/candidate_status

@@ -2,8 +2,7 @@ module Screening
   # The agreement and cost check (FLOW v2.1 §1 "Checks on top of the flow"; plan task A9): the
   # invented CVs of the demo seed are screened with the real prompt, schema, evidence-section filter,
   # redactor and evidence check, and every AI judgement is set beside the judgement a person gave the
-  # same requirement (the hand scores; docs/evaluation/hand-scores.csv is generated from the same
-  # seed). It measures what the deck and the README may claim, from one run, never an estimate:
+  # same requirement (the hand scores, generated from the same seed). It measures what the deck and the README may claim, from one run, never an estimate:
   #   - agreement per requirement, per tier and overall, with n; for 0-3 ratings also within one point;
   #   - the S1 outcome (pass / eliminate at the vacancy's pass score) the AI judgements lead to,
   #     against the outcome of the hand judgements, and the score difference;
@@ -37,7 +36,7 @@ module Screening
 
     class Malformed < StandardError; end
 
-    # The brief's English tier words (docs/GLOSSARY-EN.md); the stored values stay in the database.
+    # The brief's English tier words; the stored values stay in the database.
     TIER_WORDS = { "wajib" => "must-have", "sebaiknya" => "should-have", "nilai_tambah" => "nice-to-have" }.freeze
 
     # The 25 invented applicants of db/seeds/demo_glassbox.rb, each with its vacancy's rubric and the

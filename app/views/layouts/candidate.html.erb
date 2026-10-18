@@ -11,7 +11,7 @@
     <%= stylesheet_link_tag "layout_apply" %>
     <%# Only the three scripts candidate pages use. Turbo and Stimulus (about 155 KB of the 197 KB
         this page used to load) are left out: every candidate form runs with Turbo off and no
-        Stimulus controller is used here (docs/perf/2026-10-10-portal-baseline.md). A candidate
+        Stimulus controller is used here. A candidate
         feature that needs Turbo must add it back on purpose. %>
     <%# test_countdown: the technical-test clock (D60), display only, inert without [data-due-at]. %>
     <%= javascript_include_tag "submit_guard", "file_pick", "consent_disclosure", "test_countdown", "apply_autosave", type: "module" %>

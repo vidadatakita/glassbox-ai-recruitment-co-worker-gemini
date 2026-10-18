@@ -5,8 +5,11 @@
 <% tile = "col-xl col-md-4 col-sm-6" %>
 <div class="row loan-index-summary report-metrics">
   <%= render "staff/shared/metric", variant: "primary", icon: "fa-magic", label: "AI score (S1)", col: tile,
-             value: ScreeningReport::Text.band(row.band),
-             caption: row.ai_score ? "score #{ScreeningReport::Text.score(row.ai_score)} of 100 · pass score #{ScreeningReport::Text.score(board.s1.threshold)}" : "not assessed by the AI yet" %>
+             value: row.blinded ? "Hidden" : ScreeningReport::Text.band(row.band),
+             caption: if row.blinded then "until you judge this calibration CV"
+                      elsif row.ai_score then "score #{ScreeningReport::Text.score(row.ai_score)} of 100 · pass score #{ScreeningReport::Text.score(board.s1.threshold)}"
+                      else "not assessed by the AI yet"
+                      end %>
   <%= render "staff/shared/metric", variant: "info", icon: "fa-file-excel-o", label: "Technical test score (S2)", col: tile,
              value: ScreeningReport::Text.test(row.test),
              caption: board.s2 ? "of 100 · pass score #{ScreeningReport::Text.score(board.s2.threshold)}" : "this package has no technical test" %>

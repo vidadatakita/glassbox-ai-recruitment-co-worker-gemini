@@ -3,7 +3,7 @@ module Screening
   # calibration screen hides the AI's answer for a CV until the consultant has judged it, so the
   # consultant is not anchored by it (the agreement figure would otherwise measure copying).
   #
-  # Who: a consultant; when the job names its consultant, that consultant.
+  # Who: an HR Admin; when the job names its consultant, that consultant. The superadmin always.
   class JudgeCalibration
     class Refused < StandardError; end
 
@@ -20,8 +20,11 @@ module Screening
 
     def call
       refuse!("Only the HR Admin judges calibration CVs.") unless @user.role.in?(%w[hr_admin superadmin])
-      if @job.consultant_id.present? && @job.consultant_id != @user.id
-        refuse!("Calibration CVs are judged by the consultant of this vacancy.")
+      # The superadmin may judge too, also on a vacancy with its own consultant (Vida, 18 Oct 2026: "the
+      # superadmin passes every check"); ScreeningHelper#ai_result_blinded? hides the AI's answer from
+      # the superadmin until it has judged, so the blind-judging rule (D13) still holds.
+      if @job.consultant_id.present? && @job.consultant_id != @user.id && @user.role != "superadmin"
+        refuse!("Calibration CVs are judged by the consultant of this vacancy (or the superadmin).")
       end
       refuse!("Choose Passed or Not passed.") unless CalibrationJudgement::OUTCOMES.key?(@outcome)
 

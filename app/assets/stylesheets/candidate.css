@@ -261,7 +261,7 @@ details summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;alig
 /* Applicant status page (17 Oct 2026), in the sign-in page's spirit: a greeting, a prominent "next"
    card with the stage progress, the stages as a navy/orange timeline, a reassurance line, and the
    consent withdrawal as a quiet card. Scoped to .status-page; colours PANTONE 282 C navy and 158 C
-   orange (docs/brand-palette.md). */
+   orange. */
 .status-page__hello { margin: 0 0 .1rem; font-size: .95rem; font-weight: 700; color: #A9431E; }
 .status-page h1 { margin: 0 0 1rem; color: #041E42; letter-spacing: -.01em; }
 .status-page__h2 { font-size: .8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: #63666A; margin: 1.5rem 0 .75rem; }

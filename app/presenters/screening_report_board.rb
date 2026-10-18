@@ -5,7 +5,7 @@
 class ScreeningReportBoard
   Row = Data.define(
     :number, :application, :candidate, :s1, :s2, :result, :s1_decision, :s2_decision, :test, :gate,
-    :label_key, :label_confirmed, :confirmation, :budget, :appointment, :recommendation
+    :label_key, :label_confirmed, :confirmation, :budget, :appointment, :recommendation, :blinded
   ) do
     def ai_score = result&.score
     def band = ScreeningReport::Band.of(ai_score)
@@ -64,8 +64,12 @@ class ScreeningReportBoard
 
   def build_row(p1, number)
     p2 = s2_by_application[p1.job_application_id]
-    result = results[p1.id]
-    confirmation = confirmations[p1.id]
+    # An unjudged calibration CV, seen by someone who judges calibration: the AI result, its label
+    # and its judgements are left out of the row, so the list, the detail page and the Excel cannot
+    # show them (Screening::CalibrationBlind). Human decisions and the test score stay.
+    blinded = blinded?(p1)
+    result = blinded ? nil : results[p1.id]
+    confirmation = blinded ? nil : confirmations[p1.id]
     confirmation = nil if confirmation && result && confirmation.screening_result_id != result.id
     application = p1.job_application
     Row.new(
@@ -75,8 +79,15 @@ class ScreeningReportBoard
       label_key: confirmation&.label || result&.label_proposal, label_confirmed: !confirmation.nil?, confirmation:,
       budget: ScreeningReport::Budget.fit(expected_min: application.expected_salary_min, expected_max: application.expected_salary_max,
                                           band_min: job.salary_min, band_max: job.salary_max),
-      appointment: appointments[application.id], recommendation: recommendations[application.id]
+      appointment: appointments[application.id], recommendation: recommendations[application.id], blinded:
     )
+  end
+
+  def blinded?(p1)
+    return false unless Screening::CalibrationBlind.judge?(@user, job)
+
+    @calibration ||= Screening::Calibration.new(job)
+    Screening::CalibrationBlind.blinded?(p1, @user, calibration: @calibration)
   end
 
   def test_cell(p2, application)

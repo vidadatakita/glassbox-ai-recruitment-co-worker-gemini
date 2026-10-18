@@ -7,7 +7,7 @@ module Gates
   #    participant decided, no review left), and not when S1 is first decided: an S1 elimination can
   #    still be reversed while the stage is open (a reviewer, or a threshold change that re-decides
   #    threshold decisions), and an S2 row written early would then shut out a candidate who is back
-  #    in. Builder decision, recorded in docs/features/07-technical-test.md §2.
+  #    in. A build decision.
   # 2. Both stages close through Stages::Close, which refuses while anyone is undecided or in review.
   # Everything is one transaction: a refusal at any step writes nothing.
   class Close

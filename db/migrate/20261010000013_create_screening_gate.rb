@@ -1,4 +1,4 @@
-# D60 slice 1 (plan docs/plans/2026-10-10-online-test-in-apply-flow.md §a, option A1): S1 (Seleksi
+# D60 slice 1: S1 (Seleksi
 # CV) and S2 (Tes teknis) stay two stages, each with its own score source, threshold, weight and
 # append-only rows, but on a package that runs both (packages 3 and up) they form ONE gate,
 # "Seleksi CV dan Tes Teknis". This migration is additive: one nullable column, new functions and

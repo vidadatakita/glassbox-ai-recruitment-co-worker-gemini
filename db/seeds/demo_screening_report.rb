@@ -94,6 +94,7 @@ module DemoScreeningReport
         ActiveRecord::Base.transaction { populate(job, state, stages, consultant:, reviewer:, hr:, now:) }
       end
       approve_narratives(job, consultant)
+      judge_calibration(job, consultant)
       cities(job)
       job
     end
@@ -115,6 +116,22 @@ module DemoScreeningReport
     keys = state == :open ? PEOPLE.keys : CLOSED_PEOPLE
     keys.each { |key| applicant(job, key, stages, test_case, consultant:, reviewer:, hr:, now:) }
     Gates::Close.call(stage: stages[:s1], now:) if state == :closed
+  end
+
+  # The consultant has judged every calibration CV of the job (18 Oct 2026): the screening report hides
+  # an unjudged calibration CV's AI result from the people who judge calibration
+  # (Screening::CalibrationBlind), and this seed's report screens are about everything else. The verdict
+  # follows the CV's recorded S1 decision, Passed when there is none; idempotent.
+  def judge_calibration(job, consultant)
+    calibration = Screening::Calibration.new(job)
+    return unless calibration.applicable?
+
+    calibration.rows.each do |row|
+      next if row.judgement
+
+      outcome = row.participation.current_decision&.outcome == "eliminate" ? "eliminate" : "pass"
+      Screening::JudgeCalibration.call(participation: row.participation, user: consultant, outcome:, note: "Sample data: judged by the consultant.")
+    end
   end
 
   # D62 h2 both states on the screen: A and C carry narratives approved by the consultant, every

@@ -63,6 +63,16 @@ module Engine08Support
   end
 
   # A manual decision (the only basis allowed without an attended threshold score in every state).
+  # The consultant judges every calibration CV of the job, so the report shows the AI results to the
+  # people who judge calibration (Screening::CalibrationBlind, 18 Oct 2026). Call after the results exist.
+  def e8_judge_calibration!(job)
+    Screening::Calibration.new(job).rows.each do |row|
+      next if row.judgement
+
+      Screening::JudgeCalibration.call(participation: row.participation, user: job.consultant, outcome: "pass")
+    end
+  end
+
   def e8_decide(participation, outcome, by: staff_user("consultant"))
     Decision.create!(participation:, outcome:, basis: "manual", reason_code: "manual", note: "keputusan uji E8",
                      decided_by_id: by.id, decided_at: Time.current,

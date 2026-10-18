@@ -1,5 +1,4 @@
-# D60 slices 3-5 (plan docs/plans/2026-10-10-online-test-in-apply-flow.md Part 1 §b, §d, §e, §a.2,
-# §c scoring). Additive: new columns on test_attempts, one new table, new functions and triggers,
+# D60 slices 3-5 (the online-test plan, Part 1 §b, §d, §e, §a.2, §c scoring). Additive: new columns on test_attempts, one new table, new functions and triggers,
 # one partial unique index. Nothing existing is dropped; the slice-2 function enforce_test_attempt is
 # REPLACED with a superset (every slice-2 refusal is kept word for word, new ones are added).
 #

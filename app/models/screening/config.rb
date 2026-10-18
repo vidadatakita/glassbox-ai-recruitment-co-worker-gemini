@@ -51,7 +51,7 @@ module Screening
       ad: :low, ad_scan: :low, letter: :low, chat: :low, status_text: :low, interview: :low
     }.freeze
     # Rule 6: model ids are defaults, not facts. This is the allowlist the team confirmed in the Google
-    # Cloud project (glassbox:ai:smoke TIER=high|medium|low at deploy; results in docs/BUILD-LOG.md). A
+    # Cloud project (glassbox:ai:smoke TIER=high|medium|low at deploy). A
     # configured id outside it stops the boot (validate_models!), never a silent fallback. Confirmed
     # ids are appended here at deploy; the list is the record. gemini-3.8-pro was removed on 16 Oct
     # 2026: Vertex AI answers 404 for it, so a server configured with it now stops at boot instead of

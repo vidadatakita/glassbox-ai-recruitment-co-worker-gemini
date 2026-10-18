@@ -6,8 +6,8 @@ module Briefs
   # Stages per package come from the package ladder (concept brief §3): S5 is client-run and
   # scored in the portal in packages 1-3; the reference check runs in packages 4-5 (blueprint §3.4).
   # NOTE the §7.1 default plan for G1-2 ("S1, S2 work sample, S5") matches neither package 2 (no
-  # S2) nor package 3 (adds S3); the ladder wins here and the gap is an open SPEC CONFLICT in
-  # docs/features/03-job-form.md part 8.
+  # S2) nor package 3 (adds S3); the ladder wins here, and the gap is an open spec conflict the team
+  # has not ruled on.
   module StagePlan
     CODES = {
       1 => %w[S5], 2 => %w[S1 S5], 3 => %w[S1 S2 S3 S5],

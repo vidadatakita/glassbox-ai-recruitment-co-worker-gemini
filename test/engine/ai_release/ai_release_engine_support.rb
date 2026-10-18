@@ -1,6 +1,6 @@
 # Helpers for the feature-09 test engine (AI release gate, D51 = A + B + C). Written by the test
 # engine on 2026-10-10. Reuses the feature-06 engine support (FakeGemini at the HTTP boundary,
-# release through the real AiReleases::Release path); its hash is in docs/test-engine/hashes-06.txt.
+# release through the real AiReleases::Release path).
 require_relative "../screening/screening_engine_support"
 
 module AiReleaseEngineSupport

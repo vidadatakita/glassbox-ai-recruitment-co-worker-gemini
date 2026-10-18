@@ -1,6 +1,6 @@
 module Screening
-  # An INVENTED CV and rubric for the runbook's one-call check and token count
-  # (docs/runbooks/enable-ai-screening.md). No real person; safe to send to the API.
+  # An INVENTED CV and rubric for the one-call check and token count. No real person; safe to send
+  # to the API.
   module Sample
     CV = <<~CV.freeze
       CURRICULUM VITAE

@@ -1,4 +1,4 @@
-# Test engine 07 findings F-03, F-06 and F-04 (2026-10-10, docs/features/07-technical-test.md §7).
+# Test engine 07 findings F-03, F-06 and F-04 (2026-10-10).
 # Additive: one new trigger on test_cases, one replaced feature-07 function, one new trigger on
 # decisions. Nothing from features 01-06 changes.
 #

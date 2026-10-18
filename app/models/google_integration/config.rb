@@ -8,8 +8,7 @@ module GoogleIntegration
   # being able to print a secret.
   #
   # An integration with no credentials is OFF and harmless: no button, no call, no change to how
-  # mail, files or appointments work today. The exact keys are listed in
-  # docs/runbooks/enable-google.md; every ENV key is declared in lib/glassbox/settings.rb.
+  # mail, files or appointments work today. Every ENV key is declared in lib/glassbox/settings.rb.
   #
   # Namespace note: the Google gems own the root modules `Google::Apis` and `Google::Cloud`, so this
   # code lives under GoogleIntegration, never under Google.

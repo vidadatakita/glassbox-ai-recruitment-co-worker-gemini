@@ -1,4 +1,4 @@
-# Second test-engine run on feature 01, 2026-10-10 (docs/features/01-scoring-core.md §7).
+# Second test-engine run on feature 01, 2026-10-10.
 # Replaces enforce_stage_lifecycle() with three more database guards:
 #   F-19: weight and threshold never change on a CLOSED stage (D37 R2), whatever an in-memory
 #         object believed; a stale object in a second tab could otherwise move it.

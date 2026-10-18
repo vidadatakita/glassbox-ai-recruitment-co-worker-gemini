@@ -1,6 +1,6 @@
 require "test_helper"
 
-# AI interview gaps closed on 18 Oct 2026 (docs/features/05-ai-interview.md part 7): the status page
+# AI interview gaps closed on 18 Oct 2026: the status page
 # leads back into an open interview, the vacancy page counts interviews, and Start screening warns before
 # it ends the open ones. Each with a control.
 class AiInterviewGapsTest < ActionDispatch::IntegrationTest

@@ -1,4 +1,4 @@
-# The AI interview before CV screening (docs/features/05-ai-interview.md).
+# The AI interview before CV screening.
 module Interviews
   module_function
 

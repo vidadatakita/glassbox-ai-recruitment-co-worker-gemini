@@ -6,7 +6,7 @@ module Briefs
   # three-tier requirements. The proposal is stored as it came (BriefSuggestion) and only fills the
   # wizard's form; nothing in the brief changes until HR or the consultant presses Save, which
   # records the change like any other save (SaveStep). This reverses the earlier "typed by hand, no
-  # AI drafting" rule for the brief; docs/features/03-job-form.md records the change.
+  # AI drafting" rule for the brief.
   #
   # The text sent holds no candidate data and no company name or salary: only what the title and
   # the level say about the work. Whatever provider AI_PROVIDER names is used, with the "text"

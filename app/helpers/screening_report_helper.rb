@@ -1,5 +1,5 @@
 # Feature 08 labels for the "Screening report". Colour always travels with a word (SPEC §1);
-# screen text is English (docs/GLOSSARY-EN.md). Visibility comes from the board.
+# screen text is English. Visibility comes from the board.
 module ScreeningReportHelper
   def report_person(row, board)
     board.visibility.name_for?(row.application) ? (row.candidate&.name || row.person_number) : row.person_number
@@ -23,6 +23,7 @@ module ScreeningReportHelper
   def report_budget_badge(row) = report_state(ScreeningReport::Budget.label(row.budget), ScreeningReport::Budget.tone(row.budget))
 
   def report_ai_score(row)
+    return content_tag(:span, "Hidden until you judge this calibration CV", class: "text-muted") if row.blinded
     return content_tag(:span, "Not assessed by the AI", class: "text-muted") if row.ai_score.nil?
 
     safe_join([content_tag(:strong, "#{row.band}/5", class: "report-score"),

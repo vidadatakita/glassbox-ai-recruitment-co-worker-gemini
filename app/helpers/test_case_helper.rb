@@ -1,4 +1,4 @@
-# Brief step 5 "Technical test" (D60 slice 2). Screen text is English (docs/GLOSSARY-EN.md).
+# Brief step 5 "Technical test" (D60 slice 2). Screen text is English.
 module TestCaseHelper
   # The brief's steps for this job: 1-4 always, 5 only when the package runs S2.
   def brief_steps(job)

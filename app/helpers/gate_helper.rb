@@ -1,4 +1,4 @@
-# Labels for the gate "CV screening and technical test" (D60). Screen text is English (A3, docs/GLOSSARY-EN.md).
+# Labels for the gate "CV screening and technical test" (D60). Screen text is English (A3).
 module GateHelper
   STAGE_STATUS = { "draft" => ["Not yet open", "muted"], "open" => ["Open", "info"], "closed" => ["Closed", "success"] }.freeze
 

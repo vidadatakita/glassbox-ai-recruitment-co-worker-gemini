@@ -8,23 +8,13 @@ CV; sensitive data is removed before any model call; every applicant always sees
 
 **Status: prototype in build (deadline 18 Oct 2026).** All data in this project is invented.
 
-## Documentation (`docs/`)
-
-| File | What it is |
-|---|---|
-| `docs/GLASSBOX-PLAN.md` | Project plan: origin of the code, merit analysis, task list A1–A11, project rules, team decisions |
-| `docs/FLOW-v2.1-glassbox.md` | The 12-step prototype flow, the three checks, roadmap, verified evidence (§5.1), team decision log (§7) |
-| `docs/BUILD-PLAN-18-OCT.md` | Timeline 16–18 Oct, proposed owners, submission gates, cut order |
-| `docs/video-material/` | Everything for the video: `VIDEO-NARRATION-aicohire.md` (the 3-minute script for three presenters, claims-checked against the live site), `VIDEO-SCRIPT-and-DECK-v2.1.md` (earlier script and the 10-slide deck outline), `screens/` (storyboard screenshots) |
-| `docs/FIT-CHECK-three-topics.md` | Why this topic was chosen against the judging criteria |
-
 ## Project rules
 
 - English only: code, comments, UI, data, documents, video, deck.
 - Google products only in the product: Gemini on Vertex AI, Cloud Run, Cloud SQL, Cloud Storage, Secret Manager.
 - Invented data only. No keys in code or git.
 - A person decides every step; nothing moves or rejects a candidate automatically.
-- Every change is agreed by all team members and logged in `docs/FLOW-v2.1-glassbox.md` §7.
+- Every change is agreed by all team members.
 - Documents are signed "GlassBox Team".
 
 ## Run locally

@@ -215,7 +215,7 @@ form[data-submitted="true"][data-submitter="ai"] .ai-btn::before {
 .salary-band__mark { position: absolute; top: -5px; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; background: #fff; border: 3px solid #0b2a55; }
 /* AI Builder Cup: Ringkasan Dampak. */
 /* Impact page (staff/impacts): before / after matrix. Before is muted Cool Gray, With AiCoHire is
-   the brand navy, the change chip is success green or accent-text orange (docs/brand-palette.md). */
+   the brand navy, the change chip is success green or accent-text orange. */
 .impact-headline .loan-index-metric small { white-space: normal; }
 .impact-matrix { overflow: hidden; border-radius: .75rem; }
 .impact-matrix__header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; }
@@ -376,7 +376,7 @@ form[data-submitted="true"][data-submitter="ai"] .ad-text-skeleton,
 }
 
 /* Brief change history modal (staff/job_briefs/_history_modal): navy header, a timeline of
-   change cards, each field as before -> after chips (docs/brand-palette.md). */
+   change cards, each field as before -> after chips. */
 .brief-history-modal__header { background: #041E42; color: #fff; align-items: flex-start; }
 .brief-history-modal__header .modal-title { font-size: 1.15rem; font-weight: 700; color: #fff; }
 .brief-history-modal__header .modal-title .fa { color: #EDA04F; }

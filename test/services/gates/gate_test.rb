@@ -1,7 +1,7 @@
 require "test_helper"
 
 # D60 slice 1: S1 (Seleksi CV) and S2 (Tes teknis) as one gate "Seleksi CV dan Tes Teknis".
-# Plan docs/plans/2026-10-10-online-test-in-apply-flow.md §a; decision D60 (GlassBox Team 16:28/16:32,
+# The online-test plan §a; decision D60 (GlassBox Team 16:28/16:32,
 # clarifications 16:45). Each guard has its control beside it (load-bearing-tests rule 5).
 class Gates::GateTest < ActiveSupport::TestCase
   include GateFactory

@@ -1,4 +1,4 @@
-# One AI interview per application (docs/features/05-ai-interview.md). It exists only
+# One AI interview per application. It exists only
 # when the switch is on at submit time; Screening::Enqueue holds S1 while it is open (gate :interview_pending).
 class Interview < ApplicationRecord
   STATUSES = %w[open finished].freeze

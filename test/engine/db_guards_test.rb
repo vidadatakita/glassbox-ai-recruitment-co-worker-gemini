@@ -78,7 +78,7 @@ class EngineDbGuardsTest < ActiveSupport::TestCase
 
   # ---- Run 3 (2026-10-10): stages_lifecycle after migration ...0006 ---------------------------
   # Every test below exists because a mutant of the trigger survived the suite without it
-  # (DL1, DL2, DL4, DL5, DL7, DL8 in docs/test-engine/mutants-01.md). The service layer refuses
+  # (DL1, DL2, DL4, DL5, DL7, DL8). The service layer refuses
   # the same moves first, so only a write that skips the model reaches these trigger branches.
 
   # Logs a StageChange row and names it for this transaction, as Stages::ChangeThreshold does.

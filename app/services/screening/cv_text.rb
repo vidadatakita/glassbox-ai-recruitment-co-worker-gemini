@@ -1,6 +1,6 @@
 module Screening
   # CV text extraction (feature 06; blueprint §1.3 module 3, §4.3 "Unreadable CV"). Uses the
-  # pure-Ruby pdf-reader gem; reason in docs/decisions/0003-pdf-text-extraction.md.
+  # pure-Ruby pdf-reader gem: no system binary to install on the server.
   #
   # A PDF with no text layer (a scanned image) gives back no letters. Then the CV is UNREADABLE:
   # state cv_unreadable, "CV tidak terbaca", no API call and no score; a consultant pastes the text

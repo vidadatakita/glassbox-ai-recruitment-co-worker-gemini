@@ -55,7 +55,8 @@ end
 lines = ["# Mutation log", "", "Run at #{Time.now.iso8601}.", "",
          "| Rule | Mutated file | Test | Verdict |", "|---|---|---|---|"]
 results.each { |r| lines << "| #{r[:rule]} | `#{r[:file]}` | `#{r[:test]}` | #{r[:verdict]} |" }
-File.write("docs/mutation-log.md", lines.join("\n") + "\n")
+# The log goes to tmp/ (not tracked); the run prints it below as well.
+File.write("tmp/mutation-log.md", lines.join("\n") + "\n")
 puts lines
 
 survivors = results.count { |r| r[:verdict] == "SURVIVED" }

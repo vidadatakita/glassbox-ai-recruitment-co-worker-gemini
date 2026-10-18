@@ -1,6 +1,6 @@
 module TestCases
   # What a test version needs before HR may approve it (D60, plan §c, §d). Each problem is a
-  # sentence that says what is missing and how to fix it, in English (docs/GLOSSARY-EN.md). The database
+  # sentence that says what is missing and how to fix it, in English. The database
   # repeats the hard parts (weights 100, a recorded file, not infected, an answer type).
   module Readiness
     module_function

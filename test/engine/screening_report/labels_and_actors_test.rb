@@ -14,6 +14,9 @@ class Engine08LabelsAndActorsTest < ActionDispatch::IntegrationTest
     @ja, @p1, @p2 = e8_applicant(@job, @s1, @s2, name: "Larasati Uji")
     @result = e8_result(@p1, score: 72, label: "pertimbangkan")
     @reviewer = staff_user("reviewer")
+    # The consultant has judged the calibration CV, so the report shows the AI result to the people who
+    # judge calibration (Screening::CalibrationBlind, 18 Oct 2026); these tests are about labels and actors.
+    e8_judge_calibration!(@job)
   end
 
   def confirm(**kw) = ScreeningReport::ConfirmLabel.call(participation: @p1, reviewer: @reviewer, label: "pertimbangkan", **kw)

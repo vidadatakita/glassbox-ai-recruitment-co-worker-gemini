@@ -1,4 +1,4 @@
-# Portal test-engine run, 2026-10-10 (docs/features/02-portal-pelamar.md §7).
+# Portal test-engine run, 2026-10-10.
 class PortalEngineFixes < ActiveRecord::Migration[8.1]
   def change
     # F12: who marked a failed email as handled.

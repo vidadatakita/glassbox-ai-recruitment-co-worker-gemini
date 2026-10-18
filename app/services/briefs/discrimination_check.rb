@@ -21,7 +21,7 @@ module Briefs
   #
   # Each line: { "id" => "R<id>", "text", "verdict", "reason", "replacement", "source" => "rule" | "ai" }.
   # Structure of the standard's Appendix D (task-related? testable? protected attribute?); the
-  # standard's own wording is pasted in by the team later (docs/engineering-notes/appendix-D.md).
+  # standard's own wording is pasted in by the team later.
   module DiscriminationCheck
     # .2 (16 Oct, accuracy pass): the protected list is the screening standard's full §8 table (region
     # of origin, politics, union, photo, family card, bank account, experience caps and graduation

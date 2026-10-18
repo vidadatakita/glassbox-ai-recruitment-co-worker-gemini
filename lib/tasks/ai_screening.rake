@@ -1,4 +1,4 @@
-# Operator tasks for S1 AI screening (feature 06). Runbook: docs/runbooks/enable-ai-screening.md.
+# Operator tasks for S1 AI screening (feature 06).
 # None of them prints the API key, a CV of a real candidate, or a response body.
 namespace :glassbox do
   namespace :ai do
@@ -17,7 +17,7 @@ namespace :glassbox do
 
     desc "ONE real API call on an INVENTED CV, to verify the credentials and the model of one tier (TIER=high|medium|low, default high; costs one request)"
     task smoke: :environment do
-      abort "No credentials for provider #{Screening::Config.provider}: see docs/runbooks/enable-ai-screening.md." unless Screening::Config.enabled?
+      abort "No credentials for provider #{Screening::Config.provider}: set AI_API_KEY (or the service account)." unless Screening::Config.enabled?
 
       tier = ENV.fetch("TIER", "high").downcase.to_sym
       abort "TIER must be high, medium or low" unless Screening::Config::TIERS.key?(tier)
@@ -31,7 +31,7 @@ namespace :glassbox do
       puts "Criteria judged: #{ids.size} of #{rubric.criteria.size} (#{ids.sort.join(', ')})"
       puts "Tokens: input #{reply.input_tokens}, output #{reply.output_tokens}"
     rescue Screening::Errors::Base => e
-      abort "FAILED: #{e.kind} (#{e.detail}). See the runbook's failure table."
+      abort "FAILED: #{e.kind} (#{e.detail})."
     end
 
     # Plan task A9 (Screening::Evaluation): the numbers the README and the deck may claim. Each run
