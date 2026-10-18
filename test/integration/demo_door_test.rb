@@ -44,11 +44,18 @@ class DemoDoorTest < ActionDispatch::IntegrationTest
       assert_response :success
       assert_select "a.auth-demo-link[href='/demo']", 1
       assert_select "form a.auth-demo-link", 0, "the link sits outside the sign-in form"
+      # The demo accounts: three, each with a fill button that is not a submit, outside the form.
+      assert_select ".demo-accounts .demo-account", 3
+      assert_select ".demo-account__use[type=button][data-demo-email]", 3
+      assert_select "form .demo-accounts", 0
+      assert_includes response.body, Glassbox::Settings::DEMO_PASSWORD
     end
     with_env("DEMO_MODE" => nil) do
       Rails.application.reload_routes!
       get new_session_path
       assert_select "a.auth-demo-link", 0, "control: no demo link without demo mode"
+      assert_select ".demo-accounts", 0, "control: no account list without demo mode"
+      refute_includes response.body, Glassbox::Settings::DEMO_PASSWORD, "control: never a password outside demo mode"
     end
   end
 

@@ -131,3 +131,17 @@
 
 /* The split sign-in owns the whole viewport: no vendor body margin or light strip above the hero. */
 .auth-split-body { margin: 0; padding: 0; background: #041E42; }
+
+/* Demo accounts on the sign-in page (DEMO_MODE=1 only). */
+.demo-accounts { margin-top: 1.25rem; padding: .9rem 1rem; border: 1px solid #e3e7ef; border-radius: .75rem; background: #f6f7fa; }
+.demo-accounts__title { font-size: .95rem; font-weight: 700; color: #041E42; margin: 0 0 .25rem; }
+.demo-accounts__title .fa { color: #E87722; margin-right: .3rem; }
+.demo-accounts__lead { font-size: .8rem; color: #53565A; margin: 0 0 .6rem; }
+.demo-accounts__lead code { color: #041E42; background: #fff; padding: .05rem .35rem; border-radius: .3rem; }
+.demo-accounts__list { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
+.demo-account { background: #fff; border: 1px solid #e3e7ef; border-radius: .6rem; padding: .55rem .75rem; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem .75rem; align-items: center; }
+.demo-account__head { display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; font-size: .88rem; color: #041E42; }
+.demo-account__name { color: #53565A; font-weight: 500; }
+.demo-account__use { padding: .25rem .8rem; font-size: .78rem; white-space: nowrap; }
+.demo-account__email { font-size: .82rem; color: #1D428A; overflow-wrap: anywhere; }
+.demo-account__use-for { font-size: .76rem; color: #63666A; }

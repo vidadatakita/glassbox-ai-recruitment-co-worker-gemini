@@ -1,0 +1,24 @@
+<%# The demo accounts, shown ONLY in DEMO_MODE=1 (a real install never prints a password on its
+    sign-in page). Every account is invented (db/seeds.rb). "Use" fills the form above;
+    it is a plain button (type="button"), not a submit, and the visitor still presses Sign in. The
+    names come from the seeded users, so the page and the data cannot disagree. %>
+<% names = User.where(email_address: Glassbox::Settings::DEMO_ACCOUNTS.pluck(:email)).pluck(:email_address, :name).to_h %>
+<section class="demo-accounts" aria-labelledby="demo-accounts-title">
+  <h3 id="demo-accounts-title" class="demo-accounts__title"><i class="fa fa-users" aria-hidden="true"></i> Demo accounts</h3>
+  <p class="demo-accounts__lead">Invented accounts for the demo. Password for all three: <code><%= Glassbox::Settings::DEMO_PASSWORD %></code></p>
+  <ul class="demo-accounts__list">
+    <% Glassbox::Settings::DEMO_ACCOUNTS.each do |account| %>
+      <li class="demo-account">
+        <div class="demo-account__info">
+          <div class="demo-account__head">
+            <strong><%= account[:role] %></strong><% if (name = names[account[:email]]).present? && !name.include?(account[:role]) %> <span class="demo-account__name">(<%= name %>)</span><% end %>
+          </div>
+          <div class="demo-account__email"><%= account[:email] %></div>
+          <div class="demo-account__use-for"><%= account[:use_for] %></div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary demo-account__use"
+                data-demo-email="<%= account[:email] %>" data-demo-password="<%= Glassbox::Settings::DEMO_PASSWORD %>">Use</button>
+      </li>
+    <% end %>
+  </ul>
+</section>

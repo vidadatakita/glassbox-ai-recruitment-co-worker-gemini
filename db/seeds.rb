@@ -1,7 +1,7 @@
 # Demo data for development. Every name, company and address here is INVENTED (brief §2: no
 # real candidate or client data). The retention period is deliberately NOT seeded (D32): an
 # admin sets it on Pengaturan Sistem, and until then the portal cannot open.
-password = "glassbox-demo-2026"
+password = Glassbox::Settings::DEMO_PASSWORD
 
 # Seeding never sends anything to the AI, whatever .env says: the demo rows are written as "data
 # contoh", and the release demo shows a CV waiting for a reviewer. Put back at the end of the file.

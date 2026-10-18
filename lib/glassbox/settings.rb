@@ -13,6 +13,17 @@ module Glassbox
   # A key read anywhere in app/, config/ or lib/ must be declared here; test/lib/settings_registry_test.rb
   # scans the code and fails on an undeclared ENV read.
   module Settings
+    # The invented demo accounts (db/seeds.rb), shown on the sign-in page ONLY in DEMO_MODE=1 so a
+    # visitor can sign in by role. One copy of the password: the seed and the page both read it.
+    DEMO_PASSWORD = "glassbox-demo-2026"
+    DEMO_ACCOUNTS = [
+      { role: "HR Admin", email: "hr@terangnusantara.example",
+        use_for: "Brief, job ad, open the portal, start screening, test case, step decisions, offer" },
+      { role: "HR Manager", email: "manager@terangnusantara.example",
+        use_for: "Send to Gemini, review flagged results, score the technical test, agree the salary" },
+      { role: "Superadmin", email: "admin@glassbox.example", use_for: "Every step of every role" }
+    ].freeze
+
     class Invalid < StandardError; end
 
     ENV_KEYS = {

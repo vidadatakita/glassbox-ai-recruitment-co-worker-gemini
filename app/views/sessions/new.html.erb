@@ -30,6 +30,8 @@
     <i class="fa fa-play-circle" aria-hidden="true"></i><span>Try the demo without signing in</span>
   <% end %>
   <p class="text-muted text-center fs-12 mt-2 mb-0">Invented data only; pick a role on the next page.</p>
+  <%= render "sessions/demo_accounts" %>
+  <%= javascript_include_tag "demo_accounts", type: "module" %>
 <% end %>
 <%# D52 (1): shown only while Google login is configured. It is its OWN form (button_to) and sits
     AFTER the password form, never inside it (hard rule: no form inside a form). POST with the
