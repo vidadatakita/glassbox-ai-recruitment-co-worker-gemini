@@ -37,6 +37,21 @@ class DemoDoorTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # 18 Oct 2026 (Vida): with DEMO_MODE=1 the sign-in page links to the demo door; without it, no link.
+  test "the sign-in page links to the demo door in demo mode only" do
+    in_demo_mode do
+      get new_session_path
+      assert_response :success
+      assert_select "a.auth-demo-link[href='/demo']", 1
+      assert_select "form a.auth-demo-link", 0, "the link sits outside the sign-in form"
+    end
+    with_env("DEMO_MODE" => nil) do
+      Rails.application.reload_routes!
+      get new_session_path
+      assert_select "a.auth-demo-link", 0, "control: no demo link without demo mode"
+    end
+  end
+
   test "entering a door signs the visitor into that role's seeded account and logs it as a demo sign-in" do
     in_demo_mode do
       assert_difference -> { SignInEvent.where(auth_method: "demo", outcome: "success").count }, 1 do

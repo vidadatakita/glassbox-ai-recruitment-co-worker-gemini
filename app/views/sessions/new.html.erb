@@ -21,6 +21,16 @@
     <button type="submit" class="btn btn-lg btn-primary" name="commit" value="Sign in">Sign in</button>
   </div>
 <% end %>
+<%# The public demo (DEMO_MODE=1): a link to the no-login demo door, so a visitor who lands on the
+    sign-in page can enter without an account. A plain link, outside the sign-in form; without the flag
+    the door is not routed, so the link is not drawn either. %>
+<% if demo_mode? %>
+  <div class="text-center my-3 authentication-barrier"><span>or</span></div>
+  <%= link_to demo_path, class: "btn btn-lg btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2 auth-demo-link" do %>
+    <i class="fa fa-play-circle" aria-hidden="true"></i><span>Try the demo without signing in</span>
+  <% end %>
+  <p class="text-muted text-center fs-12 mt-2 mb-0">Invented data only; pick a role on the next page.</p>
+<% end %>
 <%# D52 (1): shown only while Google login is configured. It is its OWN form (button_to) and sits
     AFTER the password form, never inside it (hard rule: no form inside a form). POST with the
     authenticity token; a GET link would reopen login CSRF. %>
